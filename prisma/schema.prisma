@@ -1,0 +1,214 @@
+// Build Track - Construction Project Management Database Schema
+// Tracks estimates vs actual costs, schedule variance, and milestone payments
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite" // For local development; change to postgresql for production
+  url      = env("DATABASE_URL")
+}
+
+// User Management
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      UserRole @default(VIEWER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relationships
+  projects    ProjectUser[]
+  invoices    Invoice[]
+  
+  @@map("users")
+}
+
+model Project {
+  id                String   @id @default(cuid())
+  name              String
+  description       String?
+  totalBudget       Decimal
+  currency          String   @default("NZD")
+  startDate         DateTime?
+  estimatedEndDate  DateTime?
+  actualEndDate     DateTime?
+  status            ProjectStatus @default(PLANNING)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relationships
+  users             ProjectUser[]
+  trades            Trade[]
+  milestones        Milestone[]
+  invoices          Invoice[]
+  
+  @@map("projects")
+}
+
+model ProjectUser {
+  id        String   @id @default(cuid())
+  userId    String
+  projectId String
+  role      ProjectRole @default(VIEWER)
+  createdAt DateTime @default(now())
+
+  // Relationships
+  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, projectId])
+  @@map("project_users")
+}
+
+// Trade Categories (e.g., Electrical, Plumbing, Framing)
+model Trade {
+  id          String   @id @default(cuid())
+  projectId   String
+  name        String   // e.g., "Electrical", "Plumbing", "Framing"
+  description String?
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relationships
+  project     Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  lineItems   LineItem[]
+  
+  @@unique([projectId, name])
+  @@map("trades")
+}
+
+// Individual line items within trades
+model LineItem {
+  id                String   @id @default(cuid())
+  tradeId           String
+  itemCode          String?  // Optional code for tracking
+  description       String
+  quantity          Decimal
+  unit              String   // e.g., "m", "m2", "each", "hours"
+  
+  // Estimate costs
+  materialCostEst   Decimal  @default(0)
+  laborCostEst      Decimal  @default(0)
+  equipmentCostEst  Decimal  @default(0)
+  markupPercent     Decimal  @default(0)
+  overheadPercent   Decimal  @default(0)
+  
+  sortOrder         Int      @default(0)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relationships
+  trade             Trade @relation(fields: [tradeId], references: [id], onDelete: Cascade)
+  invoiceItems      InvoiceLineItem[]
+  
+  @@map("line_items")
+}
+
+// Construction milestones for progress payments
+model Milestone {
+  id              String   @id @default(cuid())
+  projectId       String
+  name            String   // e.g., "Foundation Complete", "Frame Complete"
+  description     String?
+  targetDate      DateTime
+  actualDate      DateTime?
+  paymentAmount   Decimal
+  percentComplete Decimal  @default(0) // 0-100%
+  status          MilestoneStatus @default(PENDING)
+  sortOrder       Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relationships
+  project         Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  @@map("milestones")
+}
+
+// Invoices from suppliers and contractors
+model Invoice {
+  id              String   @id @default(cuid())
+  projectId       String
+  userId          String?  // Who uploaded the invoice
+  invoiceNumber   String
+  supplierName    String
+  supplierABN     String?  // Australian Business Number or similar
+  invoiceDate     DateTime
+  dueDate         DateTime?
+  totalAmount     Decimal
+  gstAmount       Decimal  @default(0) // GST/VAT
+  status          InvoiceStatus @default(PENDING)
+  pdfUrl          String?  // URL to stored PDF
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relationships
+  project         Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user            User? @relation(fields: [userId], references: [id])
+  lineItems       InvoiceLineItem[]
+  
+  @@unique([projectId, invoiceNumber])
+  @@map("invoices")
+}
+
+// Line items within invoices mapped to estimate line items
+model InvoiceLineItem {
+  id              String   @id @default(cuid())
+  invoiceId       String
+  lineItemId      String?  // Link to estimate line item if applicable
+  description     String
+  quantity        Decimal
+  unitPrice       Decimal
+  totalPrice      Decimal
+  category        String   @default("MATERIAL") // MATERIAL, LABOR, EQUIPMENT, OTHER
+  createdAt       DateTime @default(now())
+
+  // Relationships
+  invoice         Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  lineItem        LineItem? @relation(fields: [lineItemId], references: [id])
+  
+  @@map("invoice_line_items")
+}
+
+// Enums
+enum UserRole {
+  ADMIN
+  USER
+  VIEWER
+}
+
+enum ProjectRole {
+  OWNER
+  CONTRACTOR
+  VIEWER
+}
+
+enum ProjectStatus {
+  PLANNING
+  IN_PROGRESS
+  ON_HOLD
+  COMPLETED
+  CANCELLED
+}
+
+enum MilestoneStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  OVERDUE
+}
+
+enum InvoiceStatus {
+  PENDING
+  APPROVED
+  PAID
+  DISPUTED
+  REJECTED
+}
