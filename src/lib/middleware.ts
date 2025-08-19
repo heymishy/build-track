@@ -1,0 +1,207 @@
+/**
+ * Role-based access control middleware
+ * Handles user permissions and project-level access control
+ */
+
+import { UserRole, ProjectRole } from '@/generated/prisma'
+import { NextRequest } from 'next/server'
+
+// Define available resources and actions
+export type Resource = 'users' | 'projects' | 'invoices' | 'estimates' | 'milestones'
+export type Action = 'create' | 'read' | 'update' | 'delete' | 'write'
+
+// User with role information
+export interface AuthUser {
+  id: string
+  email: string
+  name: string
+  role: UserRole
+  createdAt: Date
+  updatedAt: Date
+}
+
+// Project user association
+export interface ProjectUser {
+  userId: string
+  projectId: string
+  role: ProjectRole
+  user: { id: string; role: UserRole }
+}
+
+// Middleware options
+export interface MiddlewareOptions {
+  resource: Resource
+  action: Action
+  requireAuth: boolean
+  projectId?: string
+}
+
+// Middleware result
+export interface MiddlewareResult {
+  allowed: boolean
+  reason?: string
+  user?: AuthUser
+}
+
+/**
+ * Permission matrix defining what each role can do with each resource
+ */
+const PERMISSION_MATRIX: Record<UserRole, Record<Resource, Action[]>> = {
+  ADMIN: {
+    users: ['create', 'read', 'update', 'delete', 'write'],
+    projects: ['create', 'read', 'update', 'delete', 'write'],
+    invoices: ['create', 'read', 'update', 'delete', 'write'],
+    estimates: ['create', 'read', 'update', 'delete', 'write'],
+    milestones: ['create', 'read', 'update', 'delete', 'write'],
+  },
+  USER: {
+    users: ['read'], // Can only read their own user info
+    projects: ['create', 'read', 'update'], // Cannot delete projects
+    invoices: ['create', 'read', 'update', 'write'],
+    estimates: ['create', 'read', 'update', 'write'],
+    milestones: ['read', 'update'],
+  },
+  VIEWER: {
+    users: [],
+    projects: ['read'],
+    invoices: ['read'],
+    estimates: ['read'],
+    milestones: ['read'],
+  },
+}
+
+/**
+ * Check if a user role has permission for a specific resource and action
+ */
+export function checkPermission(userRole: UserRole, resource: Resource, action: Action): boolean {
+  const allowedActions = PERMISSION_MATRIX[userRole][resource]
+  return allowedActions.includes(action) || allowedActions.includes('write')
+}
+
+/**
+ * Check if a user has access to a specific project
+ */
+export function hasProjectAccess(
+  userId: string,
+  userRole: UserRole,
+  projectUsers: ProjectUser[],
+  action: Action
+): boolean {
+  // Admins have access to all projects
+  if (userRole === 'ADMIN') {
+    return true
+  }
+
+  // Find user's role in this project
+  const projectUser = projectUsers.find(pu => pu.userId === userId)
+  if (!projectUser) {
+    return false
+  }
+
+  // Check project-level permissions
+  const { role: projectRole } = projectUser
+
+  switch (projectRole) {
+    case 'OWNER':
+      return true // Owners can do everything
+    case 'CONTRACTOR':
+      return ['create', 'read', 'update', 'write'].includes(action) // Cannot delete
+    case 'VIEWER':
+      return action === 'read' // Read-only access
+    default:
+      return false
+  }
+}
+
+/**
+ * Create authentication middleware for route protection
+ */
+export function createAuthMiddleware(options: MiddlewareOptions) {
+  return async function middleware(
+    request: NextRequest,
+    user: AuthUser | null
+  ): Promise<MiddlewareResult> {
+    const { resource, action, requireAuth } = options
+
+    // Allow public access if authentication is not required
+    if (!requireAuth) {
+      return { allowed: true }
+    }
+
+    // Require authentication
+    if (!user) {
+      return {
+        allowed: false,
+        reason: 'Authentication required',
+      }
+    }
+
+    // Check user permissions for the resource
+    const hasPermission = checkPermission(user.role, resource, action)
+
+    if (!hasPermission) {
+      return {
+        allowed: false,
+        reason: 'Insufficient permissions',
+      }
+    }
+
+    return {
+      allowed: true,
+      user,
+    }
+  }
+}
+
+/**
+ * Extract user ID from request (from session/token)
+ * This would typically integrate with NextAuth or similar
+ */
+export function getUserFromRequest(request: NextRequest): AuthUser | null {
+  // Placeholder implementation
+  // In a real app, this would decode JWT tokens or check session cookies
+  const authHeader = request.headers.get('authorization')
+
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return null
+  }
+
+  // Mock user for testing - in production this would validate the token
+  return {
+    id: 'test-user-id',
+    email: 'test@example.com',
+    name: 'Test User',
+    role: 'USER',
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  }
+}
+
+/**
+ * Higher-order function to protect API routes
+ */
+export function withAuth(
+  handler: (request: NextRequest, user: AuthUser) => Promise<Response>,
+  options: MiddlewareOptions
+) {
+  return async function protectedHandler(request: NextRequest): Promise<Response> {
+    const user = getUserFromRequest(request)
+    const middleware = createAuthMiddleware(options)
+    const result = await middleware(request, user)
+
+    if (!result.allowed) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: result.reason || 'Access denied',
+        }),
+        {
+          status: result.reason === 'Authentication required' ? 401 : 403,
+          headers: { 'Content-Type': 'application/json' },
+        }
+      )
+    }
+
+    return handler(request, result.user!)
+  }
+}
