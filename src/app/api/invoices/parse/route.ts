@@ -4,7 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { extractTextFromPDF, parseInvoiceFromText } from '@/lib/pdf-parser'
+import { parseMultipleInvoices } from '@/lib/pdf-parser'
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
 const ALLOWED_FILE_TYPE = 'application/pdf'
@@ -56,14 +56,14 @@ export async function POST(request: NextRequest) {
       heapUsed: Math.round(bufferMemory.heapUsed / 1024 / 1024) + 'MB',
     })
 
-    // Extract text from PDF
-    let extractedText: string
+    // Parse multiple invoices from PDF
+    let result
     try {
-      console.log('Starting PDF text extraction...')
-      extractedText = await extractTextFromPDF(buffer)
-      console.log('PDF text extracted, length:', extractedText.length)
+      console.log('Starting PDF multi-invoice parsing...')
+      result = await parseMultipleInvoices(buffer)
+      console.log('PDF parsing completed:', result.summary)
     } catch (error) {
-      console.error('PDF extraction error:', error)
+      console.error('PDF parsing error:', error)
       return NextResponse.json(
         {
           success: false,
@@ -73,29 +73,19 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Parse invoice data from text
-    const parsedInvoice = parseInvoiceFromText(extractedText)
-
-    // Check if we found meaningful invoice data
-    const hasInvoiceData =
-      parsedInvoice.invoiceNumber ||
-      parsedInvoice.total ||
-      parsedInvoice.amount ||
-      parsedInvoice.vendorName
-
     const response = {
       success: true,
-      invoice: parsedInvoice,
-      extractedText: extractedText, // Include for debugging purposes
+      result,
       filename: file.name,
       fileSize: file.size,
     }
 
-    // Add warning if no clear invoice data was found
-    if (!hasInvoiceData) {
+    // Add warning if no invoices were found
+    if (result.totalInvoices === 0) {
       return NextResponse.json({
         ...response,
-        warning: 'PDF processed but no clear invoice data found',
+        warning:
+          'PDF processed but no invoices found. Please check if the PDF contains valid invoice data.',
       })
     }
 

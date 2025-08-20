@@ -1,7 +1,10 @@
 /**
- * PDF Parser Utility
+ * PDF Parser Utility with Training System
  * Extracts and parses invoice data from PDF documents
+ * Now includes machine learning capabilities for improved accuracy
  */
+
+import { trainingManager } from './invoice-training'
 
 export interface InvoiceLineItem {
   description: string
@@ -19,64 +22,83 @@ export interface ParsedInvoice {
   tax: number | null
   total: number | null
   lineItems: InvoiceLineItem[]
+  pageNumber?: number
+  confidence?: number
+  rawText?: string
+  trainingId?: string
+}
+
+export interface MultiInvoiceResult {
+  invoices: ParsedInvoice[]
+  totalInvoices: number
+  totalAmount: number
+  summary: string
 }
 
 /**
- * Extract text from PDF buffer using pdfjs-dist
+ * Extract text from PDF buffer using pdfjs-dist, returning page-by-page text
  */
-export async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string> {
+export async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string[]> {
   try {
     console.log('PDF buffer size:', pdfBuffer.length, 'bytes')
 
-    // Dynamic import of pdfjs-dist for server-side usage
-    const pdfjsLib = await import('pdfjs-dist')
-    
-    // Configure for Node.js environment
+    // Dynamic import of pdfjs-dist legacy build for server-side usage
+    const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs')
+
+    // Set worker source for Node.js environment
     if (typeof window === 'undefined') {
-      pdfjsLib.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js`
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'pdfjs-dist/legacy/build/pdf.worker.mjs'
     }
 
     // Convert Buffer to Uint8Array for PDF.js
     const uint8Array = new Uint8Array(pdfBuffer)
-    
+
     // Load the PDF document with error handling
     const loadingTask = pdfjsLib.getDocument({
       data: uint8Array,
       verbosity: 0, // Reduce console output
-      standardFontDataUrl: `//unpkg.com/pdfjs-dist@${pdfjsLib.version}/web/standard_fonts/`,
+      useSystemFonts: true,
+      disableFontFace: false,
+      isEvalSupported: false,
     })
-    
+
     const pdf = await loadingTask.promise
     console.log('PDF loaded successfully, pages:', pdf.numPages)
-    
-    let fullText = ''
-    
-    // Extract text from each page
+
+    const pages: string[] = []
+
+    // Extract text from each page separately
     for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
       try {
         const page = await pdf.getPage(pageNum)
         const textContent = await page.getTextContent()
-        
+
         // Extract text items and join them
         const pageText = textContent.items
           .filter((item): item is any => 'str' in item)
           .map((item: any) => item.str)
           .join(' ')
-        
-        fullText += pageText + '\n'
+
+        pages.push(pageText.trim())
       } catch (pageError) {
         console.warn(`Error extracting text from page ${pageNum}:`, pageError)
-        // Continue with other pages even if one fails
+        // Add empty string for failed pages to maintain page indexing
+        pages.push('')
       }
     }
-    
-    console.log('PDF text extracted successfully, total length:', fullText.length)
-    
-    if (fullText.length === 0) {
+
+    console.log(
+      'PDF text extracted successfully, pages:',
+      pages.length,
+      'total length:',
+      pages.join(' ').length
+    )
+
+    if (pages.every(page => page.length === 0)) {
       throw new Error('No text could be extracted from the PDF')
     }
-    
-    return fullText.trim()
+
+    return pages
   } catch (error) {
     console.error('Error extracting text from PDF:', error)
     console.error('Error details:', {
@@ -89,19 +111,171 @@ export async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string> {
 }
 
 /**
- * Parse invoice information from extracted text
+ * Parse multiple invoices from a multi-page PDF
  */
-export function parseInvoiceFromText(text: string): ParsedInvoice {
-  return {
-    invoiceNumber: extractInvoiceNumber(text),
-    date: extractDate(text),
-    vendorName: extractVendorName(text),
-    description: extractDescription(text),
-    amount: extractAmount(text),
-    tax: extractTax(text),
-    total: extractTotal(text),
-    lineItems: extractLineItems(text),
+export async function parseMultipleInvoices(pdfBuffer: Buffer): Promise<MultiInvoiceResult> {
+  const pages = await extractTextFromPDF(pdfBuffer)
+  const invoices: ParsedInvoice[] = []
+
+  for (let i = 0; i < pages.length; i++) {
+    const pageText = pages[i]
+
+    if (pageText.trim().length === 0) {
+      continue // Skip empty pages
+    }
+
+    // Check if this page contains invoice indicators
+    if (isInvoicePage(pageText)) {
+      const invoice = parseInvoiceFromText(pageText, i + 1)
+      if (invoice.invoiceNumber || invoice.total || invoice.vendorName) {
+        invoices.push(invoice)
+      }
+    }
   }
+
+  const totalAmount = invoices.reduce((sum, invoice) => sum + (invoice.total || 0), 0)
+
+  return {
+    invoices,
+    totalInvoices: invoices.length,
+    totalAmount,
+    summary: `Found ${invoices.length} invoice(s) across ${pages.length} page(s). Total amount: $${totalAmount.toFixed(2)}`,
+  }
+}
+
+/**
+ * Check if a page contains invoice content
+ */
+function isInvoicePage(text: string): boolean {
+  const invoiceIndicators = [
+    /invoice/i,
+    /bill/i,
+    /receipt/i,
+    /statement/i,
+    /total\s*(?:amount|due)/i,
+    /amount\s*due/i,
+    /pay.*(?:by|before)/i,
+    /invoice\s*(?:number|#|no)/i,
+    /\$[\d,]+\.?\d*/, // Dollar amounts
+  ]
+
+  return invoiceIndicators.some(pattern => pattern.test(text))
+}
+
+/**
+ * Parse invoice information from extracted text with training system integration
+ */
+export function parseInvoiceFromText(text: string, pageNumber?: number): ParsedInvoice {
+  // First try learned patterns from training data
+  const learnedInvoiceNumber = trainingManager.applyLearnedPatterns(text, 'invoiceNumber') as string
+  const learnedDate = trainingManager.applyLearnedPatterns(text, 'date') as string
+  const learnedVendorName = trainingManager.applyLearnedPatterns(text, 'vendorName') as string
+  const learnedDescription = trainingManager.applyLearnedPatterns(text, 'description') as string
+  const learnedAmount = trainingManager.applyLearnedPatterns(text, 'amount') as number
+  const learnedTax = trainingManager.applyLearnedPatterns(text, 'tax') as number
+  const learnedTotal = trainingManager.applyLearnedPatterns(text, 'total') as number
+
+  // Fallback to traditional extraction methods
+  const invoiceNumber = learnedInvoiceNumber || extractInvoiceNumber(text)
+  const date = learnedDate || extractDate(text)
+  const vendorName = learnedVendorName || extractVendorName(text)
+  const description = learnedDescription || extractDescription(text)
+  const amount = learnedAmount || extractAmount(text)
+  const tax = learnedTax || extractTax(text)
+  let total = learnedTotal || extractTotal(text)
+  const lineItems = extractLineItems(text)
+
+  // Enhanced amount detection: if we don't find a total but find an amount, use that
+  if (!total && amount) {
+    total = amount
+  }
+
+  // Final fallback: if we still don't have amounts, try to find ANY dollar value
+  if (!total && !amount) {
+    const fallbackAmount = extractFallbackAmount(text)
+    if (fallbackAmount) {
+      total = fallbackAmount
+    }
+  }
+
+  // Calculate confidence based on how many fields were extracted
+  const fieldsFound = [invoiceNumber, date, vendorName, description, amount || total, tax].filter(
+    Boolean
+  ).length
+  const confidence = Math.min(1.0, fieldsFound / 4) // Normalize to 0-1 range
+
+  // Debug logging for amount detection issues
+  if (pageNumber && (!total || total === 0)) {
+    console.log(`Page ${pageNumber} - No amount detected. Sample text:`, text.substring(0, 200))
+  }
+
+  return {
+    invoiceNumber,
+    date,
+    vendorName,
+    description,
+    amount,
+    tax,
+    total,
+    lineItems,
+    pageNumber,
+    confidence,
+    rawText: text,
+  }
+}
+
+/**
+ * Train the parser with corrected invoice data
+ */
+export function trainParser(
+  originalInvoice: ParsedInvoice,
+  correctedData: Partial<ParsedInvoice>,
+  invoiceType?: string
+): string {
+  if (!originalInvoice.rawText) {
+    throw new Error('Original invoice must have rawText to train')
+  }
+
+  const parsedValues = {
+    invoiceNumber: originalInvoice.invoiceNumber,
+    date: originalInvoice.date,
+    vendorName: originalInvoice.vendorName,
+    description: originalInvoice.description,
+    amount: originalInvoice.amount,
+    tax: originalInvoice.tax,
+    total: originalInvoice.total,
+  }
+
+  const correctValues = {
+    invoiceNumber: correctedData.invoiceNumber,
+    date: correctedData.date,
+    vendorName: correctedData.vendorName,
+    description: correctedData.description,
+    amount: correctedData.amount,
+    tax: correctedData.tax,
+    total: correctedData.total,
+  }
+
+  return trainingManager.addTrainingExample(
+    originalInvoice.rawText,
+    parsedValues,
+    correctValues,
+    invoiceType
+  )
+}
+
+/**
+ * Get training statistics
+ */
+export function getTrainingStats() {
+  return trainingManager.getTrainingStats()
+}
+
+/**
+ * Legacy function for backward compatibility - parses single page/invoice
+ */
+export function parseSingleInvoiceFromPDF(text: string): ParsedInvoice {
+  return parseInvoiceFromText(text)
 }
 
 /**
@@ -233,6 +407,8 @@ function extractAmount(text: string): number | null {
     /(?:subtotal|sub[-\s]total):?\s*(?:NZ\$|\$|AUD|USD)?\s*([\d,]+\.?\d*)/i,
     /(?:net\s*amount):?\s*(?:NZ\$|\$|AUD|USD)?\s*([\d,]+\.?\d*)/i,
     /(?:^|\n)\s*amount:?\s*(?:NZ\$|\$|AUD|USD)?\s*([\d,]+\.?\d*)/im,
+    /(?:cost|charge|fee):?\s*(?:NZ\$|\$|AUD|USD)?\s*([\d,]+\.?\d*)/i,
+    /(?:price|value):?\s*(?:NZ\$|\$|AUD|USD)?\s*([\d,]+\.?\d*)/i,
   ]
 
   return extractMonetaryValue(text, patterns)
@@ -258,27 +434,73 @@ function extractTotal(text: string): number | null {
     /(?:total\s+amount|grand\s*total|amount\s*due):?\s*(?:NZ\$|\$|AUD|USD)?\s*([\d,]+\.?\d*)/i,
     /(?:^|\n)\s*total:?\s*(?:NZ\$|\$|AUD|USD)?\s*([\d,]+\.?\d*)/im,
     /(?:balance\s*due):?\s*(?:NZ\$|\$|AUD|USD)?\s*([\d,]+\.?\d*)/i,
+    /(?:final\s*amount|payment\s*due):?\s*(?:NZ\$|\$|AUD|USD)?\s*([\d,]+\.?\d*)/i,
+    /(?:amount\s*owing|outstanding):?\s*(?:NZ\$|\$|AUD|USD)?\s*([\d,]+\.?\d*)/i,
   ]
 
   return extractMonetaryValue(text, patterns)
 }
 
 /**
- * Extract monetary value using given patterns
+ * Extract monetary value using given patterns with enhanced fallback
  */
 function extractMonetaryValue(text: string, patterns: RegExp[]): number | null {
+  // First try the specific patterns
   for (const pattern of patterns) {
     const match = text.match(pattern)
     if (match && match[1]) {
       const valueStr = match[1].replace(/,/g, '')
       const value = parseFloat(valueStr)
-      if (!isNaN(value)) {
+      if (!isNaN(value) && value > 0) {
         return Math.round(value * 100) / 100 // Round to 2 decimal places
       }
     }
   }
 
-  return null
+  // Fallback: Look for any dollar amount in the text
+  return extractFallbackAmount(text)
+}
+
+/**
+ * Enhanced fallback to find any monetary values in text
+ */
+function extractFallbackAmount(text: string): number | null {
+  // More flexible patterns for finding any dollar amounts
+  const fallbackPatterns = [
+    // Standard formats: $123.45, $1,234.56
+    /\$\s*([\d,]+\.?\d*)/g,
+    // Without dollar sign but with common prefixes
+    /(?:cost|price|amount|total|charge|fee|value|owing|due)\s*:?\s*(?:NZ\$|\$|AUD|USD)?\s*([\d,]+\.?\d*)/gi,
+    // Standalone amounts that look like money (with comma separators or decimal)
+    /\b([\d]{1,3}(?:,\d{3})*\.?\d{0,2})\b/g,
+    // Simple decimal numbers that could be amounts
+    /\b(\d+\.\d{2})\b/g,
+  ]
+
+  const potentialAmounts: number[] = []
+
+  for (const pattern of fallbackPatterns) {
+    let match
+    pattern.lastIndex = 0 // Reset regex state
+    while ((match = pattern.exec(text)) !== null) {
+      const valueStr = match[1].replace(/,/g, '')
+      const value = parseFloat(valueStr)
+
+      // Filter for reasonable invoice amounts (between $1 and $1M)
+      if (!isNaN(value) && value >= 1 && value <= 1000000) {
+        potentialAmounts.push(Math.round(value * 100) / 100)
+      }
+    }
+  }
+
+  if (potentialAmounts.length === 0) {
+    return null
+  }
+
+  // Return the largest reasonable amount found (likely to be the total)
+  // But prefer amounts that are more likely to be totals (multiples of common values)
+  potentialAmounts.sort((a, b) => b - a)
+  return potentialAmounts[0]
 }
 
 /**

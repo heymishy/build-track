@@ -154,26 +154,46 @@ export function createAuthMiddleware(options: MiddlewareOptions) {
 }
 
 /**
- * Extract user ID from request (from session/token)
- * This would typically integrate with NextAuth or similar
+ * Extract user from JWT token in request cookies
  */
 export function getUserFromRequest(request: NextRequest): AuthUser | null {
-  // Placeholder implementation
-  // In a real app, this would decode JWT tokens or check session cookies
-  const authHeader = request.headers.get('authorization')
+  try {
+    // Try to get token from cookie first
+    const cookieToken = request.cookies.get('auth-token')?.value
 
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    // Fallback to Authorization header
+    const authHeader = request.headers.get('authorization')
+    const bearerToken = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : null
+
+    const token = cookieToken || bearerToken
+
+    if (!token) {
+      return null
+    }
+
+    // Decode and verify JWT token
+    const jwt = require('jsonwebtoken')
+    const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-for-development'
+
+    const decoded = jwt.verify(token, JWT_SECRET) as {
+      userId: string
+      email: string
+      role: UserRole
+      iat: number
+      exp: number
+    }
+
+    return {
+      id: decoded.userId,
+      email: decoded.email,
+      name: '', // We don't store name in the token, but it's not needed for authorization
+      role: decoded.role,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    }
+  } catch (error) {
+    console.error('Error verifying JWT token:', error)
     return null
-  }
-
-  // Mock user for testing - in production this would validate the token
-  return {
-    id: 'test-user-id',
-    email: 'test@example.com',
-    name: 'Test User',
-    role: 'USER',
-    createdAt: new Date(),
-    updatedAt: new Date(),
   }
 }
 

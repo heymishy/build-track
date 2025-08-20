@@ -79,6 +79,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include', // Include cookies in the request
         body: JSON.stringify(credentials),
       })
 
@@ -110,6 +111,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include', // Include cookies in the request
         body: JSON.stringify(data),
       })
 
@@ -135,10 +137,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const logout = () => {
-    setUser(null)
-    toast.success('Logged out successfully')
-    router.push('/')
+  const logout = async () => {
+    try {
+      // Call logout API to clear server-side cookie
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include', // Include cookies in the request
+      })
+    } catch (error) {
+      console.error('Error calling logout API:', error)
+      // Continue with logout even if API call fails
+    } finally {
+      setUser(null)
+      toast.success('Logged out successfully')
+      router.push('/')
+    }
   }
 
   const updateUser = (updatedUser: User) => {

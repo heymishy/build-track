@@ -66,6 +66,22 @@ async function GET(request: NextRequest, user: AuthUser) {
             },
           },
         },
+        invoices: {
+          select: {
+            id: true,
+            totalAmount: true,
+            gstAmount: true,
+            status: true,
+          },
+        },
+        milestones: {
+          select: {
+            id: true,
+            paymentAmount: true,
+            status: true,
+            percentComplete: true,
+          },
+        },
         _count: {
           select: {
             trades: true,
@@ -79,13 +95,51 @@ async function GET(request: NextRequest, user: AuthUser) {
       },
     })
 
-    // Map database fields to API fields for consistency
-    const mappedProjects = projects.map(project => ({
-      ...project,
-      budget: project.totalBudget,
-      expectedEndDate: project.estimatedEndDate,
-      actualCost: 0, // Calculated from invoices later
-    }))
+    // Map database fields to API fields with calculated statistics
+    const mappedProjects = projects.map(project => {
+      const totalInvoiceAmount = project.invoices.reduce(
+        (sum, invoice) => sum + Number(invoice.totalAmount),
+        0
+      )
+      const paidInvoiceAmount = project.invoices
+        .filter(invoice => invoice.status === 'PAID')
+        .reduce((sum, invoice) => sum + Number(invoice.totalAmount), 0)
+      const pendingInvoiceAmount = project.invoices
+        .filter(invoice => invoice.status === 'PENDING')
+        .reduce((sum, invoice) => sum + Number(invoice.totalAmount), 0)
+
+      const totalMilestoneAmount = project.milestones.reduce(
+        (sum, milestone) => sum + Number(milestone.paymentAmount),
+        0
+      )
+      const completedMilestones = project.milestones.filter(m => m.status === 'COMPLETED').length
+
+      const budgetUsedPercent =
+        Number(project.totalBudget) > 0
+          ? (totalInvoiceAmount / Number(project.totalBudget)) * 100
+          : 0
+
+      return {
+        ...project,
+        budget: project.totalBudget,
+        expectedEndDate: project.estimatedEndDate,
+        actualCost: totalInvoiceAmount,
+        stats: {
+          totalInvoices: project._count.invoices,
+          totalTrades: project._count.trades,
+          totalMilestones: project._count.milestones,
+          completedMilestones,
+          totalInvoiceAmount,
+          paidInvoiceAmount,
+          pendingInvoiceAmount,
+          totalMilestoneAmount,
+          budgetUsed: totalInvoiceAmount,
+          budgetRemaining: Number(project.totalBudget) - totalInvoiceAmount,
+          budgetUsedPercent: Math.round(budgetUsedPercent * 100) / 100,
+          isOverBudget: totalInvoiceAmount > Number(project.totalBudget),
+        },
+      }
+    })
 
     return Response.json({
       success: true,
