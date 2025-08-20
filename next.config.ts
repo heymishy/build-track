@@ -23,10 +23,6 @@ const nextConfig: NextConfig = {
     
     return config
   },
-  // Disable static optimization for pages that use browser-only features
-  experimental: {
-    esmExternals: 'loose',
-  },
 }
 
 export default nextConfig
