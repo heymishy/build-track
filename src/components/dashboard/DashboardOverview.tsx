@@ -7,8 +7,8 @@ import {
   DocumentTextIcon,
   ChartBarIcon,
   ExclamationTriangleIcon,
-  TrendingUpIcon,
-  TrendingDownIcon,
+  ArrowTrendingUpIcon,
+  ArrowTrendingDownIcon,
   ClockIcon,
 } from '@heroicons/react/24/outline'
 
@@ -210,7 +210,7 @@ export function DashboardOverview({ className = '' }: DashboardOverviewProps) {
             ? 'bg-yellow-50'
             : 'bg-green-50',
       subtitle: `${stats.overBudgetProjects} projects over budget`,
-      trendIcon: stats.averageBudgetUsage > 85 ? TrendingUpIcon : undefined,
+      trendIcon: stats.averageBudgetUsage > 85 ? ArrowTrendingUpIcon : undefined,
     },
     {
       title: 'Total Invoices',
@@ -246,7 +246,7 @@ export function DashboardOverview({ className = '' }: DashboardOverviewProps) {
       color: stats.totalBudget - stats.totalSpent < 0 ? 'text-red-600' : 'text-green-600',
       bgColor: stats.totalBudget - stats.totalSpent < 0 ? 'bg-red-50' : 'bg-green-50',
       subtitle: 'across all projects',
-      trendIcon: stats.totalBudget - stats.totalSpent < 0 ? TrendingDownIcon : TrendingUpIcon,
+      trendIcon: stats.totalBudget - stats.totalSpent < 0 ? ArrowTrendingDownIcon : ArrowTrendingUpIcon,
     },
     {
       title: 'Average Project',

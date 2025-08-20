@@ -4,8 +4,8 @@ import { useState, useEffect } from 'react'
 import {
   ChartBarIcon,
   CurrencyDollarIcon,
-  TrendingUpIcon,
-  TrendingDownIcon,
+  ArrowTrendingUpIcon,
+  ArrowTrendingDownIcon,
   CalendarDaysIcon,
   ExclamationTriangleIcon,
 } from '@heroicons/react/24/outline'
@@ -172,7 +172,7 @@ export function ProjectAnalytics({ className = '', projectId }: ProjectAnalytics
   }
 
   const getVarianceIcon = (variance: number) => {
-    return variance >= 0 ? TrendingUpIcon : TrendingDownIcon
+    return variance >= 0 ? ArrowTrendingUpIcon : ArrowTrendingDownIcon
   }
 
   if (loading) {

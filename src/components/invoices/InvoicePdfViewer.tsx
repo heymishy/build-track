@@ -3,8 +3,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { Document, Page, pdfjs } from 'react-pdf'
 import {
-  ZoomInIcon,
-  ZoomOutIcon,
+  MagnifyingGlassPlusIcon,
+  MagnifyingGlassMinusIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   DocumentArrowDownIcon,
@@ -144,7 +144,7 @@ export function InvoicePdfViewer({
               className="p-1 rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
               title="Zoom Out"
             >
-              <ZoomOutIcon className="h-5 w-5" />
+              <MagnifyingGlassMinusIcon className="h-5 w-5" />
             </button>
             <span className="text-sm text-gray-700 min-w-0">{Math.round(scale * 100)}%</span>
             <button
@@ -153,7 +153,7 @@ export function InvoicePdfViewer({
               className="p-1 rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
               title="Zoom In"
             >
-              <ZoomInIcon className="h-5 w-5" />
+              <MagnifyingGlassPlusIcon className="h-5 w-5" />
             </button>
           </div>
         </div>
