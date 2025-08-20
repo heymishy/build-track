@@ -10,7 +10,7 @@ import {
   PencilIcon,
   EyeIcon,
 } from '@heroicons/react/24/outline'
-import { InvoicePdfViewer } from './InvoicePdfViewer'
+import ClientOnlyPdfViewer from './ClientOnlyPdfViewer'
 import { ParsedInvoice } from '@/lib/pdf-parser'
 
 interface InvoiceField {
@@ -312,7 +312,7 @@ export function InvoiceApprovalModal({
               {/* PDF Viewer */}
               {showPdf && (
                 <div className="w-1/2 border-r border-gray-200">
-                  <InvoicePdfViewer
+                  <ClientOnlyPdfViewer
                     pdfFile={pdfFile}
                     className="h-full border-none rounded-none"
                     highlightRegions={highlights}

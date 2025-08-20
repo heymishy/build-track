@@ -5,7 +5,7 @@ A comprehensive web-based construction project management system designed to tra
 ## Features
 
 - **📊 Project Management Dashboard** - Real-time budget tracking, health scoring, and milestone management
-- **📄 Invoice Approval Workflow** - PDF viewer with visual verification and training data collection  
+- **📄 Invoice Approval Workflow** - PDF viewer with visual verification and training data collection
 - **📈 Analytics & Reporting** - Cost analysis, spending trends, and vendor insights
 - **📱 Mobile-Responsive Design** - Optimized for construction site use with touch-friendly interface
 - **🤖 AI-Powered PDF Processing** - Automated invoice parsing with continuous model improvement
@@ -13,7 +13,7 @@ A comprehensive web-based construction project management system designed to tra
 ## Tech Stack
 
 - **Frontend**: Next.js 15.4.7, React 19.1.0, TypeScript, Tailwind CSS
-- **Backend**: Next.js API Routes, Prisma ORM, JWT Authentication  
+- **Backend**: Next.js API Routes, Prisma ORM, JWT Authentication
 - **Database**: SQLite (dev) / PostgreSQL (prod)
 - **Testing**: Jest, React Testing Library, Playwright E2E
 - **Deployment**: Vercel with GitHub Actions CI/CD
@@ -21,6 +21,7 @@ A comprehensive web-based construction project management system designed to tra
 ## Quick Start
 
 1. **Clone and Install**
+
    ```bash
    git clone https://github.com/heymishy/build-track.git
    cd build-track
@@ -28,12 +29,14 @@ A comprehensive web-based construction project management system designed to tra
    ```
 
 2. **Environment Setup**
+
    ```bash
    cp .env.example .env.local
    # Edit .env.local with your values
    ```
 
 3. **Database Setup**
+
    ```bash
    npx prisma generate
    npx prisma db push
@@ -64,7 +67,7 @@ npm run dev              # Start dev server with Turbopack
 npm run build           # Production build
 npm run start           # Start production server
 
-# Code Quality  
+# Code Quality
 npm run lint            # ESLint checking
 npm run typecheck       # TypeScript validation
 npm run format          # Prettier formatting
@@ -91,6 +94,7 @@ npx prisma studio       # Database browser
 
 2. **Environment Variables**
    Set these in Vercel dashboard:
+
    ```bash
    DATABASE_URL=postgresql://username:password@host:port/database
    NEXTAUTH_SECRET=your-production-secret
@@ -99,9 +103,10 @@ npx prisma studio       # Database browser
 
 3. **GitHub Secrets**
    Add these to your repository secrets:
+
    ```bash
    VERCEL_TOKEN=your-vercel-token
-   VERCEL_ORG_ID=your-org-id  
+   VERCEL_ORG_ID=your-org-id
    VERCEL_PROJECT_ID=your-project-id
    ```
 
@@ -150,24 +155,28 @@ src/
 ## Key Features
 
 ### Invoice Processing
+
 - **PDF Upload**: Drag-and-drop interface with 10MB limit
 - **AI Parsing**: Automated extraction of invoice data with confidence scoring
 - **Visual Approval**: Side-by-side PDF viewer with field verification
 - **Training Data**: User corrections improve AI accuracy over time
 
-### Project Management  
+### Project Management
+
 - **Budget Tracking**: Real-time budget vs actual cost monitoring
 - **Health Scoring**: Automated project health assessment
 - **Milestone Management**: Progress tracking with payment schedules
 - **Multi-User Support**: Role-based access (Owner/Contractor/Viewer)
 
 ### Analytics & Reporting
+
 - **Cost Analysis**: Budget variance and spending trends
 - **Vendor Insights**: Top vendors and spending categorization
 - **Performance Metrics**: Project completion rates and timelines
 - **Mobile Dashboard**: Touch-optimized charts and metrics
 
 ### Mobile Experience
+
 - **Responsive Design**: Optimized for construction site use
 - **Touch Navigation**: Bottom tab bar and swipe gestures
 - **Offline-Ready**: Progressive Web App capabilities
@@ -179,7 +188,7 @@ src/
 # Unit Tests
 npm run test
 
-# E2E Tests  
+# E2E Tests
 npm run test:e2e
 
 # Coverage Report
@@ -187,6 +196,7 @@ npm run test:coverage
 ```
 
 Test files include:
+
 - **Unit Tests**: `__tests__/` - API routes, components, utilities
 - **E2E Tests**: `tests/e2e/` - Full user workflows with Playwright
 - **PDF Testing**: Automated PDF generation and parsing validation
@@ -206,6 +216,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Support
 
 For support and questions:
+
 - Create an issue in this repository
 - Check the [CLAUDE.md](CLAUDE.md) file for development context
 

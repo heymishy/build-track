@@ -402,6 +402,12 @@ export class InvoiceTrainingManager {
    */
   private saveTrainingData(): void {
     try {
+      // Check if we're in a browser environment
+      if (typeof window === 'undefined' || !window.localStorage) {
+        console.log('localStorage not available (server-side rendering)')
+        return
+      }
+      
       localStorage.setItem(
         'invoice-training-data',
         JSON.stringify({
@@ -420,6 +426,12 @@ export class InvoiceTrainingManager {
    */
   private loadTrainingData(): void {
     try {
+      // Check if we're in a browser environment
+      if (typeof window === 'undefined' || !window.localStorage) {
+        console.log('localStorage not available (server-side rendering)')
+        return
+      }
+      
       const saved = localStorage.getItem('invoice-training-data')
       if (saved) {
         const data = JSON.parse(saved)

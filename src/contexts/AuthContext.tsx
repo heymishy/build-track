@@ -53,6 +53,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Load user from localStorage on mount
   useEffect(() => {
     try {
+      // Check if we're in a browser environment
+      if (typeof window === 'undefined' || !window.localStorage) {
+        return
+      }
+      
       const savedUser = localStorage.getItem('user')
       if (savedUser) {
         const parsedUser = JSON.parse(savedUser)
@@ -60,12 +65,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     } catch (error) {
       console.error('Error loading user from localStorage:', error)
-      localStorage.removeItem('user')
+      if (typeof window !== 'undefined' && window.localStorage) {
+        localStorage.removeItem('user')
+      }
     }
   }, [])
 
   // Save user to localStorage when user changes
   useEffect(() => {
+    // Check if we're in a browser environment
+    if (typeof window === 'undefined' || !window.localStorage) {
+      return
+    }
+    
     if (user) {
       localStorage.setItem('user', JSON.stringify(user))
     } else {
