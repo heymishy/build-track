@@ -156,7 +156,7 @@ describe('RegisterForm', () => {
     // Mock loading state
     const { useAuth } = require('@/hooks/useAuth')
     const originalMock = useAuth.getMockImplementation()
-    
+
     useAuth.mockImplementation(() => ({
       register: mockRegister,
       isLoading: true,
@@ -176,7 +176,7 @@ describe('RegisterForm', () => {
     expect(passwordInput).toBeDisabled()
     expect(confirmPasswordInput).toBeDisabled()
     expect(submitButton).toBeDisabled()
-    
+
     // Restore original mock
     useAuth.mockImplementation(originalMock)
   })
@@ -185,7 +185,7 @@ describe('RegisterForm', () => {
     render(<RegisterForm onSuccess={jest.fn()} />)
 
     const passwordInput = screen.getByLabelText('Password')
-    
+
     // Type weak password
     await user.type(passwordInput, 'weak')
     await waitFor(() => {
@@ -202,7 +202,7 @@ describe('RegisterForm', () => {
 
   it('should show terms and conditions checkbox', () => {
     render(<RegisterForm onSuccess={jest.fn()} />)
-    
+
     expect(screen.getByLabelText(/i agree to the terms and conditions/i)).toBeInTheDocument()
   })
 

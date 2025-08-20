@@ -43,7 +43,7 @@ const mockUser = {
   id: 'user-1',
   email: 'test@example.com',
   name: 'Test User',
-  role: 'ADMIN'
+  role: 'ADMIN',
 }
 
 describe('/api/projects', () => {
@@ -53,7 +53,7 @@ describe('/api/projects', () => {
       id: 'user-1',
       email: 'test@example.com',
       name: 'Test User',
-      role: 'ADMIN'
+      role: 'ADMIN',
     })
   })
 
@@ -65,7 +65,7 @@ describe('/api/projects', () => {
         budget: 850000,
         startDate: '2024-02-01',
         expectedEndDate: '2024-12-31',
-        status: 'PLANNING'
+        status: 'PLANNING',
       }
 
       const mockProject = {
@@ -76,14 +76,14 @@ describe('/api/projects', () => {
         actualCost: 0,
         ownerId: 'user-1',
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       }
 
       mockPrisma.project.create.mockResolvedValue(mockProject)
 
       const request = new NextRequest('http://localhost:3000/api/projects', {
         method: 'POST',
-        body: JSON.stringify(projectData)
+        body: JSON.stringify(projectData),
       })
 
       const response = await POST(request)
@@ -97,19 +97,19 @@ describe('/api/projects', () => {
           ...projectData,
           startDate: new Date(projectData.startDate),
           expectedEndDate: new Date(projectData.expectedEndDate),
-          ownerId: 'user-1'
-        }
+          ownerId: 'user-1',
+        },
       })
     })
 
     it('should handle validation errors for missing required fields', async () => {
       const invalidData = {
-        description: 'Missing required fields'
+        description: 'Missing required fields',
       }
 
       const request = new NextRequest('http://localhost:3000/api/projects', {
         method: 'POST',
-        body: JSON.stringify(invalidData)
+        body: JSON.stringify(invalidData),
       })
 
       const response = await POST(request)
@@ -128,12 +128,12 @@ describe('/api/projects', () => {
         budget: 100000,
         startDate: '2024-02-01',
         expectedEndDate: '2024-12-31',
-        status: 'PLANNING'
+        status: 'PLANNING',
       }
 
       const request = new NextRequest('http://localhost:3000/api/projects', {
         method: 'POST',
-        body: JSON.stringify(projectData)
+        body: JSON.stringify(projectData),
       })
 
       const response = await POST(request)
@@ -159,8 +159,8 @@ describe('/api/projects', () => {
           createdAt: new Date(),
           updatedAt: new Date(),
           startDate: new Date('2024-02-01'),
-          expectedEndDate: new Date('2024-12-31')
-        }
+          expectedEndDate: new Date('2024-12-31'),
+        },
       ]
 
       mockPrisma.project.findMany.mockResolvedValue(mockProjects)
@@ -180,15 +180,12 @@ describe('/api/projects', () => {
 
       const request = new NextRequest('http://localhost:3000/api/projects?status=COMPLETED')
       const response = await GET(request)
-      
+
       expect(mockPrisma.project.findMany).toHaveBeenCalledWith({
         where: {
-          AND: [
-            { ownerId: 'user-1' },
-            { status: 'COMPLETED' }
-          ]
+          AND: [{ ownerId: 'user-1' }, { status: 'COMPLETED' }],
         },
-        orderBy: { updatedAt: 'desc' }
+        orderBy: { updatedAt: 'desc' },
       })
     })
   })
@@ -200,7 +197,7 @@ describe('/api/projects', () => {
         name: 'Auckland Office',
         budget: 850000,
         actualCost: 125000,
-        ownerId: 'user-1'
+        ownerId: 'user-1',
       }
 
       mockPrisma.project.findUnique.mockResolvedValue(mockProject)
@@ -236,25 +233,25 @@ describe('/api/projects', () => {
       const updateData = {
         name: 'Updated Project Name',
         budget: 950000,
-        status: 'IN_PROGRESS'
+        status: 'IN_PROGRESS',
       }
 
       const mockUpdatedProject = {
         id: 'project-1',
         ...updateData,
-        ownerId: 'user-1'
+        ownerId: 'user-1',
       }
 
       mockPrisma.project.findUnique.mockResolvedValue({
         id: 'project-1',
-        ownerId: 'user-1'
+        ownerId: 'user-1',
       })
       mockPrisma.project.update.mockResolvedValue(mockUpdatedProject)
 
       const response = await PUT(
         new NextRequest('http://localhost:3000/api/projects/project-1', {
           method: 'PUT',
-          body: JSON.stringify(updateData)
+          body: JSON.stringify(updateData),
         }),
         { params: { id: 'project-1' } }
       )
@@ -268,13 +265,13 @@ describe('/api/projects', () => {
     it('should prevent unauthorized updates', async () => {
       mockPrisma.project.findUnique.mockResolvedValue({
         id: 'project-1',
-        ownerId: 'different-user'
+        ownerId: 'different-user',
       })
 
       const response = await PUT(
         new NextRequest('http://localhost:3000/api/projects/project-1', {
           method: 'PUT',
-          body: JSON.stringify({ name: 'Hacked' })
+          body: JSON.stringify({ name: 'Hacked' }),
         }),
         { params: { id: 'project-1' } }
       )
@@ -290,7 +287,7 @@ describe('/api/projects', () => {
     it('should delete a project successfully', async () => {
       mockPrisma.project.findUnique.mockResolvedValue({
         id: 'project-1',
-        ownerId: 'user-1'
+        ownerId: 'user-1',
       })
       mockPrisma.project.delete.mockResolvedValue({ id: 'project-1' })
 

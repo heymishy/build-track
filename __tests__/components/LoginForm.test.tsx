@@ -132,7 +132,7 @@ describe('LoginForm', () => {
 
   it('should show forgot password link', () => {
     render(<LoginForm onSuccess={jest.fn()} />)
-    
+
     expect(screen.getByText(/forgot your password/i)).toBeInTheDocument()
   })
 

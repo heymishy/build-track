@@ -14,22 +14,19 @@ export async function POST(request: NextRequest) {
   const startMemory = process.memoryUsage()
   console.log('Initial memory usage:', {
     rss: Math.round(startMemory.rss / 1024 / 1024) + 'MB',
-    heapUsed: Math.round(startMemory.heapUsed / 1024 / 1024) + 'MB'
+    heapUsed: Math.round(startMemory.heapUsed / 1024 / 1024) + 'MB',
   })
-  
+
   try {
     // Parse the form data
     const formData = await request.formData()
     const file = formData.get('file') as File
-    
+
     console.log('File received:', file?.name, 'Size:', file?.size)
-    
+
     // Validate file presence
     if (!file) {
-      return NextResponse.json(
-        { success: false, error: 'No file uploaded' },
-        { status: 400 }
-      )
+      return NextResponse.json({ success: false, error: 'No file uploaded' }, { status: 400 })
     }
 
     // Validate file type
@@ -52,11 +49,11 @@ export async function POST(request: NextRequest) {
     console.log('Converting file to buffer...')
     const arrayBuffer = await file.arrayBuffer()
     const buffer = Buffer.from(arrayBuffer)
-    
+
     const bufferMemory = process.memoryUsage()
     console.log('After buffer conversion:', {
       rss: Math.round(bufferMemory.rss / 1024 / 1024) + 'MB',
-      heapUsed: Math.round(bufferMemory.heapUsed / 1024 / 1024) + 'MB'
+      heapUsed: Math.round(bufferMemory.heapUsed / 1024 / 1024) + 'MB',
     })
 
     // Extract text from PDF
@@ -68,9 +65,9 @@ export async function POST(request: NextRequest) {
     } catch (error) {
       console.error('PDF extraction error:', error)
       return NextResponse.json(
-        { 
-          success: false, 
-          error: `Failed to parse PDF: ${error instanceof Error ? error.message : 'Unknown error'}` 
+        {
+          success: false,
+          error: `Failed to parse PDF: ${error instanceof Error ? error.message : 'Unknown error'}`,
         },
         { status: 500 }
       )
@@ -80,37 +77,35 @@ export async function POST(request: NextRequest) {
     const parsedInvoice = parseInvoiceFromText(extractedText)
 
     // Check if we found meaningful invoice data
-    const hasInvoiceData = (
+    const hasInvoiceData =
       parsedInvoice.invoiceNumber ||
       parsedInvoice.total ||
       parsedInvoice.amount ||
       parsedInvoice.vendorName
-    )
 
     const response = {
       success: true,
       invoice: parsedInvoice,
       extractedText: extractedText, // Include for debugging purposes
       filename: file.name,
-      fileSize: file.size
+      fileSize: file.size,
     }
 
     // Add warning if no clear invoice data was found
     if (!hasInvoiceData) {
       return NextResponse.json({
         ...response,
-        warning: 'PDF processed but no clear invoice data found'
+        warning: 'PDF processed but no clear invoice data found',
       })
     }
 
     return NextResponse.json(response)
-
   } catch (error) {
     console.error('Invoice parsing API error:', error)
     return NextResponse.json(
-      { 
-        success: false, 
-        error: 'Internal server error' 
+      {
+        success: false,
+        error: 'Internal server error',
       },
       { status: 500 }
     )

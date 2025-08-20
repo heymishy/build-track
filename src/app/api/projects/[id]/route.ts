@@ -7,11 +7,7 @@ import { NextRequest } from 'next/server'
 import { withAuth, AuthUser } from '@/lib/middleware'
 import { prisma } from '@/lib/prisma'
 
-async function GET(
-  request: NextRequest, 
-  user: AuthUser,
-  { params }: { params: { id: string } }
-) {
+async function GET(request: NextRequest, user: AuthUser, { params }: { params: { id: string } }) {
   try {
     const { id } = params
 
@@ -52,8 +48,7 @@ async function GET(
     }
 
     // Check if user has access to this project
-    const hasAccess = user.role === 'ADMIN' || 
-      project.users.some(pu => pu.userId === user.id)
+    const hasAccess = user.role === 'ADMIN' || project.users.some(pu => pu.userId === user.id)
 
     if (!hasAccess) {
       return Response.json(
@@ -70,7 +65,7 @@ async function GET(
       ...project,
       budget: project.totalBudget,
       expectedEndDate: project.estimatedEndDate,
-      actualCost: 0 // Will be calculated from invoices
+      actualCost: 0, // Will be calculated from invoices
     }
 
     return Response.json({
@@ -89,11 +84,7 @@ async function GET(
   }
 }
 
-async function PUT(
-  request: NextRequest,
-  user: AuthUser, 
-  { params }: { params: { id: string } }
-) {
+async function PUT(request: NextRequest, user: AuthUser, { params }: { params: { id: string } }) {
   try {
     const { id } = params
     const body = await request.json()
@@ -118,9 +109,11 @@ async function PUT(
     }
 
     // Check if user has access to modify this project
-    const hasAccess = user.role === 'ADMIN' || 
-      existingProject.users.some(pu => pu.userId === user.id && 
-        (pu.role === 'OWNER' || pu.role === 'CONTRACTOR'))
+    const hasAccess =
+      user.role === 'ADMIN' ||
+      existingProject.users.some(
+        pu => pu.userId === user.id && (pu.role === 'OWNER' || pu.role === 'CONTRACTOR')
+      )
 
     if (!hasAccess) {
       return Response.json(
@@ -133,12 +126,13 @@ async function PUT(
     }
 
     // Prepare update data
-    const updateData: any = {}
+    const updateData: Record<string, unknown> = {}
     if (name !== undefined) updateData.name = name
     if (description !== undefined) updateData.description = description
     if (budget !== undefined) updateData.totalBudget = budget
     if (startDate !== undefined) updateData.startDate = startDate ? new Date(startDate) : null
-    if (expectedEndDate !== undefined) updateData.estimatedEndDate = expectedEndDate ? new Date(expectedEndDate) : null
+    if (expectedEndDate !== undefined)
+      updateData.estimatedEndDate = expectedEndDate ? new Date(expectedEndDate) : null
     if (status !== undefined) updateData.status = status
 
     // Update the project
@@ -211,7 +205,8 @@ async function DELETE(
     }
 
     // Check if user has access to delete this project (only owners and admins)
-    const hasAccess = user.role === 'ADMIN' || 
+    const hasAccess =
+      user.role === 'ADMIN' ||
       existingProject.users.some(pu => pu.userId === user.id && pu.role === 'OWNER')
 
     if (!hasAccess) {

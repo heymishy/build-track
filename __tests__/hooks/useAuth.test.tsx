@@ -29,9 +29,7 @@ jest.mock('react-hot-toast', () => ({
   },
 }))
 
-const wrapper = ({ children }: { children: ReactNode }) => (
-  <AuthProvider>{children}</AuthProvider>
-)
+const wrapper = ({ children }: { children: ReactNode }) => <AuthProvider>{children}</AuthProvider>
 
 describe('useAuth Hook', () => {
   beforeEach(() => {
@@ -59,10 +57,11 @@ describe('useAuth Hook', () => {
 
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve({
-          success: true,
-          user: mockUser,
-        }),
+        json: () =>
+          Promise.resolve({
+            success: true,
+            user: mockUser,
+          }),
       })
 
       const { result } = renderHook(() => useAuth(), { wrapper })
@@ -91,10 +90,11 @@ describe('useAuth Hook', () => {
     it('should handle login failure', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: false,
-        json: () => Promise.resolve({
-          success: false,
-          error: 'Invalid credentials',
-        }),
+        json: () =>
+          Promise.resolve({
+            success: false,
+            error: 'Invalid credentials',
+          }),
       })
 
       const { result } = renderHook(() => useAuth(), { wrapper })
@@ -116,7 +116,7 @@ describe('useAuth Hook', () => {
 
     it('should set loading state during login', async () => {
       let resolvePromise: (value: any) => void
-      const mockPromise = new Promise((resolve) => {
+      const mockPromise = new Promise(resolve => {
         resolvePromise = resolve
       })
 
@@ -136,10 +136,11 @@ describe('useAuth Hook', () => {
       await act(async () => {
         resolvePromise!({
           ok: true,
-          json: () => Promise.resolve({
-            success: true,
-            user: { id: '1', email: 'test@example.com', name: 'Test', role: 'USER' },
-          }),
+          json: () =>
+            Promise.resolve({
+              success: true,
+              user: { id: '1', email: 'test@example.com', name: 'Test', role: 'USER' },
+            }),
         })
       })
 
@@ -158,10 +159,11 @@ describe('useAuth Hook', () => {
 
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve({
-          success: true,
-          user: mockUser,
-        }),
+        json: () =>
+          Promise.resolve({
+            success: true,
+            user: mockUser,
+          }),
       })
 
       const { result } = renderHook(() => useAuth(), { wrapper })
@@ -191,10 +193,11 @@ describe('useAuth Hook', () => {
     it('should handle registration failure', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: false,
-        json: () => Promise.resolve({
-          success: false,
-          error: 'Email already exists',
-        }),
+        json: () =>
+          Promise.resolve({
+            success: false,
+            error: 'Email already exists',
+          }),
       })
 
       const { result } = renderHook(() => useAuth(), { wrapper })

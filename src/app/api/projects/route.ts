@@ -14,10 +14,12 @@ async function GET(request: NextRequest, user: AuthUser) {
     const { searchParams } = new URL(request.url)
     const status = searchParams.get('status')
     const search = searchParams.get('search')
-    
+
     // Build query filters
-    const whereClause: any = {
-      AND: []
+    const whereClause: {
+      AND: Array<Record<string, unknown>>
+    } = {
+      AND: [],
     }
 
     // Add user access control
@@ -43,8 +45,8 @@ async function GET(request: NextRequest, user: AuthUser) {
       whereClause.AND.push({
         OR: [
           { name: { contains: search, mode: 'insensitive' } },
-          { description: { contains: search, mode: 'insensitive' } }
-        ]
+          { description: { contains: search, mode: 'insensitive' } },
+        ],
       })
     }
 
@@ -80,9 +82,9 @@ async function GET(request: NextRequest, user: AuthUser) {
     // Map database fields to API fields for consistency
     const mappedProjects = projects.map(project => ({
       ...project,
-      budget: project.totalBudget, 
+      budget: project.totalBudget,
       expectedEndDate: project.estimatedEndDate,
-      actualCost: 0 // Calculated from invoices later
+      actualCost: 0, // Calculated from invoices later
     }))
 
     return Response.json({

@@ -19,7 +19,7 @@ describe('PDF Parser', () => {
     it('should extract text from a valid PDF buffer', async () => {
       const mockPDFBuffer = Buffer.from('mock-pdf-data')
       const mockPdfParse = require('pdf-parse')
-      
+
       const expectedText = `INVOICE
 Invoice #: INV-2024-001
 Date: 2024-01-15
@@ -30,11 +30,11 @@ Tax: $1,500.00
 Total: $16,500.00`
 
       mockPdfParse.mockResolvedValue({
-        text: expectedText
+        text: expectedText,
       })
 
       const extractedText = await extractTextFromPDF(mockPDFBuffer)
-      
+
       expect(extractedText).toContain('INVOICE')
       expect(extractedText).toContain('INV-2024-001')
       expect(extractedText).toContain('$16,500.00')
@@ -43,7 +43,7 @@ Total: $16,500.00`
     it('should handle PDF parsing errors gracefully', async () => {
       const mockPDFBuffer = Buffer.from('invalid-pdf-data')
       const mockPdfParse = require('pdf-parse')
-      
+
       mockPdfParse.mockRejectedValue(new Error('Invalid PDF format'))
 
       await expect(extractTextFromPDF(mockPDFBuffer)).rejects.toThrow('Invalid PDF format')
@@ -71,7 +71,7 @@ Total: $16,500.00`
         amount: 15000,
         tax: 1500,
         total: 16500,
-        lineItems: expect.any(Array)
+        lineItems: expect.any(Array),
       })
     })
 
@@ -96,13 +96,13 @@ Total: $8,800.00`
         description: 'Steel beams',
         quantity: 10,
         unitPrice: 500,
-        total: 5000
+        total: 5000,
       })
       expect(parsedInvoice.lineItems[1]).toEqual({
         description: 'Labor costs',
         quantity: 40,
         unitPrice: 50,
-        total: 2000
+        total: 2000,
       })
       expect(parsedInvoice.total).toBe(8800)
     })

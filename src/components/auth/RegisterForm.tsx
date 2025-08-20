@@ -34,9 +34,9 @@ const registerSchema = z
       .min(1, 'Password is required')
       .min(8, 'Password must be at least 8 characters'),
     confirmPassword: z.string().min(1, 'Password confirmation is required'),
-    acceptTerms: z.boolean().refine((val) => val, 'You must accept the terms and conditions'),
+    acceptTerms: z.boolean().refine(val => val, 'You must accept the terms and conditions'),
   })
-  .refine((data) => data.password === data.confirmPassword, {
+  .refine(data => data.password === data.confirmPassword, {
     message: 'Passwords do not match',
     path: ['confirmPassword'],
   })
@@ -68,6 +68,7 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
   const onSubmit = async (data: RegisterFormData) => {
     try {
       setError(null)
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { confirmPassword, acceptTerms, ...registerData } = data
       await registerUser(registerData as RegisterData)
       onSuccess()
@@ -159,9 +160,7 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
             Password strength: {passwordStrength}
           </p>
         )}
-        {errors.password && (
-          <p className="mt-2 text-sm text-red-600">{errors.password.message}</p>
-        )}
+        {errors.password && <p className="mt-2 text-sm text-red-600">{errors.password.message}</p>}
       </div>
 
       <div>

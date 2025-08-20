@@ -11,7 +11,9 @@ import { extractTextFromPDF, parseInvoiceFromText } from '@/lib/pdf-parser'
 jest.mock('@/lib/pdf-parser')
 
 const mockExtractTextFromPDF = extractTextFromPDF as jest.MockedFunction<typeof extractTextFromPDF>
-const mockParseInvoiceFromText = parseInvoiceFromText as jest.MockedFunction<typeof parseInvoiceFromText>
+const mockParseInvoiceFromText = parseInvoiceFromText as jest.MockedFunction<
+  typeof parseInvoiceFromText
+>
 
 describe('/api/invoices/parse', () => {
   beforeEach(() => {
@@ -38,7 +40,7 @@ Total: $16,500.00`
       amount: 15000,
       tax: 1500,
       total: 16500,
-      lineItems: []
+      lineItems: [],
     })
 
     // Create a mock PDF file
@@ -49,7 +51,7 @@ Total: $16,500.00`
 
     const request = new NextRequest('http://localhost:3000/api/invoices/parse', {
       method: 'POST',
-      body: formData
+      body: formData,
     })
 
     const response = await POST(request)
@@ -65,7 +67,7 @@ Total: $16,500.00`
       amount: 15000,
       tax: 1500,
       total: 16500,
-      lineItems: []
+      lineItems: [],
     })
   })
 
@@ -73,7 +75,7 @@ Total: $16,500.00`
     const formData = new FormData()
     const request = new NextRequest('http://localhost:3000/api/invoices/parse', {
       method: 'POST',
-      body: formData
+      body: formData,
     })
 
     const response = await POST(request)
@@ -92,7 +94,7 @@ Total: $16,500.00`
 
     const request = new NextRequest('http://localhost:3000/api/invoices/parse', {
       method: 'POST',
-      body: formData
+      body: formData,
     })
 
     const response = await POST(request)
@@ -113,7 +115,7 @@ Total: $16,500.00`
 
     const request = new NextRequest('http://localhost:3000/api/invoices/parse', {
       method: 'POST',
-      body: formData
+      body: formData,
     })
 
     const response = await POST(request)
@@ -133,7 +135,7 @@ Total: $16,500.00`
 
     const request = new NextRequest('http://localhost:3000/api/invoices/parse', {
       method: 'POST',
-      body: formData
+      body: formData,
     })
 
     const response = await POST(request)
@@ -146,7 +148,7 @@ Total: $16,500.00`
 
   it('should handle text extraction with no parseable invoice data', async () => {
     const mockText = 'This is just some random text with no invoice information'
-    
+
     mockExtractTextFromPDF.mockResolvedValue(mockText)
     mockParseInvoiceFromText.mockReturnValue({
       invoiceNumber: null,
@@ -156,7 +158,7 @@ Total: $16,500.00`
       amount: null,
       tax: null,
       total: null,
-      lineItems: []
+      lineItems: [],
     })
 
     const pdfBuffer = Buffer.from('mock-pdf-data')
@@ -166,7 +168,7 @@ Total: $16,500.00`
 
     const request = new NextRequest('http://localhost:3000/api/invoices/parse', {
       method: 'POST',
-      body: formData
+      body: formData,
     })
 
     const response = await POST(request)

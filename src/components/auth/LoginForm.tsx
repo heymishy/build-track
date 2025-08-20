@@ -65,9 +65,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
             className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
           />
         </div>
-        {errors.email && (
-          <p className="mt-2 text-sm text-red-600">{errors.email.message}</p>
-        )}
+        {errors.email && <p className="mt-2 text-sm text-red-600">{errors.email.message}</p>}
       </div>
 
       <div>
@@ -96,9 +94,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
             )}
           </button>
         </div>
-        {errors.password && (
-          <p className="mt-2 text-sm text-red-600">{errors.password.message}</p>
-        )}
+        {errors.password && <p className="mt-2 text-sm text-red-600">{errors.password.message}</p>}
       </div>
 
       {error && (
@@ -109,10 +105,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
 
       <div className="flex items-center justify-between">
         <div className="text-sm">
-          <a
-            href="/forgot-password"
-            className="font-medium text-blue-600 hover:text-blue-500"
-          >
+          <a href="/forgot-password" className="font-medium text-blue-600 hover:text-blue-500">
             Forgot your password?
           </a>
         </div>

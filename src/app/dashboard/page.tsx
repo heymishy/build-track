@@ -4,6 +4,7 @@ import { useState, useRef } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
+import { ParsedInvoice } from '@/lib/pdf-parser'
 
 export default function Dashboard() {
   const { user, logout, isAuthenticated } = useAuth()
@@ -12,7 +13,7 @@ export default function Dashboard() {
     type: 'success' | 'error' | 'uploading' | null
     message: string
   }>({ type: null, message: '' })
-  const [parsedInvoice, setParsedInvoice] = useState<any>(null)
+  const [parsedInvoice, setParsedInvoice] = useState<ParsedInvoice | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -32,7 +33,7 @@ export default function Dashboard() {
     if (file.type !== 'application/pdf') {
       setUploadStatus({
         type: 'error',
-        message: 'Please select a PDF file'
+        message: 'Please select a PDF file',
       })
       return
     }
@@ -54,19 +55,19 @@ export default function Dashboard() {
       if (data.success) {
         setUploadStatus({
           type: 'success',
-          message: data.warning || 'PDF processed successfully!'
+          message: data.warning || 'PDF processed successfully!',
         })
         setParsedInvoice(data.invoice)
       } else {
         setUploadStatus({
           type: 'error',
-          message: data.error || 'Failed to process PDF'
+          message: data.error || 'Failed to process PDF',
         })
       }
-    } catch (error) {
+    } catch {
       setUploadStatus({
         type: 'error',
-        message: 'Network error. Please try again.'
+        message: 'Network error. Please try again.',
       })
     }
 
@@ -121,7 +122,7 @@ export default function Dashboard() {
                 <p className="text-sm text-gray-600 mb-4">
                   Upload a PDF invoice to extract project cost information automatically.
                 </p>
-                
+
                 <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
                   <div className="space-y-1 text-center">
                     <svg
@@ -162,20 +163,24 @@ export default function Dashboard() {
 
                 {/* Upload Status */}
                 {uploadStatus.type && (
-                  <div className={`mt-4 p-3 rounded-md ${
-                    uploadStatus.type === 'success' 
-                      ? 'bg-green-50 border border-green-200' 
-                      : uploadStatus.type === 'error'
-                      ? 'bg-red-50 border border-red-200'
-                      : 'bg-blue-50 border border-blue-200'
-                  }`}>
-                    <p className={`text-sm ${
+                  <div
+                    className={`mt-4 p-3 rounded-md ${
                       uploadStatus.type === 'success'
-                        ? 'text-green-800'
+                        ? 'bg-green-50 border border-green-200'
                         : uploadStatus.type === 'error'
-                        ? 'text-red-800'
-                        : 'text-blue-800'
-                    }`}>
+                          ? 'bg-red-50 border border-red-200'
+                          : 'bg-blue-50 border border-blue-200'
+                    }`}
+                  >
+                    <p
+                      className={`text-sm ${
+                        uploadStatus.type === 'success'
+                          ? 'text-green-800'
+                          : uploadStatus.type === 'error'
+                            ? 'text-red-800'
+                            : 'text-blue-800'
+                      }`}
+                    >
                       {uploadStatus.message}
                     </p>
                   </div>
@@ -189,7 +194,7 @@ export default function Dashboard() {
                 <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
                   Parsed Invoice Data
                 </h3>
-                
+
                 {parsedInvoice ? (
                   <div className="space-y-3">
                     <div className="grid grid-cols-2 gap-4 text-sm">
@@ -210,25 +215,31 @@ export default function Dashboard() {
                         <p>{parsedInvoice.description || 'Not found'}</p>
                       </div>
                     </div>
-                    
+
                     <div className="border-t pt-3">
                       <div className="grid grid-cols-3 gap-4 text-sm">
                         <div>
                           <span className="font-medium text-gray-500">Amount:</span>
                           <p className="text-lg font-semibold">
-                            {parsedInvoice.amount ? `$${parsedInvoice.amount.toLocaleString()}` : 'Not found'}
+                            {parsedInvoice.amount
+                              ? `$${parsedInvoice.amount.toLocaleString()}`
+                              : 'Not found'}
                           </p>
                         </div>
                         <div>
                           <span className="font-medium text-gray-500">Tax:</span>
                           <p className="text-lg">
-                            {parsedInvoice.tax ? `$${parsedInvoice.tax.toLocaleString()}` : 'Not found'}
+                            {parsedInvoice.tax
+                              ? `$${parsedInvoice.tax.toLocaleString()}`
+                              : 'Not found'}
                           </p>
                         </div>
                         <div>
                           <span className="font-medium text-gray-500">Total:</span>
                           <p className="text-lg font-bold text-green-600">
-                            {parsedInvoice.total ? `$${parsedInvoice.total.toLocaleString()}` : 'Not found'}
+                            {parsedInvoice.total
+                              ? `$${parsedInvoice.total.toLocaleString()}`
+                              : 'Not found'}
                           </p>
                         </div>
                       </div>
@@ -238,13 +249,13 @@ export default function Dashboard() {
                       <div className="border-t pt-3">
                         <span className="font-medium text-gray-500 text-sm">Line Items:</span>
                         <div className="mt-2 space-y-2">
-                          {parsedInvoice.lineItems.map((item: any, index: number) => (
+                          {parsedInvoice.lineItems.map((item, index: number) => (
                             <div key={index} className="flex justify-between text-sm">
                               <span>{item.description}</span>
                               <span>
                                 {item.quantity && item.unitPrice && (
                                   <span className="text-gray-500">
-                                    {item.quantity} × ${item.unitPrice} = 
+                                    {item.quantity} × ${item.unitPrice} =
                                   </span>
                                 )}
                                 <span className="font-medium ml-1">${item.total}</span>
@@ -300,7 +311,10 @@ export default function Dashboard() {
                   </div>
                 </div>
                 <div className="mt-4 text-sm text-gray-500">
-                  <p>Dashboard features coming soon: Project tracking, cost analysis, and milestone management.</p>
+                  <p>
+                    Dashboard features coming soon: Project tracking, cost analysis, and milestone
+                    management.
+                  </p>
                 </div>
               </div>
             </div>
