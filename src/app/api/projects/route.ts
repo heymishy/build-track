@@ -10,18 +10,47 @@ import { prisma } from '@/lib/prisma'
 
 async function GET(request: NextRequest, user: AuthUser) {
   try {
+    // Parse query parameters for filtering
+    const { searchParams } = new URL(request.url)
+    const status = searchParams.get('status')
+    const search = searchParams.get('search')
+    
+    // Build query filters
+    const whereClause: any = {
+      AND: []
+    }
+
+    // Add user access control
+    if (user.role === 'ADMIN') {
+      // Admin can see all projects
+    } else {
+      whereClause.AND.push({
+        users: {
+          some: {
+            userId: user.id,
+          },
+        },
+      })
+    }
+
+    // Add status filter if provided
+    if (status) {
+      whereClause.AND.push({ status })
+    }
+
+    // Add search filter if provided
+    if (search) {
+      whereClause.AND.push({
+        OR: [
+          { name: { contains: search, mode: 'insensitive' } },
+          { description: { contains: search, mode: 'insensitive' } }
+        ]
+      })
+    }
+
     // Get projects where user is a member or admin can see all
     const projects = await prisma.project.findMany({
-      where:
-        user.role === 'ADMIN'
-          ? {}
-          : {
-              users: {
-                some: {
-                  userId: user.id,
-                },
-              },
-            },
+      where: whereClause.AND.length > 0 ? whereClause : undefined,
       include: {
         users: {
           include: {
@@ -48,9 +77,17 @@ async function GET(request: NextRequest, user: AuthUser) {
       },
     })
 
+    // Map database fields to API fields for consistency
+    const mappedProjects = projects.map(project => ({
+      ...project,
+      budget: project.totalBudget, 
+      expectedEndDate: project.estimatedEndDate,
+      actualCost: 0 // Calculated from invoices later
+    }))
+
     return Response.json({
       success: true,
-      projects,
+      projects: mappedProjects,
     })
   } catch (error) {
     console.error('Error fetching projects:', error)
@@ -67,10 +104,10 @@ async function GET(request: NextRequest, user: AuthUser) {
 async function POST(request: NextRequest, user: AuthUser) {
   try {
     const body = await request.json()
-    const { name, description, totalBudget, startDate, estimatedEndDate } = body
+    const { name, description, budget, startDate, expectedEndDate, status } = body
 
     // Validate required fields
-    if (!name || !totalBudget) {
+    if (!name || !budget) {
       return Response.json(
         {
           success: false,
@@ -85,10 +122,10 @@ async function POST(request: NextRequest, user: AuthUser) {
       data: {
         name,
         description,
-        totalBudget,
+        totalBudget: budget, // Map budget to totalBudget
         startDate: startDate ? new Date(startDate) : null,
-        estimatedEndDate: estimatedEndDate ? new Date(estimatedEndDate) : null,
-        status: 'PLANNING',
+        estimatedEndDate: expectedEndDate ? new Date(expectedEndDate) : null, // Map expectedEndDate to estimatedEndDate
+        status: status || 'PLANNING',
         users: {
           create: {
             userId: user.id,
@@ -115,7 +152,11 @@ async function POST(request: NextRequest, user: AuthUser) {
     return Response.json(
       {
         success: true,
-        project,
+        project: {
+          ...project,
+          budget: project.totalBudget, // Map back for consistent API
+          expectedEndDate: project.estimatedEndDate,
+        },
       },
       { status: 201 }
     )
