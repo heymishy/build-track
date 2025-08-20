@@ -15,8 +15,9 @@ async function GET(request: NextRequest, user: AuthUser) {
 
     // Calculate date range
     const now = new Date()
-    const daysBack = timeRange === '7d' ? 7 : timeRange === '30d' ? 30 : timeRange === '90d' ? 90 : 365
-    const startDate = new Date(now.getTime() - (daysBack * 24 * 60 * 60 * 1000))
+    const daysBack =
+      timeRange === '7d' ? 7 : timeRange === '30d' ? 30 : timeRange === '90d' ? 90 : 365
+    const startDate = new Date(now.getTime() - daysBack * 24 * 60 * 60 * 1000)
 
     // Build where clause for user access control
     const whereClause: any = {
@@ -75,15 +76,14 @@ async function GET(request: NextRequest, user: AuthUser) {
     // Calculate analytics
     const totalProjects = projects.length
     const totalBudget = projects.reduce((sum, p) => sum + Number(p.totalBudget), 0)
-    const totalSpent = projects.reduce((sum, p) => 
-      sum + p.invoices.reduce((invoiceSum, invoice) => 
-        invoiceSum + Number(invoice.totalAmount), 0
-      ), 0
+    const totalSpent = projects.reduce(
+      (sum, p) =>
+        sum +
+        p.invoices.reduce((invoiceSum, invoice) => invoiceSum + Number(invoice.totalAmount), 0),
+      0
     )
-    
-    const avgBudgetVariance = totalBudget > 0 
-      ? ((totalSpent - totalBudget) / totalBudget) * 100 
-      : 0
+
+    const avgBudgetVariance = totalBudget > 0 ? ((totalSpent - totalBudget) / totalBudget) * 100 : 0
 
     const projectsOverBudget = projects.filter(p => {
       const spent = p.invoices.reduce((sum, inv) => sum + Number(inv.totalAmount), 0)
@@ -91,22 +91,25 @@ async function GET(request: NextRequest, user: AuthUser) {
     }).length
 
     const completedProjects = projects.filter(p => p.status === 'COMPLETED').length
-    const activeProjects = projects.filter(p => ['PLANNING', 'IN_PROGRESS'].includes(p.status)).length
+    const activeProjects = projects.filter(p =>
+      ['PLANNING', 'IN_PROGRESS'].includes(p.status)
+    ).length
 
     const allInvoices = projects.flatMap(p => p.invoices)
     const totalInvoices = allInvoices.length
     const avgInvoiceValue = totalInvoices > 0 ? totalSpent / totalInvoices : 0
 
     // Calculate average project duration (simplified)
-    const completedProjectsWithDates = projects.filter(p => 
-      p.status === 'COMPLETED' && p.startDate && p.actualEndDate
+    const completedProjectsWithDates = projects.filter(
+      p => p.status === 'COMPLETED' && p.startDate && p.actualEndDate
     )
-    const avgProjectDuration = completedProjectsWithDates.length > 0
-      ? completedProjectsWithDates.reduce((sum, p) => {
-          const duration = new Date(p.actualEndDate!).getTime() - new Date(p.startDate!).getTime()
-          return sum + (duration / (1000 * 60 * 60 * 24)) // days
-        }, 0) / completedProjectsWithDates.length
-      : 180 // default 6 months
+    const avgProjectDuration =
+      completedProjectsWithDates.length > 0
+        ? completedProjectsWithDates.reduce((sum, p) => {
+            const duration = new Date(p.actualEndDate!).getTime() - new Date(p.startDate!).getTime()
+            return sum + duration / (1000 * 60 * 60 * 24) // days
+          }, 0) / completedProjectsWithDates.length
+        : 180 // default 6 months
 
     // Monthly spending (simplified - would need more complex grouping in production)
     const monthlySpending = generateMonthlySpending(allInvoices, startDate, now)
@@ -118,7 +121,7 @@ async function GET(request: NextRequest, user: AuthUser) {
       const current = vendorSpending.get(vendor) || { total: 0, count: 0 }
       vendorSpending.set(vendor, {
         total: current.total + Number(invoice.totalAmount),
-        count: current.count + 1
+        count: current.count + 1,
       })
     })
 
@@ -126,25 +129,27 @@ async function GET(request: NextRequest, user: AuthUser) {
       .map(([name, data]) => ({
         name,
         totalSpent: data.total,
-        invoiceCount: data.count
+        invoiceCount: data.count,
       }))
       .sort((a, b) => b.totalSpent - a.totalSpent)
       .slice(0, 5)
 
     // Budget variance by project
-    const budgetVarianceByProject = projects.map(project => {
-      const spent = project.invoices.reduce((sum, inv) => sum + Number(inv.totalAmount), 0)
-      const budget = Number(project.totalBudget)
-      const variance = budget > 0 ? ((spent - budget) / budget) * 100 : 0
+    const budgetVarianceByProject = projects
+      .map(project => {
+        const spent = project.invoices.reduce((sum, inv) => sum + Number(inv.totalAmount), 0)
+        const budget = Number(project.totalBudget)
+        const variance = budget > 0 ? ((spent - budget) / budget) * 100 : 0
 
-      return {
-        name: project.name,
-        budgetUsed: spent,
-        budgetTotal: budget,
-        variance,
-        status: project.status
-      }
-    }).slice(0, 10)
+        return {
+          name: project.name,
+          budgetUsed: spent,
+          budgetTotal: budget,
+          variance,
+          status: project.status,
+        }
+      })
+      .slice(0, 10)
 
     // Spending by category (simplified)
     const spendingByCategory = calculateSpendingByCategory(allInvoices)
@@ -170,9 +175,8 @@ async function GET(request: NextRequest, user: AuthUser) {
       success: true,
       data: analyticsData,
       timeRange,
-      generatedAt: new Date().toISOString()
+      generatedAt: new Date().toISOString(),
     })
-
   } catch (error) {
     console.error('Error fetching analytics:', error)
     return NextResponse.json(
@@ -187,7 +191,7 @@ async function GET(request: NextRequest, user: AuthUser) {
 
 function generateMonthlySpending(invoices: any[], startDate: Date, endDate: Date) {
   const months: { [key: string]: number } = {}
-  
+
   // Initialize months
   const currentDate = new Date(startDate)
   while (currentDate <= endDate) {
@@ -208,18 +212,18 @@ function generateMonthlySpending(invoices: any[], startDate: Date, endDate: Date
   return Object.entries(months).map(([month, amount]) => ({
     month,
     amount,
-    budget: amount * 1.1 // Assume budget is 10% higher than actual for demo
+    budget: amount * 1.1, // Assume budget is 10% higher than actual for demo
   }))
 }
 
 function calculateSpendingByCategory(invoices: any[]) {
   // Simplified categorization based on invoice line items
   const categories = {
-    'Materials': 0,
-    'Labor': 0,
-    'Equipment': 0,
+    Materials: 0,
+    Labor: 0,
+    Equipment: 0,
     'Permits & Fees': 0,
-    'Other': 0
+    Other: 0,
   }
 
   const totalSpending = invoices.reduce((sum, inv) => sum + Number(inv.totalAmount), 0)
@@ -228,12 +232,16 @@ function calculateSpendingByCategory(invoices: any[]) {
   invoices.forEach(invoice => {
     const amount = Number(invoice.totalAmount)
     const vendor = invoice.supplierName.toLowerCase()
-    
+
     if (vendor.includes('supply') || vendor.includes('material') || vendor.includes('lumber')) {
       categories['Materials'] += amount
     } else if (vendor.includes('electric') || vendor.includes('plumb') || vendor.includes('hvac')) {
       categories['Labor'] += amount
-    } else if (vendor.includes('rental') || vendor.includes('tool') || vendor.includes('equipment')) {
+    } else if (
+      vendor.includes('rental') ||
+      vendor.includes('tool') ||
+      vendor.includes('equipment')
+    ) {
       categories['Equipment'] += amount
     } else if (vendor.includes('permit') || vendor.includes('fee') || vendor.includes('city')) {
       categories['Permits & Fees'] += amount
@@ -242,11 +250,13 @@ function calculateSpendingByCategory(invoices: any[]) {
     }
   })
 
-  return Object.entries(categories).map(([category, amount]) => ({
-    category,
-    amount,
-    percentage: totalSpending > 0 ? (amount / totalSpending) * 100 : 0
-  })).filter(cat => cat.amount > 0)
+  return Object.entries(categories)
+    .map(([category, amount]) => ({
+      category,
+      amount,
+      percentage: totalSpending > 0 ? (amount / totalSpending) * 100 : 0,
+    }))
+    .filter(cat => cat.amount > 0)
 }
 
 // Apply authentication middleware

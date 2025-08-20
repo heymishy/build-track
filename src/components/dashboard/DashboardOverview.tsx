@@ -48,24 +48,31 @@ export function DashboardOverview({ className = '' }: DashboardOverviewProps) {
 
       if (data.success) {
         const projects = data.projects
-        
+
         // Calculate dashboard statistics
         const dashboardStats: DashboardStats = {
           totalProjects: projects.length,
-          activeProjects: projects.filter((p: any) => 
+          activeProjects: projects.filter((p: any) =>
             ['PLANNING', 'IN_PROGRESS'].includes(p.status)
           ).length,
           completedProjects: projects.filter((p: any) => p.status === 'COMPLETED').length,
           totalBudget: projects.reduce((sum: number, p: any) => sum + Number(p.totalBudget), 0),
           totalSpent: projects.reduce((sum: number, p: any) => sum + p.stats.budgetUsed, 0),
           totalInvoices: projects.reduce((sum: number, p: any) => sum + p.stats.totalInvoices, 0),
-          pendingInvoices: projects.reduce((sum: number, p: any) => 
-            sum + (p.stats.totalInvoices - p.stats.totalInvoices), 0), // This would need actual pending count
+          pendingInvoices: projects.reduce(
+            (sum: number, p: any) => sum + (p.stats.totalInvoices - p.stats.totalInvoices),
+            0
+          ), // This would need actual pending count
           overBudgetProjects: projects.filter((p: any) => p.stats.isOverBudget).length,
-          averageBudgetUsage: projects.length > 0 
-            ? projects.reduce((sum: number, p: any) => sum + p.stats.budgetUsedPercent, 0) / projects.length
-            : 0,
-          totalPendingAmount: projects.reduce((sum: number, p: any) => sum + p.stats.pendingInvoiceAmount, 0),
+          averageBudgetUsage:
+            projects.length > 0
+              ? projects.reduce((sum: number, p: any) => sum + p.stats.budgetUsedPercent, 0) /
+                projects.length
+              : 0,
+          totalPendingAmount: projects.reduce(
+            (sum: number, p: any) => sum + p.stats.pendingInvoiceAmount,
+            0
+          ),
           healthyProjects: projects.filter((p: any) => {
             const health = calculateProjectHealth(p)
             return health >= 80
@@ -89,7 +96,7 @@ export function DashboardOverview({ className = '' }: DashboardOverviewProps) {
 
   const calculateProjectHealth = (project: any) => {
     let healthScore = 100
-    
+
     if (project.stats.isOverBudget) {
       healthScore -= 40
     } else if (project.stats.budgetUsedPercent > 85) {
@@ -104,9 +111,10 @@ export function DashboardOverview({ className = '' }: DashboardOverviewProps) {
       healthScore = 0
     }
 
-    const milestoneCompletionRate = project.stats.totalMilestones > 0 
-      ? (project.stats.completedMilestones / project.stats.totalMilestones) * 100 
-      : 100
+    const milestoneCompletionRate =
+      project.stats.totalMilestones > 0
+        ? (project.stats.completedMilestones / project.stats.totalMilestones) * 100
+        : 100
 
     if (milestoneCompletionRate < 50) {
       healthScore -= 20
@@ -189,8 +197,18 @@ export function DashboardOverview({ className = '' }: DashboardOverviewProps) {
       title: 'Budget Usage',
       value: formatPercentage(stats.averageBudgetUsage),
       icon: ChartBarIcon,
-      color: stats.averageBudgetUsage > 85 ? 'text-red-600' : stats.averageBudgetUsage > 70 ? 'text-yellow-600' : 'text-green-600',
-      bgColor: stats.averageBudgetUsage > 85 ? 'bg-red-50' : stats.averageBudgetUsage > 70 ? 'bg-yellow-50' : 'bg-green-50',
+      color:
+        stats.averageBudgetUsage > 85
+          ? 'text-red-600'
+          : stats.averageBudgetUsage > 70
+            ? 'text-yellow-600'
+            : 'text-green-600',
+      bgColor:
+        stats.averageBudgetUsage > 85
+          ? 'bg-red-50'
+          : stats.averageBudgetUsage > 70
+            ? 'bg-yellow-50'
+            : 'bg-green-50',
       subtitle: `${stats.overBudgetProjects} projects over budget`,
       trendIcon: stats.averageBudgetUsage > 85 ? TrendingUpIcon : undefined,
     },
@@ -213,7 +231,9 @@ export function DashboardOverview({ className = '' }: DashboardOverviewProps) {
     },
     {
       title: 'Completion Rate',
-      value: formatPercentage(stats.totalProjects > 0 ? (stats.completedProjects / stats.totalProjects) * 100 : 0),
+      value: formatPercentage(
+        stats.totalProjects > 0 ? (stats.completedProjects / stats.totalProjects) * 100 : 0
+      ),
       icon: ClockIcon,
       color: 'text-indigo-600',
       bgColor: 'bg-indigo-50',
@@ -223,14 +243,17 @@ export function DashboardOverview({ className = '' }: DashboardOverviewProps) {
       title: 'Budget Remaining',
       value: formatCurrency(stats.totalBudget - stats.totalSpent),
       icon: CurrencyDollarIcon,
-      color: (stats.totalBudget - stats.totalSpent) < 0 ? 'text-red-600' : 'text-green-600',
-      bgColor: (stats.totalBudget - stats.totalSpent) < 0 ? 'bg-red-50' : 'bg-green-50',
+      color: stats.totalBudget - stats.totalSpent < 0 ? 'text-red-600' : 'text-green-600',
+      bgColor: stats.totalBudget - stats.totalSpent < 0 ? 'bg-red-50' : 'bg-green-50',
       subtitle: 'across all projects',
-      trendIcon: (stats.totalBudget - stats.totalSpent) < 0 ? TrendingDownIcon : TrendingUpIcon,
+      trendIcon: stats.totalBudget - stats.totalSpent < 0 ? TrendingDownIcon : TrendingUpIcon,
     },
     {
       title: 'Average Project',
-      value: stats.totalProjects > 0 ? formatCurrency(stats.totalBudget / stats.totalProjects) : formatCurrency(0),
+      value:
+        stats.totalProjects > 0
+          ? formatCurrency(stats.totalBudget / stats.totalProjects)
+          : formatCurrency(0),
       icon: BuildingOfficeIcon,
       color: 'text-gray-600',
       bgColor: 'bg-gray-50',
@@ -256,7 +279,7 @@ export function DashboardOverview({ className = '' }: DashboardOverviewProps) {
             {statCards.map((card, index) => {
               const IconComponent = card.icon
               const TrendIcon = card.trendIcon
-              
+
               return (
                 <div key={index} className="relative">
                   <div className="relative p-4 rounded-lg border border-gray-200 hover:border-gray-300 transition-colors">
@@ -269,27 +292,24 @@ export function DashboardOverview({ className = '' }: DashboardOverviewProps) {
                           {card.title}
                         </p>
                         <div className="flex items-center space-x-2">
-                          <p className={`text-lg font-semibold ${card.color}`}>
-                            {card.value}
-                          </p>
-                          {TrendIcon && (
-                            <TrendIcon className={`h-4 w-4 ${card.color}`} />
-                          )}
+                          <p className={`text-lg font-semibold ${card.color}`}>{card.value}</p>
+                          {TrendIcon && <TrendIcon className={`h-4 w-4 ${card.color}`} />}
                         </div>
-                        <p className="text-xs text-gray-500 mt-1 truncate">
-                          {card.subtitle}
-                        </p>
+                        <p className="text-xs text-gray-500 mt-1 truncate">{card.subtitle}</p>
                       </div>
                     </div>
-                    
+
                     {/* Trend bar for budget usage */}
                     {card.trend !== undefined && (
                       <div className="mt-3">
                         <div className="w-full bg-gray-200 rounded-full h-1">
-                          <div 
+                          <div
                             className={`h-1 rounded-full transition-all duration-300 ${
-                              card.trend > 85 ? 'bg-red-500' : 
-                              card.trend > 70 ? 'bg-yellow-500' : 'bg-green-500'
+                              card.trend > 85
+                                ? 'bg-red-500'
+                                : card.trend > 70
+                                  ? 'bg-yellow-500'
+                                  : 'bg-green-500'
                             }`}
                             style={{ width: `${Math.min(100, card.trend)}%` }}
                           ></div>
@@ -314,13 +334,16 @@ export function DashboardOverview({ className = '' }: DashboardOverviewProps) {
                 <ExclamationTriangleIcon className="h-5 w-5 text-red-600 mr-3" />
                 <div>
                   <p className="text-sm font-medium text-red-800">
-                    {stats.overBudgetProjects} project{stats.overBudgetProjects !== 1 ? 's' : ''} over budget
+                    {stats.overBudgetProjects} project{stats.overBudgetProjects !== 1 ? 's' : ''}{' '}
+                    over budget
                   </p>
-                  <p className="text-xs text-red-600">Review spending and adjust budgets as needed</p>
+                  <p className="text-xs text-red-600">
+                    Review spending and adjust budgets as needed
+                  </p>
                 </div>
               </div>
             )}
-            
+
             {stats.atRiskProjects > 0 && (
               <div className="flex items-center p-3 bg-yellow-50 rounded-lg">
                 <ExclamationTriangleIcon className="h-5 w-5 text-yellow-600 mr-3" />
@@ -328,7 +351,9 @@ export function DashboardOverview({ className = '' }: DashboardOverviewProps) {
                   <p className="text-sm font-medium text-yellow-800">
                     {stats.atRiskProjects} project{stats.atRiskProjects !== 1 ? 's' : ''} at risk
                   </p>
-                  <p className="text-xs text-yellow-600">Consider reviewing project timelines and resources</p>
+                  <p className="text-xs text-yellow-600">
+                    Consider reviewing project timelines and resources
+                  </p>
                 </div>
               </div>
             )}
@@ -340,7 +365,9 @@ export function DashboardOverview({ className = '' }: DashboardOverviewProps) {
                   <p className="text-sm font-medium text-blue-800">
                     {formatCurrency(stats.totalPendingAmount)} in pending invoices
                   </p>
-                  <p className="text-xs text-blue-600">Process invoices to keep project finances up to date</p>
+                  <p className="text-xs text-blue-600">
+                    Process invoices to keep project finances up to date
+                  </p>
                 </div>
               </div>
             )}
@@ -349,10 +376,10 @@ export function DashboardOverview({ className = '' }: DashboardOverviewProps) {
               <div className="flex items-center p-3 bg-green-50 rounded-lg">
                 <ChartBarIcon className="h-5 w-5 text-green-600 mr-3" />
                 <div>
-                  <p className="text-sm font-medium text-green-800">
-                    All projects are on track
+                  <p className="text-sm font-medium text-green-800">All projects are on track</p>
+                  <p className="text-xs text-green-600">
+                    Great job managing your construction projects!
                   </p>
-                  <p className="text-xs text-green-600">Great job managing your construction projects!</p>
                 </div>
               </div>
             )}

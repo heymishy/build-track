@@ -1,13 +1,13 @@
 'use client'
 
 import { useState } from 'react'
-import { 
+import {
   Bars3Icon,
   XMarkIcon,
   CameraIcon,
   DocumentTextIcon,
   ChartBarIcon,
-  Cog6ToothIcon
+  Cog6ToothIcon,
 } from '@heroicons/react/24/outline'
 import { DashboardOverview } from '@/components/dashboard/DashboardOverview'
 import { ProjectDashboard } from '@/components/dashboard/ProjectDashboard'
@@ -41,11 +41,7 @@ export function MobileDashboard({ user, onLogout, children }: MobileDashboardPro
       case 'analytics':
         return <ProjectAnalytics className="px-2" />
       case 'upload':
-        return (
-          <div className="px-2">
-            {children}
-          </div>
-        )
+        return <div className="px-2">{children}</div>
       default:
         return <DashboardOverview className="px-2" />
     }
@@ -69,9 +65,7 @@ export function MobileDashboard({ user, onLogout, children }: MobileDashboardPro
               </div>
             </div>
             <div className="flex items-center space-x-3">
-              <div className="text-sm text-gray-700 truncate max-w-24">
-                {user?.name}
-              </div>
+              <div className="text-sm text-gray-700 truncate max-w-24">{user?.name}</div>
               <button
                 onClick={() => setSidebarOpen(true)}
                 className="p-1.5 text-gray-600 hover:text-gray-900"
@@ -86,7 +80,10 @@ export function MobileDashboard({ user, onLogout, children }: MobileDashboardPro
       {/* Mobile Sidebar Overlay */}
       {sidebarOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
-          <div className="fixed inset-0 bg-black bg-opacity-25" onClick={() => setSidebarOpen(false)} />
+          <div
+            className="fixed inset-0 bg-black bg-opacity-25"
+            onClick={() => setSidebarOpen(false)}
+          />
           <div className="fixed inset-y-0 left-0 w-64 bg-white shadow-lg">
             <div className="flex items-center justify-between p-4 border-b border-gray-200">
               <h2 className="text-lg font-semibold text-gray-900">Menu</h2>
@@ -97,7 +94,7 @@ export function MobileDashboard({ user, onLogout, children }: MobileDashboardPro
                 <XMarkIcon className="h-6 w-6" />
               </button>
             </div>
-            
+
             <div className="p-4">
               <div className="mb-6">
                 <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
@@ -107,18 +104,14 @@ export function MobileDashboard({ user, onLogout, children }: MobileDashboardPro
                     </span>
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-gray-900 truncate">
-                      {user?.name}
-                    </p>
-                    <p className="text-xs text-gray-500 uppercase tracking-wide">
-                      {user?.role}
-                    </p>
+                    <p className="text-sm font-medium text-gray-900 truncate">{user?.name}</p>
+                    <p className="text-xs text-gray-500 uppercase tracking-wide">{user?.role}</p>
                   </div>
                 </div>
               </div>
 
               <nav className="space-y-2">
-                {tabs.map((tab) => {
+                {tabs.map(tab => {
                   const IconComponent = tab.icon
                   return (
                     <button
@@ -158,15 +151,13 @@ export function MobileDashboard({ user, onLogout, children }: MobileDashboardPro
 
       {/* Main Content */}
       <main className="flex-1 overflow-y-auto">
-        <div className="py-4 sm:py-6">
-          {renderTabContent()}
-        </div>
+        <div className="py-4 sm:py-6">{renderTabContent()}</div>
       </main>
 
       {/* Bottom Navigation - Mobile Only */}
       <div className="bg-white border-t border-gray-200 lg:hidden">
         <div className="grid grid-cols-4">
-          {tabs.map((tab) => {
+          {tabs.map(tab => {
             const IconComponent = tab.icon
             return (
               <button

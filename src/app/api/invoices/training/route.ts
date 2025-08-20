@@ -22,13 +22,7 @@ interface TrainingData {
 async function POST(request: NextRequest, user: AuthUser) {
   try {
     const body: TrainingData = await request.json()
-    const { 
-      invoiceText, 
-      originalExtraction, 
-      correctedData, 
-      userConfidence,
-      pdfMetadata 
-    } = body
+    const { invoiceText, originalExtraction, correctedData, userConfidence, pdfMetadata } = body
 
     // Validate required fields
     if (!invoiceText || !originalExtraction || !correctedData) {
@@ -42,13 +36,14 @@ async function POST(request: NextRequest, user: AuthUser) {
     }
 
     // Calculate improvement metrics
-    const corrections = Object.keys(correctedData).filter(key => 
-      originalExtraction[key] !== correctedData[key]
+    const corrections = Object.keys(correctedData).filter(
+      key => originalExtraction[key] !== correctedData[key]
     )
 
-    const accuracyBefore = Object.keys(originalExtraction).reduce((acc, key) => {
-      return acc + (originalExtraction[key] === correctedData[key] ? 1 : 0)
-    }, 0) / Object.keys(originalExtraction).length
+    const accuracyBefore =
+      Object.keys(originalExtraction).reduce((acc, key) => {
+        return acc + (originalExtraction[key] === correctedData[key] ? 1 : 0)
+      }, 0) / Object.keys(originalExtraction).length
 
     // Store training data (you might want to create a separate table for this)
     // For now, we'll store it as a special type of invoice record
@@ -71,9 +66,9 @@ async function POST(request: NextRequest, user: AuthUser) {
           accuracyBefore,
           pdfMetadata,
           trainingDate: new Date().toISOString(),
-          userId: user.id
-        })
-      }
+          userId: user.id,
+        }),
+      },
     })
 
     // Log training data for analysis (in production, you'd send this to your ML pipeline)
@@ -83,7 +78,7 @@ async function POST(request: NextRequest, user: AuthUser) {
       accuracyBefore,
       correctedFields: corrections,
       userId: user.id,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     })
 
     // In a real implementation, you might:
@@ -97,9 +92,8 @@ async function POST(request: NextRequest, user: AuthUser) {
       trainingId: trainingRecord.id,
       corrections: corrections.length,
       accuracyImprovement: 1.0 - accuracyBefore,
-      message: 'Training data collected successfully'
+      message: 'Training data collected successfully',
     })
-
   } catch (error) {
     console.error('Error storing training data:', error)
     return NextResponse.json(

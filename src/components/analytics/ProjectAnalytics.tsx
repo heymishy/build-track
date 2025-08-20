@@ -1,13 +1,13 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { 
+import {
   ChartBarIcon,
   CurrencyDollarIcon,
   TrendingUpIcon,
   TrendingDownIcon,
   CalendarDaysIcon,
-  ExclamationTriangleIcon
+  ExclamationTriangleIcon,
 } from '@heroicons/react/24/outline'
 
 interface AnalyticsData {
@@ -65,9 +65,9 @@ export function ProjectAnalytics({ className = '', projectId }: ProjectAnalytics
       setLoading(true)
       const params = new URLSearchParams({
         timeRange,
-        ...(projectId && { projectId })
+        ...(projectId && { projectId }),
       })
-      
+
       const response = await fetch(`/api/analytics?${params}`)
       const result = await response.json()
 
@@ -103,28 +103,52 @@ export function ProjectAnalytics({ className = '', projectId }: ProjectAnalytics
       { month: 'Mar', amount: 48000, budget: 45000 },
       { month: 'Apr', amount: 67000, budget: 60000 },
       { month: 'May', amount: 58000, budget: 65000 },
-      { month: 'Jun', amount: 72000, budget: 70000 }
+      { month: 'Jun', amount: 72000, budget: 70000 },
     ],
     topVendors: [
       { name: 'ABC Construction Supply', totalSpent: 85000, invoiceCount: 12 },
       { name: 'Smith Electrical', totalSpent: 45000, invoiceCount: 8 },
       { name: 'Quality Plumbing Co', totalSpent: 32000, invoiceCount: 6 },
       { name: 'Premium Materials Ltd', totalSpent: 28000, invoiceCount: 9 },
-      { name: 'BuildRight Tools', totalSpent: 15000, invoiceCount: 4 }
+      { name: 'BuildRight Tools', totalSpent: 15000, invoiceCount: 4 },
     ],
     budgetVarianceByProject: [
-      { name: 'Kitchen Renovation', budgetUsed: 45000, budgetTotal: 50000, variance: -10, status: 'IN_PROGRESS' },
-      { name: 'Bathroom Remodel', budgetUsed: 32000, budgetTotal: 30000, variance: 6.7, status: 'COMPLETED' },
-      { name: 'Deck Construction', budgetUsed: 18000, budgetTotal: 25000, variance: -28, status: 'IN_PROGRESS' },
-      { name: 'Garage Addition', budgetUsed: 125000, budgetTotal: 120000, variance: 4.2, status: 'IN_PROGRESS' }
+      {
+        name: 'Kitchen Renovation',
+        budgetUsed: 45000,
+        budgetTotal: 50000,
+        variance: -10,
+        status: 'IN_PROGRESS',
+      },
+      {
+        name: 'Bathroom Remodel',
+        budgetUsed: 32000,
+        budgetTotal: 30000,
+        variance: 6.7,
+        status: 'COMPLETED',
+      },
+      {
+        name: 'Deck Construction',
+        budgetUsed: 18000,
+        budgetTotal: 25000,
+        variance: -28,
+        status: 'IN_PROGRESS',
+      },
+      {
+        name: 'Garage Addition',
+        budgetUsed: 125000,
+        budgetTotal: 120000,
+        variance: 4.2,
+        status: 'IN_PROGRESS',
+      },
     ],
     spendingByCategory: [
       { category: 'Materials', amount: 195000, percentage: 50.3 },
       { category: 'Labor', amount: 140000, percentage: 36.1 },
       { category: 'Equipment', amount: 35000, percentage: 9.0 },
       { category: 'Permits & Fees', amount: 12500, percentage: 3.2 },
-      { category: 'Other', amount: 5000, percentage: 1.3 }
-    ]
+      { category: 'Other', amount: 5000, percentage: 1.3 },
+    ],
   })
 
   const formatCurrency = (amount: number) => {
@@ -194,7 +218,7 @@ export function ProjectAnalytics({ className = '', projectId }: ProjectAnalytics
         <div className="flex items-center space-x-3">
           <select
             value={timeRange}
-            onChange={(e) => setTimeRange(e.target.value as any)}
+            onChange={e => setTimeRange(e.target.value as any)}
             className="rounded-md border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500"
           >
             <option value="7d">Last 7 days</option>
@@ -275,9 +299,7 @@ export function ProjectAnalytics({ className = '', projectId }: ProjectAnalytics
                   <p className="text-2xl font-bold text-orange-900">
                     {formatCurrency(data.avgInvoiceValue)}
                   </p>
-                  <p className="text-xs text-orange-600">
-                    {data.totalInvoices} invoices total
-                  </p>
+                  <p className="text-xs text-orange-600">{data.totalInvoices} invoices total</p>
                 </div>
               </div>
             </div>
@@ -294,7 +316,7 @@ export function ProjectAnalytics({ className = '', projectId }: ProjectAnalytics
               {data.monthlySpending.map((month, index) => {
                 const variance = ((month.amount - month.budget) / month.budget) * 100
                 const VarianceIcon = getVarianceIcon(variance)
-                
+
                 return (
                   <div key={index} className="flex items-center justify-between">
                     <div className="flex-1">
@@ -317,7 +339,9 @@ export function ProjectAnalytics({ className = '', projectId }: ProjectAnalytics
                           className={`h-2 rounded-full ${
                             month.amount > month.budget ? 'bg-red-500' : 'bg-green-500'
                           }`}
-                          style={{ width: `${Math.min(100, (month.amount / month.budget) * 100)}%` }}
+                          style={{
+                            width: `${Math.min(100, (month.amount / month.budget) * 100)}%`,
+                          }}
                         ></div>
                       </div>
                     </div>
@@ -335,7 +359,7 @@ export function ProjectAnalytics({ className = '', projectId }: ProjectAnalytics
             <div className="space-y-3">
               {data.budgetVarianceByProject.map((project, index) => {
                 const VarianceIcon = getVarianceIcon(project.variance)
-                
+
                 return (
                   <div key={index} className="p-3 bg-gray-50 rounded-lg">
                     <div className="flex items-center justify-between mb-2">
@@ -351,11 +375,15 @@ export function ProjectAnalytics({ className = '', projectId }: ProjectAnalytics
                       <span>
                         {formatCurrency(project.budgetUsed)} / {formatCurrency(project.budgetTotal)}
                       </span>
-                      <span className={`px-2 py-1 rounded-full text-xs ${
-                        project.status === 'COMPLETED' ? 'bg-green-100 text-green-800' :
-                        project.status === 'IN_PROGRESS' ? 'bg-blue-100 text-blue-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
+                      <span
+                        className={`px-2 py-1 rounded-full text-xs ${
+                          project.status === 'COMPLETED'
+                            ? 'bg-green-100 text-green-800'
+                            : project.status === 'IN_PROGRESS'
+                              ? 'bg-blue-100 text-blue-800'
+                              : 'bg-gray-100 text-gray-800'
+                        }`}
+                      >
                         {project.status.replace('_', ' ')}
                       </span>
                     </div>
@@ -374,7 +402,10 @@ export function ProjectAnalytics({ className = '', projectId }: ProjectAnalytics
             <h3 className="text-lg font-medium text-gray-900 mb-4">Top Vendors</h3>
             <div className="space-y-3">
               {data.topVendors.map((vendor, index) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div
+                  key={index}
+                  className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                >
                   <div>
                     <p className="text-sm font-medium text-gray-900">{vendor.name}</p>
                     <p className="text-xs text-gray-500">{vendor.invoiceCount} invoices</p>
@@ -406,9 +437,7 @@ export function ProjectAnalytics({ className = '', projectId }: ProjectAnalytics
                       <span className="text-sm font-semibold text-gray-900">
                         {formatCurrency(category.amount)}
                       </span>
-                      <span className="text-xs text-gray-500 ml-2">
-                        {category.percentage}%
-                      </span>
+                      <span className="text-xs text-gray-500 ml-2">{category.percentage}%</span>
                     </div>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2">

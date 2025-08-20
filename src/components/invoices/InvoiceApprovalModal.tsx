@@ -2,13 +2,13 @@
 
 import { useState, useEffect } from 'react'
 import { Dialog } from '@headlessui/react'
-import { 
-  XMarkIcon, 
-  CheckCircleIcon, 
+import {
+  XMarkIcon,
+  CheckCircleIcon,
   XCircleIcon,
   ExclamationTriangleIcon,
   PencilIcon,
-  EyeIcon
+  EyeIcon,
 } from '@heroicons/react/24/outline'
 import { InvoicePdfViewer } from './InvoicePdfViewer'
 import { ParsedInvoice } from '@/lib/pdf-parser'
@@ -46,11 +46,13 @@ export function InvoiceApprovalModal({
   invoice,
   pdfFile,
   onApproval,
-  onRejection
+  onRejection,
 }: InvoiceApprovalModalProps) {
   const [fields, setFields] = useState<InvoiceField[]>([])
   const [showPdf, setShowPdf] = useState(true)
-  const [approvalStatus, setApprovalStatus] = useState<'pending' | 'approved' | 'rejected'>('pending')
+  const [approvalStatus, setApprovalStatus] = useState<'pending' | 'approved' | 'rejected'>(
+    'pending'
+  )
   const [rejectionReason, setRejectionReason] = useState('')
   const [validationErrors, setValidationErrors] = useState<string[]>([])
 
@@ -70,7 +72,7 @@ export function InvoiceApprovalModal({
         confidence: invoice.confidence,
         isVerified: false,
         isRequired: true,
-        type: 'text'
+        type: 'text',
       },
       {
         key: 'vendorName',
@@ -80,7 +82,7 @@ export function InvoiceApprovalModal({
         confidence: invoice.confidence,
         isVerified: false,
         isRequired: true,
-        type: 'text'
+        type: 'text',
       },
       {
         key: 'date',
@@ -90,7 +92,7 @@ export function InvoiceApprovalModal({
         confidence: invoice.confidence,
         isVerified: false,
         isRequired: true,
-        type: 'date'
+        type: 'date',
       },
       {
         key: 'amount',
@@ -100,7 +102,7 @@ export function InvoiceApprovalModal({
         confidence: invoice.confidence,
         isVerified: false,
         isRequired: true,
-        type: 'currency'
+        type: 'currency',
       },
       {
         key: 'tax',
@@ -110,7 +112,7 @@ export function InvoiceApprovalModal({
         confidence: invoice.confidence,
         isVerified: false,
         isRequired: false,
-        type: 'currency'
+        type: 'currency',
       },
       {
         key: 'total',
@@ -120,7 +122,7 @@ export function InvoiceApprovalModal({
         confidence: invoice.confidence,
         isVerified: false,
         isRequired: true,
-        type: 'currency'
+        type: 'currency',
       },
       {
         key: 'description',
@@ -130,27 +132,25 @@ export function InvoiceApprovalModal({
         confidence: invoice.confidence,
         isVerified: false,
         isRequired: false,
-        type: 'text'
-      }
+        type: 'text',
+      },
     ]
 
     setFields(invoiceFields)
   }
 
   const updateFieldValue = (key: string, value: string | number) => {
-    setFields(prev => prev.map(field => 
-      field.key === key 
-        ? { ...field, userValue: value, isVerified: true }
-        : field
-    ))
+    setFields(prev =>
+      prev.map(field =>
+        field.key === key ? { ...field, userValue: value, isVerified: true } : field
+      )
+    )
   }
 
   const toggleFieldVerification = (key: string) => {
-    setFields(prev => prev.map(field => 
-      field.key === key 
-        ? { ...field, isVerified: !field.isVerified }
-        : field
-    ))
+    setFields(prev =>
+      prev.map(field => (field.key === key ? { ...field, isVerified: !field.isVerified } : field))
+    )
   }
 
   const getConfidenceColor = (confidence?: number) => {
@@ -170,7 +170,7 @@ export function InvoiceApprovalModal({
   const validateFields = () => {
     const errors: string[] = []
     const requiredFields = fields.filter(f => f.isRequired)
-    
+
     requiredFields.forEach(field => {
       if (!field.userValue || field.userValue === '') {
         errors.push(`${field.label} is required`)
@@ -181,8 +181,8 @@ export function InvoiceApprovalModal({
     const amount = Number(fields.find(f => f.key === 'amount')?.userValue || 0)
     const tax = Number(fields.find(f => f.key === 'tax')?.userValue || 0)
     const total = Number(fields.find(f => f.key === 'total')?.userValue || 0)
-    
-    if (Math.abs((amount + tax) - total) > 0.01) {
+
+    if (Math.abs(amount + tax - total) > 0.01) {
       errors.push('Total amount does not match subtotal + tax')
     }
 
@@ -198,7 +198,7 @@ export function InvoiceApprovalModal({
         acc[field.key] = {
           original: field.extractedValue,
           corrected: field.userValue,
-          confidence: field.confidence
+          confidence: field.confidence,
         }
       }
       return acc
@@ -227,13 +227,14 @@ export function InvoiceApprovalModal({
     const num = typeof value === 'string' ? parseFloat(value) : value
     return new Intl.NumberFormat('en-NZ', {
       style: 'currency',
-      currency: 'NZD'
+      currency: 'NZD',
     }).format(num || 0)
   }
 
   const renderFieldInput = (field: InvoiceField) => {
-    const commonClasses = "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-    
+    const commonClasses =
+      'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm'
+
     switch (field.type) {
       case 'currency':
         return (
@@ -241,7 +242,7 @@ export function InvoiceApprovalModal({
             type="number"
             step="0.01"
             value={field.userValue || ''}
-            onChange={(e) => updateFieldValue(field.key, parseFloat(e.target.value) || 0)}
+            onChange={e => updateFieldValue(field.key, parseFloat(e.target.value) || 0)}
             className={commonClasses}
           />
         )
@@ -250,7 +251,7 @@ export function InvoiceApprovalModal({
           <input
             type="date"
             value={field.userValue || ''}
-            onChange={(e) => updateFieldValue(field.key, e.target.value)}
+            onChange={e => updateFieldValue(field.key, e.target.value)}
             className={commonClasses}
           />
         )
@@ -259,7 +260,7 @@ export function InvoiceApprovalModal({
           <input
             type="text"
             value={field.userValue || ''}
-            onChange={(e) => updateFieldValue(field.key, e.target.value)}
+            onChange={e => updateFieldValue(field.key, e.target.value)}
             className={commonClasses}
           />
         )
@@ -272,13 +273,13 @@ export function InvoiceApprovalModal({
     .map(field => ({
       ...field.highlight!,
       label: field.label,
-      confidence: field.confidence
+      confidence: field.confidence,
     }))
 
   return (
     <Dialog open={isOpen} onClose={onClose} className="relative z-50">
       <div className="fixed inset-0 bg-black bg-opacity-25" />
-      
+
       <div className="fixed inset-0 overflow-y-auto">
         <div className="flex min-h-full items-center justify-center p-4">
           <Dialog.Panel className="mx-auto max-w-6xl w-full bg-white rounded-lg shadow-xl">
@@ -300,10 +301,7 @@ export function InvoiceApprovalModal({
                   <EyeIcon className="h-4 w-4 mr-2" />
                   {showPdf ? 'Hide' : 'Show'} PDF
                 </button>
-                <button
-                  onClick={onClose}
-                  className="text-gray-400 hover:text-gray-500"
-                >
+                <button onClick={onClose} className="text-gray-400 hover:text-gray-500">
                   <XMarkIcon className="h-6 w-6" />
                 </button>
               </div>
@@ -333,9 +331,7 @@ export function InvoiceApprovalModal({
                     <div className="flex">
                       <XCircleIcon className="h-5 w-5 text-red-400" />
                       <div className="ml-3">
-                        <h3 className="text-sm font-medium text-red-800">
-                          Validation Errors
-                        </h3>
+                        <h3 className="text-sm font-medium text-red-800">Validation Errors</h3>
                         <ul className="mt-2 text-sm text-red-700 list-disc list-inside">
                           {validationErrors.map((error, index) => (
                             <li key={index}>{error}</li>
@@ -347,7 +343,7 @@ export function InvoiceApprovalModal({
                 )}
 
                 <div className="space-y-6">
-                  {fields.map((field) => (
+                  {fields.map(field => (
                     <div key={field.key} className="space-y-2">
                       <div className="flex items-center justify-between">
                         <label className="block text-sm font-medium text-gray-700">
@@ -366,8 +362,8 @@ export function InvoiceApprovalModal({
                           <button
                             onClick={() => toggleFieldVerification(field.key)}
                             className={`p-1 rounded ${
-                              field.isVerified 
-                                ? 'text-green-600 bg-green-50' 
+                              field.isVerified
+                                ? 'text-green-600 bg-green-50'
                                 : 'text-gray-400 hover:text-gray-600'
                             }`}
                             title={field.isVerified ? 'Verified' : 'Click to verify'}
@@ -384,15 +380,15 @@ export function InvoiceApprovalModal({
                       {/* Show extracted vs current value */}
                       {field.extractedValue !== field.userValue && (
                         <div className="text-xs text-gray-500 bg-yellow-50 p-2 rounded">
-                          Original: {field.type === 'currency' 
-                            ? formatCurrency(field.extractedValue as number) 
-                            : String(field.extractedValue)
-                          }
+                          Original:{' '}
+                          {field.type === 'currency'
+                            ? formatCurrency(field.extractedValue as number)
+                            : String(field.extractedValue)}
                         </div>
                       )}
 
                       {renderFieldInput(field)}
-                      
+
                       {field.type === 'currency' && field.userValue && (
                         <div className="text-sm text-gray-500">
                           {formatCurrency(field.userValue as number)}
@@ -409,7 +405,7 @@ export function InvoiceApprovalModal({
                       </label>
                       <textarea
                         value={rejectionReason}
-                        onChange={(e) => setRejectionReason(e.target.value)}
+                        onChange={e => setRejectionReason(e.target.value)}
                         rows={3}
                         className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                         placeholder="Provide reason if rejecting this invoice..."

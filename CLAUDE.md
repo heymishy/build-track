@@ -35,6 +35,7 @@ npx prisma studio       # Open database browser
 ## Architecture Overview
 
 ### Core Structure
+
 ```
 src/
 ├── app/                    # Next.js App Router
@@ -54,6 +55,7 @@ src/
 ```
 
 ### Key Design Patterns
+
 - **App Router**: Next.js 13+ routing with server components
 - **Context + Hooks**: State management with React Context API
 - **Form Handling**: React Hook Form + Zod validation
@@ -65,6 +67,7 @@ src/
 ## Database Schema
 
 ### Core Entities
+
 - **Users**: Authentication, roles (ADMIN/USER/VIEWER)
 - **Projects**: Construction projects with budgets and timelines
 - **ProjectUsers**: Many-to-many with role assignments (OWNER/CONTRACTOR/VIEWER)
@@ -75,6 +78,7 @@ src/
 - **Milestones**: Progress tracking with payment milestones
 
 ### Key Relationships
+
 - Projects → Trades → LineItems (hierarchical cost structure)
 - Invoices → InvoiceLineItems → LineItems (actual vs estimate mapping)
 - Users ↔ Projects (many-to-many with roles)
@@ -82,12 +86,14 @@ src/
 ## Authentication System
 
 ### Implementation
+
 - **Middleware**: `src/lib/middleware.ts` with `withAuth` wrapper
 - **JWT Tokens**: HTTP-only cookies for session management
 - **Password Security**: bcrypt hashing with salt rounds
 - **Role-Based Access**: Three-tier system (User/Project levels)
 
 ### Protected Routes
+
 ```typescript
 // API Route Protection
 export const POST = withAuth(async (request: NextRequest) => {
@@ -100,6 +106,7 @@ export const POST = withAuth(async (request: NextRequest) => {
 ## PDF Invoice Processing
 
 ### Core Functionality
+
 - **File Upload**: 10MB limit with drag-and-drop UI
 - **PDF Parsing**: PDF.js extraction of text and metadata
 - **Data Extraction**: Invoice numbers, dates, vendors, amounts, line items
@@ -107,6 +114,7 @@ export const POST = withAuth(async (request: NextRequest) => {
 - **Status Tracking**: PENDING → APPROVED → PAID workflow
 
 ### Parser Intelligence
+
 - Pattern matching for common invoice formats
 - Date normalization (multiple format support)
 - Currency detection and standardization
@@ -115,6 +123,7 @@ export const POST = withAuth(async (request: NextRequest) => {
 ## Testing Infrastructure
 
 ### Unit Tests (Jest + RTL)
+
 ```bash
 # Located in __tests__/
 __tests__/
@@ -125,6 +134,7 @@ __tests__/
 ```
 
 ### E2E Tests (Playwright)
+
 ```bash
 # Located in tests/e2e/
 tests/
@@ -136,7 +146,9 @@ tests/
 ```
 
 ### Test Data Attributes
+
 Components include `data-testid` attributes for reliable E2E testing:
+
 - `data-testid="parsed-invoices"` - Invoice list container
 - `data-testid="project-selector"` - Project dropdown
 - `data-testid="invoice-item"` - Individual invoice items
@@ -144,6 +156,7 @@ Components include `data-testid` attributes for reliable E2E testing:
 ## Development Patterns
 
 ### Component Structure
+
 ```typescript
 // Standard component pattern
 interface ComponentProps {
@@ -158,6 +171,7 @@ export function Component({ props }: ComponentProps) {
 ```
 
 ### API Route Pattern
+
 ```typescript
 import { withAuth } from '@/lib/middleware'
 
@@ -172,6 +186,7 @@ export const GET = withAuth(async (request: NextRequest) => {
 ```
 
 ### Context Usage
+
 ```typescript
 // Access authenticated user
 const { user } = useAuth()
@@ -183,24 +198,29 @@ const { projects, loading } = useProjects()
 ## Common Issues & Solutions
 
 ### Database Connection
+
 - **Issue**: Prisma client not generated
 - **Solution**: Run `npx prisma generate` after schema changes
 
 ### Authentication Middleware
+
 - **Issue**: Unauthorized access to protected routes
 - **Solution**: Ensure JWT token is set and valid in cookies
 
 ### PDF Parsing
+
 - **Issue**: PDF text extraction failures
 - **Solution**: Check PDF format compatibility and file size limits
 
 ### Test Setup
+
 - **Issue**: Playwright browser not installed
 - **Solution**: Run `npx playwright install` to download browsers
 
 ## Environment Setup
 
 ### Required Environment Variables
+
 ```bash
 # .env.local
 DATABASE_URL="file:./dev.db"                    # SQLite for development
@@ -209,6 +229,7 @@ NEXTAUTH_URL="http://localhost:3000"            # Auth callback URL
 ```
 
 ### Development Database
+
 ```bash
 # Initialize database
 npx prisma db push
@@ -220,15 +241,18 @@ npx prisma db seed
 ## Production Considerations
 
 ### Database Migration
+
 - Change `provider = "sqlite"` to `provider = "postgresql"` in schema.prisma
 - Update DATABASE_URL for PostgreSQL connection
 - Run `npx prisma db push` to apply schema
 
 ### File Storage
+
 - Configure Vercel Blob for PDF storage in production
 - Update file upload handlers to use cloud storage
 
 ### Performance
+
 - Enable Next.js image optimization
 - Configure database connection pooling
 - Implement API response caching where appropriate

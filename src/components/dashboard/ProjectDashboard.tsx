@@ -2,13 +2,13 @@
 
 import { useState, useEffect } from 'react'
 import { ChevronRightIcon, PlusIcon } from '@heroicons/react/24/outline'
-import { 
-  ChartBarIcon, 
-  ClockIcon, 
-  CurrencyDollarIcon, 
+import {
+  ChartBarIcon,
+  ClockIcon,
+  CurrencyDollarIcon,
   ExclamationTriangleIcon,
   CheckCircleIcon,
-  BuildingOfficeIcon
+  BuildingOfficeIcon,
 } from '@heroicons/react/24/solid'
 import { CreateProjectModal } from '@/components/projects/CreateProjectModal'
 
@@ -84,23 +84,35 @@ export function ProjectDashboard({ className = '' }: ProjectDashboardProps) {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'PLANNING': return 'bg-gray-100 text-gray-800'
-      case 'IN_PROGRESS': return 'bg-blue-100 text-blue-800'
-      case 'ON_HOLD': return 'bg-yellow-100 text-yellow-800'
-      case 'COMPLETED': return 'bg-green-100 text-green-800'
-      case 'CANCELLED': return 'bg-red-100 text-red-800'
-      default: return 'bg-gray-100 text-gray-800'
+      case 'PLANNING':
+        return 'bg-gray-100 text-gray-800'
+      case 'IN_PROGRESS':
+        return 'bg-blue-100 text-blue-800'
+      case 'ON_HOLD':
+        return 'bg-yellow-100 text-yellow-800'
+      case 'COMPLETED':
+        return 'bg-green-100 text-green-800'
+      case 'CANCELLED':
+        return 'bg-red-100 text-red-800'
+      default:
+        return 'bg-gray-100 text-gray-800'
     }
   }
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'PLANNING': return <BuildingOfficeIcon className="h-4 w-4" />
-      case 'IN_PROGRESS': return <ClockIcon className="h-4 w-4" />
-      case 'ON_HOLD': return <ExclamationTriangleIcon className="h-4 w-4" />
-      case 'COMPLETED': return <CheckCircleIcon className="h-4 w-4" />
-      case 'CANCELLED': return <ExclamationTriangleIcon className="h-4 w-4" />
-      default: return <BuildingOfficeIcon className="h-4 w-4" />
+      case 'PLANNING':
+        return <BuildingOfficeIcon className="h-4 w-4" />
+      case 'IN_PROGRESS':
+        return <ClockIcon className="h-4 w-4" />
+      case 'ON_HOLD':
+        return <ExclamationTriangleIcon className="h-4 w-4" />
+      case 'COMPLETED':
+        return <CheckCircleIcon className="h-4 w-4" />
+      case 'CANCELLED':
+        return <ExclamationTriangleIcon className="h-4 w-4" />
+      default:
+        return <BuildingOfficeIcon className="h-4 w-4" />
     }
   }
 
@@ -116,14 +128,14 @@ export function ProjectDashboard({ className = '' }: ProjectDashboardProps) {
     return new Date(dateString).toLocaleDateString('en-NZ', {
       year: 'numeric',
       month: 'short',
-      day: 'numeric'
+      day: 'numeric',
     })
   }
 
   const calculateProjectHealth = (project: Project) => {
     const { stats } = project
     let healthScore = 100
-    
+
     // Budget health (40% weight)
     if (stats.isOverBudget) {
       healthScore -= 40
@@ -141,9 +153,8 @@ export function ProjectDashboard({ className = '' }: ProjectDashboardProps) {
     }
 
     // Milestone completion (30% weight)
-    const milestoneCompletionRate = stats.totalMilestones > 0 
-      ? (stats.completedMilestones / stats.totalMilestones) * 100 
-      : 100
+    const milestoneCompletionRate =
+      stats.totalMilestones > 0 ? (stats.completedMilestones / stats.totalMilestones) * 100 : 100
 
     if (milestoneCompletionRate < 50) {
       healthScore -= 20
@@ -234,17 +245,17 @@ export function ProjectDashboard({ className = '' }: ProjectDashboardProps) {
               Projects ({projects.length})
             </h3>
             <div className="space-y-3 max-h-96 overflow-y-auto">
-              {projects.map((project) => {
+              {projects.map(project => {
                 const health = calculateProjectHealth(project)
                 const isSelected = selectedProject?.id === project.id
-                
+
                 return (
                   <div
                     key={project.id}
                     onClick={() => setSelectedProject(project)}
                     className={`p-3 rounded-lg cursor-pointer transition-colors ${
-                      isSelected 
-                        ? 'bg-blue-50 border-2 border-blue-200' 
+                      isSelected
+                        ? 'bg-blue-50 border-2 border-blue-200'
                         : 'border border-gray-200 hover:bg-gray-50'
                     }`}
                   >
@@ -254,17 +265,19 @@ export function ProjectDashboard({ className = '' }: ProjectDashboardProps) {
                           <h4 className="text-sm font-medium text-gray-900 truncate">
                             {project.name}
                           </h4>
-                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(project.status)}`}>
+                          <span
+                            className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(project.status)}`}
+                          >
                             {getStatusIcon(project.status)}
                             <span className="ml-1">{project.status.replace('_', ' ')}</span>
                           </span>
                         </div>
                         <div className="mt-1 flex items-center space-x-4 text-xs text-gray-500">
-                          <span>Budget: {formatCurrency(project.totalBudget, project.currency)}</span>
-                          <span>Used: {project.stats.budgetUsedPercent.toFixed(1)}%</span>
-                          <span className={getHealthColor(health)}>
-                            Health: {health}%
+                          <span>
+                            Budget: {formatCurrency(project.totalBudget, project.currency)}
                           </span>
+                          <span>Used: {project.stats.budgetUsedPercent.toFixed(1)}%</span>
+                          <span className={getHealthColor(health)}>Health: {health}%</span>
                         </div>
                       </div>
                       <ChevronRightIcon className="h-4 w-4 text-gray-400" />
@@ -284,7 +297,9 @@ export function ProjectDashboard({ className = '' }: ProjectDashboardProps) {
                 <h3 className="text-lg leading-6 font-medium text-gray-900">
                   {selectedProject.name}
                 </h3>
-                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(selectedProject.status)}`}>
+                <span
+                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(selectedProject.status)}`}
+                >
                   {getStatusIcon(selectedProject.status)}
                   <span className="ml-1">{selectedProject.status.replace('_', ' ')}</span>
                 </span>
@@ -302,7 +317,7 @@ export function ProjectDashboard({ className = '' }: ProjectDashboardProps) {
                     <div className="ml-2">
                       <p className="text-xs text-gray-500">Budget Used</p>
                       <p className="text-sm font-medium text-gray-900">
-                        {formatCurrency(selectedProject.stats.budgetUsed)} 
+                        {formatCurrency(selectedProject.stats.budgetUsed)}
                         <span className="text-xs text-gray-500 ml-1">
                           ({selectedProject.stats.budgetUsedPercent.toFixed(1)}%)
                         </span>
@@ -317,7 +332,8 @@ export function ProjectDashboard({ className = '' }: ProjectDashboardProps) {
                     <div className="ml-2">
                       <p className="text-xs text-gray-500">Milestones</p>
                       <p className="text-sm font-medium text-gray-900">
-                        {selectedProject.stats.completedMilestones} / {selectedProject.stats.totalMilestones}
+                        {selectedProject.stats.completedMilestones} /{' '}
+                        {selectedProject.stats.totalMilestones}
                         <span className="text-xs text-gray-500 ml-1">complete</span>
                       </p>
                     </div>
@@ -330,7 +346,8 @@ export function ProjectDashboard({ className = '' }: ProjectDashboardProps) {
                     <div className="ml-2">
                       <p className="text-xs text-gray-500">Timeline</p>
                       <p className="text-sm font-medium text-gray-900">
-                        {formatDate(selectedProject.startDate)} - {formatDate(selectedProject.estimatedEndDate)}
+                        {formatDate(selectedProject.startDate)} -{' '}
+                        {formatDate(selectedProject.estimatedEndDate)}
                       </p>
                     </div>
                   </div>
@@ -339,14 +356,21 @@ export function ProjectDashboard({ className = '' }: ProjectDashboardProps) {
                 <div className="bg-gray-50 rounded-lg p-3">
                   <div className="flex items-center">
                     <div className="flex items-center">
-                      <div className={`w-2 h-2 rounded-full mr-2 ${
-                        calculateProjectHealth(selectedProject) >= 80 ? 'bg-green-500' :
-                        calculateProjectHealth(selectedProject) >= 60 ? 'bg-yellow-500' : 'bg-red-500'
-                      }`}></div>
+                      <div
+                        className={`w-2 h-2 rounded-full mr-2 ${
+                          calculateProjectHealth(selectedProject) >= 80
+                            ? 'bg-green-500'
+                            : calculateProjectHealth(selectedProject) >= 60
+                              ? 'bg-yellow-500'
+                              : 'bg-red-500'
+                        }`}
+                      ></div>
                     </div>
                     <div>
                       <p className="text-xs text-gray-500">Health Score</p>
-                      <p className={`text-sm font-medium ${getHealthColor(calculateProjectHealth(selectedProject))}`}>
+                      <p
+                        className={`text-sm font-medium ${getHealthColor(calculateProjectHealth(selectedProject))}`}
+                      >
                         {calculateProjectHealth(selectedProject)}%
                       </p>
                     </div>
@@ -361,12 +385,12 @@ export function ProjectDashboard({ className = '' }: ProjectDashboardProps) {
                   <span>{formatCurrency(selectedProject.stats.budgetRemaining)} remaining</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div 
+                  <div
                     className={`h-2 rounded-full transition-all duration-300 ${
-                      selectedProject.stats.isOverBudget 
-                        ? 'bg-red-500' 
-                        : selectedProject.stats.budgetUsedPercent > 85 
-                          ? 'bg-yellow-500' 
+                      selectedProject.stats.isOverBudget
+                        ? 'bg-red-500'
+                        : selectedProject.stats.budgetUsedPercent > 85
+                          ? 'bg-yellow-500'
                           : 'bg-green-500'
                     }`}
                     style={{ width: `${Math.min(100, selectedProject.stats.budgetUsedPercent)}%` }}
@@ -374,7 +398,8 @@ export function ProjectDashboard({ className = '' }: ProjectDashboardProps) {
                 </div>
                 {selectedProject.stats.isOverBudget && (
                   <p className="text-xs text-red-600 mt-1">
-                    ⚠️ Over budget by {formatCurrency(Math.abs(selectedProject.stats.budgetRemaining))}
+                    ⚠️ Over budget by{' '}
+                    {formatCurrency(Math.abs(selectedProject.stats.budgetRemaining))}
                   </p>
                 )}
               </div>
@@ -382,15 +407,21 @@ export function ProjectDashboard({ className = '' }: ProjectDashboardProps) {
               {/* Quick Stats */}
               <div className="grid grid-cols-3 gap-4 text-center">
                 <div>
-                  <p className="text-2xl font-semibold text-gray-900">{selectedProject.stats.totalInvoices}</p>
+                  <p className="text-2xl font-semibold text-gray-900">
+                    {selectedProject.stats.totalInvoices}
+                  </p>
                   <p className="text-xs text-gray-500">Invoices</p>
                 </div>
                 <div>
-                  <p className="text-2xl font-semibold text-gray-900">{selectedProject.stats.totalTrades}</p>
+                  <p className="text-2xl font-semibold text-gray-900">
+                    {selectedProject.stats.totalTrades}
+                  </p>
                   <p className="text-xs text-gray-500">Trades</p>
                 </div>
                 <div>
-                  <p className="text-2xl font-semibold text-gray-900">{selectedProject.stats.totalMilestones}</p>
+                  <p className="text-2xl font-semibold text-gray-900">
+                    {selectedProject.stats.totalMilestones}
+                  </p>
                   <p className="text-xs text-gray-500">Milestones</p>
                 </div>
               </div>
@@ -403,7 +434,7 @@ export function ProjectDashboard({ className = '' }: ProjectDashboardProps) {
       <CreateProjectModal
         isOpen={createModalOpen}
         onClose={() => setCreateModalOpen(false)}
-        onProjectCreated={(project) => {
+        onProjectCreated={project => {
           setProjects(prev => [project, ...prev])
           setSelectedProject(project)
           setCreateModalOpen(false)

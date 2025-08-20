@@ -2,13 +2,13 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { Document, Page, pdfjs } from 'react-pdf'
-import { 
-  ZoomInIcon, 
-  ZoomOutIcon, 
-  ChevronLeftIcon, 
+import {
+  ZoomInIcon,
+  ZoomOutIcon,
+  ChevronLeftIcon,
   ChevronRightIcon,
   DocumentArrowDownIcon,
-  ExclamationTriangleIcon
+  ExclamationTriangleIcon,
 } from '@heroicons/react/24/outline'
 
 // Set up PDF.js worker
@@ -29,11 +29,11 @@ interface InvoicePdfViewerProps {
   }>
 }
 
-export function InvoicePdfViewer({ 
-  pdfFile, 
-  className = '', 
+export function InvoicePdfViewer({
+  pdfFile,
+  className = '',
   onPageChange,
-  highlightRegions = []
+  highlightRegions = [],
 }: InvoicePdfViewerProps) {
   const [numPages, setNumPages] = useState<number>(0)
   const [currentPage, setCurrentPage] = useState<number>(1)
@@ -146,9 +146,7 @@ export function InvoicePdfViewer({
             >
               <ZoomOutIcon className="h-5 w-5" />
             </button>
-            <span className="text-sm text-gray-700 min-w-0">
-              {Math.round(scale * 100)}%
-            </span>
+            <span className="text-sm text-gray-700 min-w-0">{Math.round(scale * 100)}%</span>
             <button
               onClick={() => handleZoom('in')}
               disabled={scale >= 3.0}
@@ -226,9 +224,7 @@ export function InvoicePdfViewer({
                 key={`page_${index + 1}`}
                 onClick={() => handlePageChange(index + 1)}
                 className={`flex-shrink-0 w-12 h-16 border-2 rounded text-xs hover:bg-gray-50 ${
-                  currentPage === index + 1
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-300'
+                  currentPage === index + 1 ? 'border-blue-500 bg-blue-50' : 'border-gray-300'
                 }`}
               >
                 <Document file={pdfFile} loading="">

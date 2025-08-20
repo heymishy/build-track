@@ -28,7 +28,10 @@ export default function Dashboard() {
   const [trainingInvoice, setTrainingInvoice] = useState<ParsedInvoice | null>(null)
   const [assignmentModalOpen, setAssignmentModalOpen] = useState(false)
   const [approvalModalOpen, setApprovalModalOpen] = useState(false)
-  const [selectedInvoiceForApproval, setSelectedInvoiceForApproval] = useState<{invoice: ParsedInvoice, index: number} | null>(null)
+  const [selectedInvoiceForApproval, setSelectedInvoiceForApproval] = useState<{
+    invoice: ParsedInvoice
+    index: number
+  } | null>(null)
   const [uploadedPdfFile, setUploadedPdfFile] = useState<File | null>(null)
   const [isMobile, setIsMobile] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -43,7 +46,7 @@ export default function Dashboard() {
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 1024) // lg breakpoint
     }
-    
+
     checkMobile()
     window.addEventListener('resize', checkMobile)
     return () => window.removeEventListener('resize', checkMobile)
@@ -141,7 +144,7 @@ export default function Dashboard() {
   const handleApprovalComplete = async (approvedData: any, corrections: any) => {
     console.log('Invoice approved:', approvedData)
     console.log('Corrections made:', corrections)
-    
+
     // Send corrections to training API for model improvement
     if (Object.keys(corrections).length > 0 && selectedInvoiceForApproval) {
       try {
@@ -156,8 +159,8 @@ export default function Dashboard() {
           pdfMetadata: {
             filename: uploadedPdfFile?.name || 'unknown.pdf',
             pageCount: 1, // Would detect from PDF
-            fileSize: uploadedPdfFile?.size || 0
-          }
+            fileSize: uploadedPdfFile?.size || 0,
+          },
         }
 
         const response = await fetch('/api/invoices/training', {
@@ -173,7 +176,7 @@ export default function Dashboard() {
           console.log('Training data sent successfully:', result)
           setUploadStatus({
             type: 'success',
-            message: `Invoice approved! ${result.corrections} corrections will improve AI accuracy.`
+            message: `Invoice approved! ${result.corrections} corrections will improve AI accuracy.`,
           })
         }
       } catch (error) {
@@ -181,47 +184,47 @@ export default function Dashboard() {
         // Don't block approval on training failure
       }
     }
-    
+
     setApprovalModalOpen(false)
     setSelectedInvoiceForApproval(null)
-    
+
     // Update the invoice in the result
     if (invoiceResult && selectedInvoiceForApproval) {
       const updatedInvoices = [...invoiceResult.invoices]
       updatedInvoices[selectedInvoiceForApproval.index] = {
         ...updatedInvoices[selectedInvoiceForApproval.index],
         ...approvedData,
-        isApproved: true
+        isApproved: true,
       }
       setInvoiceResult({
         ...invoiceResult,
-        invoices: updatedInvoices
+        invoices: updatedInvoices,
       })
     }
   }
 
   const handleApprovalRejection = (reason: string) => {
     console.log('Invoice rejected:', reason)
-    
+
     // Here you would typically:
     // 1. Log the rejection reason
     // 2. Mark invoice as rejected
     // 3. Potentially trigger reprocessing or manual review
-    
+
     setApprovalModalOpen(false)
     setSelectedInvoiceForApproval(null)
-    
+
     // Update the invoice status
     if (invoiceResult && selectedInvoiceForApproval) {
       const updatedInvoices = [...invoiceResult.invoices]
       updatedInvoices[selectedInvoiceForApproval.index] = {
         ...updatedInvoices[selectedInvoiceForApproval.index],
         isRejected: true,
-        rejectionReason: reason
+        rejectionReason: reason,
       }
       setInvoiceResult({
         ...invoiceResult,
-        invoices: updatedInvoices
+        invoices: updatedInvoices,
       })
     }
   }
@@ -237,9 +240,7 @@ export default function Dashboard() {
         {/* PDF Invoice Upload - Mobile Optimized */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 mx-2 mb-4">
           <div className="p-4">
-            <h3 className="text-base font-medium text-gray-900 mb-3">
-              Upload Invoice PDF
-            </h3>
+            <h3 className="text-base font-medium text-gray-900 mb-3">Upload Invoice PDF</h3>
             <p className="text-sm text-gray-600 mb-4">
               Upload invoices to extract cost information automatically.
             </p>
@@ -293,7 +294,7 @@ export default function Dashboard() {
                   {formatCurrency(invoiceResult.totalAmount)}
                 </span>
               </div>
-              
+
               <div className="space-y-3">
                 {invoiceResult.invoices.map((invoice, index) => (
                   <div key={index} className="border border-gray-200 rounded-lg p-3">
@@ -312,7 +313,7 @@ export default function Dashboard() {
                         </p>
                       </div>
                     </div>
-                    
+
                     <div className="flex items-center justify-between">
                       <div className="flex space-x-2">
                         {!(invoice as any).isApproved && !(invoice as any).isRejected ? (
@@ -338,7 +339,7 @@ export default function Dashboard() {
                           </button>
                         )}
                       </div>
-                      
+
                       {/* Status indicators */}
                       <div className="flex items-center space-x-2 text-xs">
                         {(invoice as any).isApproved && (
@@ -347,9 +348,11 @@ export default function Dashboard() {
                         {(invoice as any).isRejected && (
                           <span className="text-red-600 font-medium">✗ Rejected</span>
                         )}
-                        {invoice.confidence && invoice.confidence < 0.7 && !(invoice as any).isApproved && (
-                          <span className="text-orange-600 font-medium">Low confidence</span>
-                        )}
+                        {invoice.confidence &&
+                          invoice.confidence < 0.7 &&
+                          !(invoice as any).isApproved && (
+                            <span className="text-orange-600 font-medium">Low confidence</span>
+                          )}
                       </div>
                     </div>
                   </div>
@@ -410,7 +413,7 @@ export default function Dashboard() {
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-NZ', {
       style: 'currency',
-      currency: 'NZD'
+      currency: 'NZD',
     }).format(amount)
   }
 
@@ -705,20 +708,18 @@ export default function Dashboard() {
                               )}
                               {/* Status Indicators */}
                               {(invoice as any).isApproved && (
-                                <div className="text-xs text-green-600 font-medium">
-                                  ✓ Approved
-                                </div>
+                                <div className="text-xs text-green-600 font-medium">✓ Approved</div>
                               )}
                               {(invoice as any).isRejected && (
-                                <div className="text-xs text-red-600 font-medium">
-                                  ✗ Rejected
-                                </div>
+                                <div className="text-xs text-red-600 font-medium">✗ Rejected</div>
                               )}
-                              {invoice.confidence && invoice.confidence < 0.7 && !(invoice as any).isApproved && (
-                                <div className="text-xs text-orange-600 font-medium">
-                                  Low confidence
-                                </div>
-                              )}
+                              {invoice.confidence &&
+                                invoice.confidence < 0.7 &&
+                                !(invoice as any).isApproved && (
+                                  <div className="text-xs text-orange-600 font-medium">
+                                    Low confidence
+                                  </div>
+                                )}
                             </div>
                           </div>
                         </div>
@@ -752,7 +753,6 @@ export default function Dashboard() {
           <div className="mt-8">
             <TrainingStats />
           </div>
-
         </div>
       </main>
 
