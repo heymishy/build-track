@@ -22,36 +22,61 @@ export interface ParsedInvoice {
 }
 
 /**
- * Extract text from PDF buffer
- * Note: This is a simplified implementation that returns placeholder text
- * for development purposes. In production, integrate with a robust PDF parsing library.
+ * Extract text from PDF buffer using pdfjs-dist
  */
 export async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string> {
   try {
     console.log('PDF buffer size:', pdfBuffer.length, 'bytes')
 
-    // For now, return a sample invoice text to demonstrate parsing functionality
-    // In production, this would use a proper PDF parsing library
-    const sampleInvoiceText = `
-      INVOICE #INV-2024-001
-      Date: 2024-01-15
-      
-      From: ABC Construction Co Ltd
-      To: Project Client
-      
-      Description: Construction work for July 2024
-      
-      Item 1: Electrical work - Qty: 20 - $85.00 each - $1,700.00
-      Item 2: Plumbing installation - Qty: 15 - $120.00 each - $1,800.00
-      
-      Subtotal: $3,500.00
-      GST (15%): $525.00
-      Total Amount Due: $4,025.00
-    `
-
-    console.log('PDF text extracted (sample data), length:', sampleInvoiceText.length)
+    // Dynamic import of pdfjs-dist for server-side usage
+    const pdfjsLib = await import('pdfjs-dist')
     
-    return sampleInvoiceText.trim()
+    // Configure for Node.js environment
+    if (typeof window === 'undefined') {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js`
+    }
+
+    // Convert Buffer to Uint8Array for PDF.js
+    const uint8Array = new Uint8Array(pdfBuffer)
+    
+    // Load the PDF document with error handling
+    const loadingTask = pdfjsLib.getDocument({
+      data: uint8Array,
+      verbosity: 0, // Reduce console output
+      standardFontDataUrl: `//unpkg.com/pdfjs-dist@${pdfjsLib.version}/web/standard_fonts/`,
+    })
+    
+    const pdf = await loadingTask.promise
+    console.log('PDF loaded successfully, pages:', pdf.numPages)
+    
+    let fullText = ''
+    
+    // Extract text from each page
+    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+      try {
+        const page = await pdf.getPage(pageNum)
+        const textContent = await page.getTextContent()
+        
+        // Extract text items and join them
+        const pageText = textContent.items
+          .filter((item): item is any => 'str' in item)
+          .map((item: any) => item.str)
+          .join(' ')
+        
+        fullText += pageText + '\n'
+      } catch (pageError) {
+        console.warn(`Error extracting text from page ${pageNum}:`, pageError)
+        // Continue with other pages even if one fails
+      }
+    }
+    
+    console.log('PDF text extracted successfully, total length:', fullText.length)
+    
+    if (fullText.length === 0) {
+      throw new Error('No text could be extracted from the PDF')
+    }
+    
+    return fullText.trim()
   } catch (error) {
     console.error('Error extracting text from PDF:', error)
     console.error('Error details:', {
