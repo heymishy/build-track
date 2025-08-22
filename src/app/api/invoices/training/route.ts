@@ -45,12 +45,50 @@ async function POST(request: NextRequest, user: AuthUser) {
         return acc + (originalExtraction[key] === correctedData[key] ? 1 : 0)
       }, 0) / Object.keys(originalExtraction).length
 
-    // Store training data (you might want to create a separate table for this)
-    // For now, we'll store it as a special type of invoice record
+    // First, ensure we have a training project or find an existing project
+    let trainingProject
+    try {
+      // Try to find an existing project for this user, or use the first available project
+      const userProjects = await prisma.project.findMany({
+        where: { 
+          projectUsers: {
+            some: {
+              userId: user.id
+            }
+          }
+        },
+        take: 1
+      })
+
+      if (userProjects.length > 0) {
+        trainingProject = userProjects[0]
+      } else {
+        // Create a default training project if none exists
+        trainingProject = await prisma.project.create({
+          data: {
+            name: 'Training Data Project',
+            description: 'System-generated project for storing training data',
+            status: 'PLANNING',
+            totalBudget: 0,
+            currency: 'NZD',
+            projectUsers: {
+              create: {
+                userId: user.id,
+                role: 'OWNER'
+              }
+            }
+          }
+        })
+      }
+    } catch (error) {
+      console.error('Error finding/creating training project:', error)
+      throw new Error('Failed to setup training project')
+    }
+
+    // Store training data as a special type of invoice record
     const trainingRecord = await prisma.invoice.create({
       data: {
-        // Use a special project for training data
-        projectId: 'training-data', // You'd need to create this special project
+        projectId: trainingProject.id,
         userId: user.id,
         invoiceNumber: `TRAINING-${Date.now()}`,
         supplierName: 'Training Data',

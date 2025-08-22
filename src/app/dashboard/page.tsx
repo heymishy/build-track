@@ -10,10 +10,13 @@ import { InvoiceTrainingModal } from '@/components/training/InvoiceTrainingModal
 import { TrainingStats } from '@/components/training/TrainingStats'
 import { InvoiceAssignmentModal } from '@/components/invoices/InvoiceAssignmentModal'
 import { InvoiceApprovalModal } from '@/components/invoices/InvoiceApprovalModal'
+import { InvoiceManagement } from '@/components/invoices/InvoiceManagement'
 import { DashboardOverview } from '@/components/dashboard/DashboardOverview'
 import { ProjectDashboard } from '@/components/dashboard/ProjectDashboard'
+import { InvoiceMatchingWidget } from '@/components/dashboard/InvoiceMatchingWidget'
 import { ProjectAnalytics } from '@/components/analytics/ProjectAnalytics'
 import { MobileDashboard } from '@/components/mobile/MobileDashboard'
+import { AppNavigation } from '@/components/navigation/AppNavigation'
 
 export default function Dashboard() {
   const { user, logout, isAuthenticated } = useAuth()
@@ -149,7 +152,7 @@ export default function Dashboard() {
     if (Object.keys(corrections).length > 0 && selectedInvoiceForApproval) {
       try {
         const trainingData = {
-          invoiceText: '', // Would extract from PDF in real implementation
+          invoiceText: selectedInvoiceForApproval.invoice.rawText || '', // Use the raw text from parsing
           originalExtraction: selectedInvoiceForApproval.invoice,
           correctedData: approvedData,
           userConfidence: Object.keys(corrections).reduce((acc: any, key) => {
@@ -420,40 +423,26 @@ export default function Dashboard() {
   // Desktop Layout
   return (
     <div className="min-h-screen bg-gray-50 hidden lg:block">
-      {/* Header */}
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">BuildTrack</h1>
-              <p className="mt-1 text-sm text-gray-500">Construction Project Management</p>
-            </div>
-            <div className="flex items-center space-x-4">
-              <div className="text-sm text-gray-700">
-                Welcome, <span className="font-medium">{user.name}</span>
-                <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                  {user.role}
-                </span>
-              </div>
-              <button
-                onClick={handleLogout}
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-              >
-                Sign Out
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
-
+      {/* Navigation */}
+      <AppNavigation />
       {/* Main Content */}
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0 space-y-8">
           {/* Dashboard Overview */}
           <DashboardOverview />
 
+          {/* Invoice Matching Widget */}
+          <InvoiceMatchingWidget />
+
           {/* Project Management Dashboard */}
           <ProjectDashboard />
+
+          {/* Invoice Management */}
+          <InvoiceManagement 
+            pendingParsedInvoices={invoiceResult}
+            onAssignParsedInvoices={handleAssignInvoices}
+            uploadedPdfFile={uploadedPdfFile}
+          />
 
           {/* Project Analytics & Reporting */}
           <ProjectAnalytics />

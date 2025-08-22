@@ -6,18 +6,58 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { getTrainingStats } from '@/lib/pdf-parser'
 import { AcademicCapIcon, ChartBarIcon, CogIcon } from '@heroicons/react/24/outline'
 
+interface TrainingStatsData {
+  totalExamples: number
+  fieldCounts: Record<string, number>
+  learnedPatterns: number
+  templates: number
+  invoiceTypes: string[]
+}
+
 export function TrainingStats() {
-  const [stats, setStats] = useState<ReturnType<typeof getTrainingStats> | null>(null)
+  const [stats, setStats] = useState<TrainingStatsData | null>(null)
   const [isOpen, setIsOpen] = useState(false)
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    if (isOpen) {
-      setStats(getTrainingStats())
+    if (isOpen && !stats && !loading) {
+      fetchTrainingStats()
     }
-  }, [isOpen])
+  }, [isOpen, stats, loading])
+
+  const fetchTrainingStats = async () => {
+    try {
+      setLoading(true)
+      const response = await fetch('/api/invoices/training/stats')
+      const data = await response.json()
+      
+      if (data.success) {
+        setStats(data.stats)
+      } else {
+        console.error('Failed to fetch training stats:', data.error)
+        setStats({
+          totalExamples: 0,
+          fieldCounts: {},
+          learnedPatterns: 0,
+          templates: 0,
+          invoiceTypes: []
+        })
+      }
+    } catch (error) {
+      console.error('Error fetching training stats:', error)
+      setStats({
+        totalExamples: 0,
+        fieldCounts: {},
+        learnedPatterns: 0,
+        templates: 0,
+        invoiceTypes: []
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
 
   if (!isOpen) {
     return (

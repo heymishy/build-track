@@ -120,6 +120,42 @@ export const POST = withAuth(async (request: NextRequest) => {
 - Currency detection and standardization
 - Line item structure recognition with confidence scoring
 
+## Smart Invoice Matching
+
+### Core Functionality
+
+- **LLM-Powered Matching**: Primary matching using large language models for intelligent analysis
+- **Multi-Level Fallbacks**: Logic-based fallback when LLM fails, manual matching as final option
+- **Batch Processing**: Process all invoices and estimates in a single LLM request for efficiency
+- **Real-time Feedback**: Shows which method was used (AI, logic, or manual)
+- **Interactive UX**: Modern interface for reviewing, overriding, and confirming matches
+
+### Three-Tier Matching System
+
+1. **LLM-Powered (Primary)**: Uses the existing parsing orchestrator to analyze all invoice line items against all project estimates in context, providing intelligent matches with detailed reasoning
+2. **Logic-Based (Fallback)**: String similarity, semantic analysis, price validation, and category matching when LLM fails
+3. **Manual (Override)**: Full user control with dropdown selections for any line item
+
+### API Endpoints
+
+- `GET /api/invoices/matching?projectId={id}` - Get LLM-powered matching suggestions with fallbacks
+- `POST /api/invoices/matching` - Apply selected matches to database
+
+### Key Files
+
+1. **`src/lib/simple-llm-matcher.ts`** - LLM-powered matching service with intelligent fallbacks
+2. **`src/app/api/invoices/matching/route.ts`** - Matching API using LLM service
+3. **`src/components/invoices/InvoiceMatchingInterface.tsx`** - Modern matching UI with manual overrides
+4. **`src/app/invoices/page.tsx`** - Invoice management with matching tabs
+5. **`src/components/dashboard/InvoiceMatchingWidget.tsx`** - Dashboard matching widget
+
+### LLM Integration
+
+- Designed to work with existing LLM provider configuration
+- Provides cost tracking and performance metrics  
+- Graceful degradation with logic-based fallback when LLM is unavailable
+- Manual override system as final fallback for complete user control
+
 ## Testing Infrastructure
 
 ### Unit Tests (Jest + RTL)

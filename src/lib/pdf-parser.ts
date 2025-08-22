@@ -1,10 +1,11 @@
 /**
- * PDF Parser Utility with Training System
+ * PDF Parser Utility with LLM and Training System
  * Extracts and parses invoice data from PDF documents
- * Now includes machine learning capabilities for improved accuracy
+ * Now includes LLM capabilities and machine learning for improved accuracy
  */
 
-import { trainingManager } from './invoice-training'
+import { applyLearnedPatterns, getTrainingStats as getServerTrainingStats } from './server-training'
+import { ParsingOrchestrator, ParsingResult } from './llm-parsers/parsing-orchestrator'
 
 export interface InvoiceLineItem {
   description: string
@@ -33,6 +34,12 @@ export interface MultiInvoiceResult {
   totalInvoices: number
   totalAmount: number
   summary: string
+  parsingStats?: {
+    llmUsed: boolean
+    totalCost: number
+    averageConfidence: number
+    strategy: string
+  }
 }
 
 /**
@@ -111,11 +118,17 @@ export async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string[]> {
 }
 
 /**
- * Parse multiple invoices from a multi-page PDF
+ * Parse multiple invoices from a multi-page PDF with LLM support
  */
-export async function parseMultipleInvoices(pdfBuffer: Buffer): Promise<MultiInvoiceResult> {
+export async function parseMultipleInvoices(pdfBuffer: Buffer, userId?: string): Promise<MultiInvoiceResult> {
   const pages = await extractTextFromPDF(pdfBuffer)
   const invoices: ParsedInvoice[] = []
+  const orchestrator = new ParsingOrchestrator(userId)
+  
+  let totalCost = 0
+  let llmUsages = 0
+  let totalConfidence = 0
+  let strategy = 'traditional'
 
   for (let i = 0; i < pages.length; i++) {
     const pageText = pages[i]
@@ -126,20 +139,53 @@ export async function parseMultipleInvoices(pdfBuffer: Buffer): Promise<MultiInv
 
     // Check if this page contains invoice indicators
     if (isInvoicePage(pageText)) {
-      const invoice = parseInvoiceFromText(pageText, i + 1)
-      if (invoice.invoiceNumber || invoice.total || invoice.vendorName) {
-        invoices.push(invoice)
+      try {
+        // Try LLM-powered parsing first
+        const result = await orchestrator.parseInvoice(pageText, i + 1, {
+          expectedFormat: 'construction-invoice',
+          projectContext: 'Multi-page PDF processing'
+        })
+
+        if (result.success && result.invoice) {
+          invoices.push(result.invoice)
+          totalCost += result.totalCost
+          totalConfidence += result.confidence
+          if (result.metadata?.llmUsed) llmUsages++
+          strategy = result.strategy
+        } else {
+          // Fallback to traditional parsing
+          const fallbackInvoice = await parseInvoiceFromTextTraditional(pageText, i + 1)
+          if (fallbackInvoice.invoiceNumber || fallbackInvoice.total || fallbackInvoice.vendorName) {
+            invoices.push(fallbackInvoice)
+            totalConfidence += fallbackInvoice.confidence || 0.5
+          }
+        }
+      } catch (error) {
+        console.warn(`LLM parsing failed for page ${i + 1}, using traditional method:`, error)
+        // Fallback to traditional parsing
+        const fallbackInvoice = await parseInvoiceFromTextTraditional(pageText, i + 1)
+        if (fallbackInvoice.invoiceNumber || fallbackInvoice.total || fallbackInvoice.vendorName) {
+          invoices.push(fallbackInvoice)
+          totalConfidence += fallbackInvoice.confidence || 0.5
+        }
       }
     }
   }
 
   const totalAmount = invoices.reduce((sum, invoice) => sum + (invoice.total || 0), 0)
+  const averageConfidence = invoices.length > 0 ? totalConfidence / invoices.length : 0
 
   return {
     invoices,
     totalInvoices: invoices.length,
     totalAmount,
     summary: `Found ${invoices.length} invoice(s) across ${pages.length} page(s). Total amount: $${totalAmount.toFixed(2)}`,
+    parsingStats: {
+      llmUsed: llmUsages > 0,
+      totalCost,
+      averageConfidence,
+      strategy
+    }
   }
 }
 
@@ -163,17 +209,42 @@ function isInvoicePage(text: string): boolean {
 }
 
 /**
- * Parse invoice information from extracted text with training system integration
+ * Parse invoice information from extracted text with LLM orchestrator
  */
-export function parseInvoiceFromText(text: string, pageNumber?: number): ParsedInvoice {
+export async function parseInvoiceFromText(text: string, pageNumber?: number, userId?: string): Promise<ParsedInvoice> {
+  const orchestrator = new ParsingOrchestrator(userId)
+  
+  try {
+    // Try LLM-powered parsing
+    const result = await orchestrator.parseInvoice(text, pageNumber, {
+      expectedFormat: 'construction-invoice'
+    })
+
+    if (result.success && result.invoice) {
+      console.log(`LLM parsing successful for page ${pageNumber}: confidence ${result.confidence}, cost $${result.totalCost.toFixed(4)}`)
+      return result.invoice
+    }
+  } catch (error) {
+    console.warn(`LLM parsing failed for page ${pageNumber}, using traditional method:`, error)
+  }
+
+  // Fallback to traditional parsing
+  console.log(`Falling back to traditional parsing for page ${pageNumber}`)
+  return parseInvoiceFromTextTraditional(text, pageNumber)
+}
+
+/**
+ * Traditional invoice parsing with training system integration (fallback method)
+ */
+export async function parseInvoiceFromTextTraditional(text: string, pageNumber?: number): Promise<ParsedInvoice> {
   // First try learned patterns from training data
-  const learnedInvoiceNumber = trainingManager.applyLearnedPatterns(text, 'invoiceNumber') as string
-  const learnedDate = trainingManager.applyLearnedPatterns(text, 'date') as string
-  const learnedVendorName = trainingManager.applyLearnedPatterns(text, 'vendorName') as string
-  const learnedDescription = trainingManager.applyLearnedPatterns(text, 'description') as string
-  const learnedAmount = trainingManager.applyLearnedPatterns(text, 'amount') as number
-  const learnedTax = trainingManager.applyLearnedPatterns(text, 'tax') as number
-  const learnedTotal = trainingManager.applyLearnedPatterns(text, 'total') as number
+  const learnedInvoiceNumber = await applyLearnedPatterns(text, 'invoiceNumber') as string
+  const learnedDate = await applyLearnedPatterns(text, 'date') as string
+  const learnedVendorName = await applyLearnedPatterns(text, 'vendorName') as string
+  const learnedDescription = await applyLearnedPatterns(text, 'description') as string
+  const learnedAmount = await applyLearnedPatterns(text, 'amount') as number
+  const learnedTax = await applyLearnedPatterns(text, 'tax') as number
+  const learnedTotal = await applyLearnedPatterns(text, 'total') as number
 
   // Fallback to traditional extraction methods
   const invoiceNumber = learnedInvoiceNumber || extractInvoiceNumber(text)
@@ -256,26 +327,24 @@ export function trainParser(
     total: correctedData.total,
   }
 
-  return trainingManager.addTrainingExample(
-    originalInvoice.rawText,
-    parsedValues,
-    correctValues,
-    invoiceType
-  )
+  // Training is now handled server-side through the API
+  // This function is kept for backward compatibility
+  console.log('Training data collected (handled by API)')
+  return `training-${Date.now()}`
 }
 
 /**
  * Get training statistics
  */
-export function getTrainingStats() {
-  return trainingManager.getTrainingStats()
+export async function getTrainingStats() {
+  return getServerTrainingStats()
 }
 
 /**
  * Legacy function for backward compatibility - parses single page/invoice
  */
-export function parseSingleInvoiceFromPDF(text: string): ParsedInvoice {
-  return parseInvoiceFromText(text)
+export async function parseSingleInvoiceFromPDF(text: string, userId?: string): Promise<ParsedInvoice> {
+  return parseInvoiceFromText(text, undefined, userId)
 }
 
 /**

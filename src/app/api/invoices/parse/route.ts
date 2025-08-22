@@ -4,12 +4,13 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
+import { withAuth, AuthUser } from '@/lib/middleware'
 import { parseMultipleInvoices } from '@/lib/pdf-parser'
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
 const ALLOWED_FILE_TYPE = 'application/pdf'
 
-export async function POST(request: NextRequest) {
+async function POST(request: NextRequest, user: AuthUser) {
   console.log('PDF parse API called')
   const startMemory = process.memoryUsage()
   console.log('Initial memory usage:', {
@@ -60,7 +61,7 @@ export async function POST(request: NextRequest) {
     let result
     try {
       console.log('Starting PDF multi-invoice parsing...')
-      result = await parseMultipleInvoices(buffer)
+      result = await parseMultipleInvoices(buffer, user.id)
       console.log('PDF parsing completed:', result.summary)
     } catch (error) {
       console.error('PDF parsing error:', error)
@@ -123,3 +124,12 @@ export async function DELETE() {
     { status: 405 }
   )
 }
+
+// Apply authentication middleware
+const protectedPOST = withAuth(POST, {
+  resource: 'invoices',
+  action: 'create',
+  requireAuth: true,
+})
+
+export { protectedPOST as POST }

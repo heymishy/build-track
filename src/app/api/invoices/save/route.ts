@@ -13,7 +13,14 @@ async function POST(request: NextRequest, user: AuthUser) {
     const body = await request.json()
     const { projectId, invoices } = body
 
+    console.log('Invoice Save API - Request received:', {
+      projectId,
+      invoiceCount: invoices?.length,
+      user: { id: user.id, email: user.email, role: user.role }
+    })
+
     if (!projectId || !invoices || !Array.isArray(invoices)) {
+      console.log('Invoice Save API - Invalid request data:', { projectId, invoicesType: typeof invoices, isArray: Array.isArray(invoices) })
       return Response.json(
         { success: false, error: 'Project ID and invoices array are required' },
         { status: 400 }
@@ -43,6 +50,13 @@ async function POST(request: NextRequest, user: AuthUser) {
     // Process each invoice
     for (let i = 0; i < invoices.length; i++) {
       const invoice = invoices[i]
+
+      console.log(`Processing invoice ${i + 1}/${invoices.length}:`, {
+        invoiceNumber: invoice.invoiceNumber,
+        vendorName: invoice.vendorName,
+        total: invoice.total,
+        lineItemsCount: invoice.lineItems?.length
+      })
 
       try {
         // Generate invoice number if not provided
@@ -105,17 +119,23 @@ async function POST(request: NextRequest, user: AuthUser) {
           totalAmount: Number(savedInvoice.totalAmount),
           gstAmount: Number(savedInvoice.gstAmount),
         })
+
+        console.log(`Successfully saved invoice ${i + 1}: ${invoiceNumber}`)
       } catch (error) {
-        console.error(`Error saving invoice ${i}:`, error)
+        console.error(`Error saving invoice ${i + 1}:`, {
+          invoiceNumber: invoice.invoiceNumber || `Invoice ${i + 1}`,
+          error: error.message,
+          stack: error.stack
+        })
         errors.push({
           index: i,
           invoiceNumber: invoice.invoiceNumber || `Invoice ${i + 1}`,
-          error: 'Failed to save invoice to database',
+          error: error.message || 'Failed to save invoice to database',
         })
       }
     }
 
-    return Response.json({
+    const result = {
       success: true,
       savedInvoices,
       errors,
@@ -124,7 +144,15 @@ async function POST(request: NextRequest, user: AuthUser) {
         savedCount: savedInvoices.length,
         errorCount: errors.length,
       },
+    }
+
+    console.log('Invoice Save API - Final result:', {
+      summary: result.summary,
+      hasErrors: errors.length > 0,
+      errorMessages: errors.map(e => e.error)
     })
+
+    return Response.json(result)
   } catch (error) {
     console.error('Error saving invoices:', error)
     return Response.json({ success: false, error: 'Failed to save invoices' }, { status: 500 })

@@ -24,6 +24,7 @@ model User {
   // Relationships
   projects    ProjectUser[]
   invoices    Invoice[]
+  settings    UserSettings[]
   
   @@map("users")
 }
@@ -211,4 +212,21 @@ enum InvoiceStatus {
   PAID
   DISPUTED
   REJECTED
+}
+
+// User Settings for API keys and configuration persistence
+model UserSettings {
+  id        String   @id @default(cuid())
+  userId    String
+  key       String   // Setting key (e.g., "anthropic_api_key", "default_strategy")
+  value     String   // JSON-encoded setting value
+  encrypted Boolean  @default(false) // Whether the value is encrypted
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relationships
+  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, key])
+  @@map("user_settings")
 }

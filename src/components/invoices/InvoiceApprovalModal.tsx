@@ -58,6 +58,7 @@ export function InvoiceApprovalModal({
 
   useEffect(() => {
     if (invoice) {
+      console.log('InvoiceApprovalModal: Invoice pageNumber:', invoice.pageNumber)
       initializeFields()
     }
   }, [invoice])
@@ -315,6 +316,7 @@ export function InvoiceApprovalModal({
                   <ClientOnlyPdfViewer
                     pdfFile={pdfFile}
                     className="h-full border-none rounded-none"
+                    pageNumber={invoice.pageNumber}
                     highlightRegions={highlights}
                   />
                 </div>

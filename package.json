@@ -3,7 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev",
+    "dev:turbo": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
@@ -17,10 +18,14 @@
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "prepare": "husky"
+    "prepare": "husky",
+    "backup:training": "node scripts/backup-training.js backup",
+    "restore:training": "node scripts/backup-training.js restore",
+    "dev:reset": "node scripts/dev-reset.js"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.10.0",
+    "@google/generative-ai": "^0.24.1",
     "@headlessui/react": "^2.2.7",
     "@heroicons/react": "^2.2.0",
     "@hookform/resolvers": "^5.2.1",
@@ -28,6 +33,7 @@
     "@radix-ui/react-slot": "^1.2.3",
     "@types/bcryptjs": "^2.4.6",
     "@types/jsonwebtoken": "^9.0.10",
+    "@types/xlsx": "^0.0.35",
     "@vercel/blob": "^1.1.1",
     "bcryptjs": "^3.0.2",
     "class-variance-authority": "^0.7.1",
@@ -44,6 +50,7 @@
     "react-hot-toast": "^2.6.0",
     "react-pdf": "^10.1.0",
     "tailwind-merge": "^3.3.1",
+    "xlsx": "^0.18.5",
     "zod": "^4.0.17"
   },
   "devDependencies": {

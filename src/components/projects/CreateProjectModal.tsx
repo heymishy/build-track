@@ -5,8 +5,10 @@
 
 'use client'
 
-import { useState } from 'react'
-import { XMarkIcon } from '@heroicons/react/24/outline'
+import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
+import { XMarkIcon, DocumentArrowUpIcon } from '@heroicons/react/24/outline'
+import { EstimateImportModal } from '@/components/estimates/EstimateImportModal'
 
 interface CreateProjectModalProps {
   isOpen: boolean
@@ -15,6 +17,7 @@ interface CreateProjectModalProps {
 }
 
 export function CreateProjectModal({ isOpen, onClose, onProjectCreated }: CreateProjectModalProps) {
+  // ALL HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL RETURNS
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -26,8 +29,25 @@ export function CreateProjectModal({ isOpen, onClose, onProjectCreated }: Create
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-
-  if (!isOpen) return null
+  const [showEstimateImport, setShowEstimateImport] = useState(false)
+  
+  useEffect(() => {
+    if (isOpen) {
+      // Ensure body scroll is locked when modal is open
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = 'unset'
+    }
+    
+    // Cleanup on unmount
+    return () => {
+      document.body.style.overflow = 'unset'
+    }
+  }, [isOpen])
+  
+  if (!isOpen) {
+    return null
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -83,9 +103,36 @@ export function CreateProjectModal({ isOpen, onClose, onProjectCreated }: Create
     if (error) setError(null) // Clear error when user starts typing
   }
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+  const handleEstimateImportComplete = (result: any) => {
+    // Close estimate import modal and this modal, then call parent handler
+    setShowEstimateImport(false)
+    onClose()
+    onProjectCreated(result.project)
+  }
+
+  const modalContent = (
+    <div 
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-50"
+      style={{ 
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 9999,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)'
+      }}
+      onClick={(e) => {
+        // Close modal when clicking backdrop
+        if (e.target === e.currentTarget) {
+          onClose()
+        }
+      }}
+    >
+      <div 
+        className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex items-center justify-between p-6 border-b">
           <h2 className="text-xl font-semibold text-gray-900">Create New Project</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
@@ -129,6 +176,28 @@ export function CreateProjectModal({ isOpen, onClose, onProjectCreated }: Create
               placeholder="Brief description of the construction project..."
               className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
             />
+          </div>
+
+          {/* Estimate Import Option */}
+          <div className="border-t border-gray-200 pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-medium text-gray-900">Project Estimate</h3>
+                <p className="text-sm text-gray-500">Import detailed cost breakdown from your estimate files</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowEstimateImport(true)}
+                className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                <DocumentArrowUpIcon className="h-4 w-4 mr-2" />
+                Import Estimate
+              </button>
+            </div>
+            <div className="mt-3 text-xs text-gray-500">
+              Upload CSV, Excel, or PDF files with trade breakdowns, quantities, and costs.
+              This will auto-populate budget and create detailed cost tracking.
+            </div>
           </div>
 
           {/* Budget and Currency */}
@@ -237,5 +306,20 @@ export function CreateProjectModal({ isOpen, onClose, onProjectCreated }: Create
         </form>
       </div>
     </div>
+  )
+
+  // Use createPortal to render modal at document body level
+  return (
+    <>
+      {typeof window !== 'undefined' ? createPortal(modalContent, document.body) : null}
+      
+      {/* Estimate Import Modal */}
+      <EstimateImportModal
+        isOpen={showEstimateImport}
+        onClose={() => setShowEstimateImport(false)}
+        onImportComplete={handleEstimateImportComplete}
+        allowCreateProject={true}
+      />
+    </>
   )
 }

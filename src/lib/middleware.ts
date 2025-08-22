@@ -7,7 +7,7 @@ import { UserRole, ProjectRole } from '@/generated/prisma'
 import { NextRequest } from 'next/server'
 
 // Define available resources and actions
-export type Resource = 'users' | 'projects' | 'invoices' | 'estimates' | 'milestones'
+export type Resource = 'users' | 'projects' | 'invoices' | 'estimates' | 'milestones' | 'settings'
 export type Action = 'create' | 'read' | 'update' | 'delete' | 'write'
 
 // User with role information
@@ -53,6 +53,7 @@ const PERMISSION_MATRIX: Record<UserRole, Record<Resource, Action[]>> = {
     invoices: ['create', 'read', 'update', 'delete', 'write'],
     estimates: ['create', 'read', 'update', 'delete', 'write'],
     milestones: ['create', 'read', 'update', 'delete', 'write'],
+    settings: ['create', 'read', 'update', 'delete', 'write'],
   },
   USER: {
     users: ['read'], // Can only read their own user info
@@ -60,6 +61,7 @@ const PERMISSION_MATRIX: Record<UserRole, Record<Resource, Action[]>> = {
     invoices: ['create', 'read', 'update', 'write'],
     estimates: ['create', 'read', 'update', 'write'],
     milestones: ['read', 'update'],
+    settings: ['create', 'read', 'update'], // Users can manage their own settings
   },
   VIEWER: {
     users: [],
@@ -67,6 +69,7 @@ const PERMISSION_MATRIX: Record<UserRole, Record<Resource, Action[]>> = {
     invoices: ['read'],
     estimates: ['read'],
     milestones: ['read'],
+    settings: ['read'], // Viewers can only read settings
   },
 }
 
@@ -167,7 +170,18 @@ export function getUserFromRequest(request: NextRequest): AuthUser | null {
 
     const token = cookieToken || bearerToken
 
+    console.log('Auth debug:', {
+      hasCookieToken: !!cookieToken,
+      hasBearerToken: !!bearerToken,
+      hasToken: !!token,
+      cookieNames: request.cookies.getAll().map(cookie => cookie.name),
+      url: request.url,
+      cookieValue: cookieToken ? cookieToken.substring(0, 20) + '...' : null,
+      userAgent: request.headers.get('user-agent')?.substring(0, 50)
+    })
+
     if (!token) {
+      console.log('No token found in request')
       return null
     }
 
@@ -183,7 +197,7 @@ export function getUserFromRequest(request: NextRequest): AuthUser | null {
       exp: number
     }
 
-    return {
+    const user = {
       id: decoded.userId,
       email: decoded.email,
       name: '', // We don't store name in the token, but it's not needed for authorization
@@ -191,6 +205,9 @@ export function getUserFromRequest(request: NextRequest): AuthUser | null {
       createdAt: new Date(),
       updatedAt: new Date(),
     }
+    
+    console.log('Successfully authenticated user:', { id: user.id, email: user.email, role: user.role })
+    return user
   } catch (error) {
     console.error('Error verifying JWT token:', error)
     return null
@@ -201,10 +218,10 @@ export function getUserFromRequest(request: NextRequest): AuthUser | null {
  * Higher-order function to protect API routes
  */
 export function withAuth(
-  handler: (request: NextRequest, user: AuthUser) => Promise<Response>,
+  handler: (request: NextRequest, user: AuthUser, context?: any) => Promise<Response>,
   options: MiddlewareOptions
 ) {
-  return async function protectedHandler(request: NextRequest): Promise<Response> {
+  return async function protectedHandler(request: NextRequest, context?: any): Promise<Response> {
     const user = getUserFromRequest(request)
     const middleware = createAuthMiddleware(options)
     const result = await middleware(request, user)
@@ -222,6 +239,6 @@ export function withAuth(
       )
     }
 
-    return handler(request, result.user!)
+    return handler(request, result.user!, context)
   }
 }

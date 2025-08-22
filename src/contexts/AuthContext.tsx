@@ -47,7 +47,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(true) // Start with loading=true
   const router = useRouter()
 
   // Load user from localStorage on mount
@@ -55,6 +55,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       // Check if we're in a browser environment
       if (typeof window === 'undefined' || !window.localStorage) {
+        setIsLoading(false)
         return
       }
       
@@ -68,6 +69,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (typeof window !== 'undefined' && window.localStorage) {
         localStorage.removeItem('user')
       }
+    } finally {
+      setIsLoading(false) // Set loading to false after attempting to load
     }
   }, [])
 

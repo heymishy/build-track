@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { ChevronRightIcon, PlusIcon } from '@heroicons/react/24/outline'
+import { ChevronRightIcon, PlusIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline'
 import {
   ChartBarIcon,
   ClockIcon,
@@ -11,6 +11,10 @@ import {
   BuildingOfficeIcon,
 } from '@heroicons/react/24/solid'
 import { CreateProjectModal } from '@/components/projects/CreateProjectModal'
+import { EditProjectModal } from '@/components/projects/EditProjectModal'
+import { CostTrackingDashboard } from '@/components/estimates/CostTrackingDashboard'
+import { EstimateManager } from '@/components/estimates/EstimateManager'
+import { MilestoneManagement } from '@/components/projects/MilestoneManagement'
 
 interface Project {
   id: string
@@ -24,7 +28,7 @@ interface Project {
   actualEndDate?: string
   createdAt: string
   updatedAt: string
-  stats: {
+  stats?: {
     totalInvoices: number
     totalTrades: number
     totalMilestones: number
@@ -38,7 +42,7 @@ interface Project {
     budgetUsedPercent: number
     isOverBudget: boolean
   }
-  milestones: Array<{
+  milestones?: Array<{
     id: string
     paymentAmount: number
     status: string
@@ -56,6 +60,17 @@ export function ProjectDashboard({ className = '' }: ProjectDashboardProps) {
   const [error, setError] = useState<string | null>(null)
   const [selectedProject, setSelectedProject] = useState<Project | null>(null)
   const [createModalOpen, setCreateModalOpen] = useState(false)
+  const [editModalOpen, setEditModalOpen] = useState(false)
+  const [projectToEdit, setProjectToEdit] = useState<Project | null>(null)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [projectToDelete, setProjectToDelete] = useState<Project | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
+
+  // Debug effect to track modal state changes
+  useEffect(() => {
+    console.log('ProjectDashboard: createModalOpen changed to:', createModalOpen)
+  }, [createModalOpen])
+
 
   useEffect(() => {
     fetchProjects()
@@ -136,12 +151,17 @@ export function ProjectDashboard({ className = '' }: ProjectDashboardProps) {
     const { stats } = project
     let healthScore = 100
 
+    // Handle missing or incomplete stats for newly created projects
+    if (!stats) {
+      return healthScore // Return 100% health for new projects
+    }
+
     // Budget health (40% weight)
     if (stats.isOverBudget) {
       healthScore -= 40
-    } else if (stats.budgetUsedPercent > 85) {
+    } else if ((stats.budgetUsedPercent || 0) > 85) {
       healthScore -= 20
-    } else if (stats.budgetUsedPercent > 70) {
+    } else if ((stats.budgetUsedPercent || 0) > 70) {
       healthScore -= 10
     }
 
@@ -153,8 +173,10 @@ export function ProjectDashboard({ className = '' }: ProjectDashboardProps) {
     }
 
     // Milestone completion (30% weight)
+    const totalMilestones = stats.totalMilestones || 0
+    const completedMilestones = stats.completedMilestones || 0
     const milestoneCompletionRate =
-      stats.totalMilestones > 0 ? (stats.completedMilestones / stats.totalMilestones) * 100 : 100
+      totalMilestones > 0 ? (completedMilestones / totalMilestones) * 100 : 100
 
     if (milestoneCompletionRate < 50) {
       healthScore -= 20
@@ -169,6 +191,70 @@ export function ProjectDashboard({ className = '' }: ProjectDashboardProps) {
     if (health >= 80) return 'text-green-600'
     if (health >= 60) return 'text-yellow-600'
     return 'text-red-600'
+  }
+
+  const handleEditProject = (project: Project) => {
+    setProjectToEdit(project)
+    setEditModalOpen(true)
+  }
+
+  const handleProjectUpdated = (updatedProject: Project) => {
+    setProjects(prev => prev.map(p => p.id === updatedProject.id ? updatedProject : p))
+    if (selectedProject?.id === updatedProject.id) {
+      setSelectedProject(updatedProject)
+    }
+    setEditModalOpen(false)
+    setProjectToEdit(null)
+  }
+
+  const handleDeleteProject = (project: Project) => {
+    setProjectToDelete(project)
+    setShowDeleteConfirm(true)
+  }
+
+  const handleConfirmDelete = async () => {
+    if (!projectToDelete) return
+    
+    try {
+      setIsDeleting(true)
+      const response = await fetch(`/api/projects/${projectToDelete.id}/delete`, {
+        method: 'DELETE',
+      })
+      
+      const data = await response.json()
+      
+      if (data.success) {
+        // Remove from projects list
+        setProjects(prev => prev.filter(p => p.id !== projectToDelete.id))
+        
+        // Update selected project if needed
+        if (selectedProject?.id === projectToDelete.id) {
+          const remainingProjects = projects.filter(p => p.id !== projectToDelete.id)
+          setSelectedProject(remainingProjects.length > 0 ? remainingProjects[0] : null)
+        }
+        
+        // Close modals
+        setShowDeleteConfirm(false)
+        setProjectToDelete(null)
+      } else {
+        setError(data.error || 'Failed to delete project')
+      }
+    } catch (err) {
+      setError('Failed to delete project')
+      console.error('Delete project error:', err)
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
+  const handleProjectDeleted = (projectId: string) => {
+    setProjects(prev => prev.filter(p => p.id !== projectId))
+    if (selectedProject?.id === projectId) {
+      const remainingProjects = projects.filter(p => p.id !== projectId)
+      setSelectedProject(remainingProjects.length > 0 ? remainingProjects[0] : null)
+    }
+    setEditModalOpen(false)
+    setProjectToEdit(null)
   }
 
   if (loading) {
@@ -212,8 +298,15 @@ export function ProjectDashboard({ className = '' }: ProjectDashboardProps) {
           <h3 className="mt-2 text-sm font-medium text-gray-900">No Projects Yet</h3>
           <p className="mt-1 text-sm text-gray-500">Get started by creating your first project.</p>
           <button
-            onClick={() => setCreateModalOpen(true)}
-            className="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+            onClick={() => {
+              console.log('Create Project button clicked!')
+              console.log('Current createModalOpen state:', createModalOpen)
+              setCreateModalOpen(true)
+              console.log('setCreateModalOpen(true) called')
+              // Check state immediately after setting
+              console.log('State immediately after set:', createModalOpen)
+            }}
+            className="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >
             <PlusIcon className="h-4 w-4 mr-2" />
             Create Project
@@ -276,7 +369,7 @@ export function ProjectDashboard({ className = '' }: ProjectDashboardProps) {
                           <span>
                             Budget: {formatCurrency(project.totalBudget, project.currency)}
                           </span>
-                          <span>Used: {project.stats.budgetUsedPercent.toFixed(1)}%</span>
+                          <span>Used: {(project.stats?.budgetUsedPercent || 0).toFixed(1)}%</span>
                           <span className={getHealthColor(health)}>Health: {health}%</span>
                         </div>
                       </div>
@@ -297,12 +390,57 @@ export function ProjectDashboard({ className = '' }: ProjectDashboardProps) {
                 <h3 className="text-lg leading-6 font-medium text-gray-900">
                   {selectedProject.name}
                 </h3>
-                <span
-                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(selectedProject.status)}`}
-                >
-                  {getStatusIcon(selectedProject.status)}
-                  <span className="ml-1">{selectedProject.status.replace('_', ' ')}</span>
-                </span>
+                <div className="flex items-center space-x-3">
+                  <button
+                    onClick={() => handleEditProject(selectedProject)}
+                    className="inline-flex items-center px-2 py-1 border border-gray-300 text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    title="Edit project"
+                  >
+                    <PencilIcon className="h-3 w-3 mr-1" />
+                    Edit
+                  </button>
+                  <button
+                    onClick={async () => {
+                      // Debug permissions first
+                      try {
+                        const response = await fetch(`/api/projects/${selectedProject.id}/permissions`)
+                        const data = await response.json()
+                        console.log('Project permissions:', data)
+                        
+                        if (!data.permissions?.canDelete) {
+                          console.log('User cannot delete, trying to fix ownership...')
+                          const fixResponse = await fetch(`/api/projects/${selectedProject.id}/fix-ownership`, {
+                            method: 'POST'
+                          })
+                          const fixData = await fixResponse.json()
+                          console.log('Fix ownership result:', fixData)
+                          
+                          if (fixData.success) {
+                            // Refresh the page or refetch projects
+                            window.location.reload()
+                            return
+                          }
+                        }
+                        
+                        handleDeleteProject(selectedProject)
+                      } catch (error) {
+                        console.error('Error checking permissions:', error)
+                        handleDeleteProject(selectedProject)
+                      }
+                    }}
+                    className="inline-flex items-center px-2 py-1 border border-red-300 text-xs font-medium rounded text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                    title="Delete project"
+                  >
+                    <TrashIcon className="h-3 w-3 mr-1" />
+                    Delete
+                  </button>
+                  <span
+                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(selectedProject.status)}`}
+                  >
+                    {getStatusIcon(selectedProject.status)}
+                    <span className="ml-1">{selectedProject.status.replace('_', ' ')}</span>
+                  </span>
+                </div>
               </div>
 
               {selectedProject.description && (
@@ -317,9 +455,9 @@ export function ProjectDashboard({ className = '' }: ProjectDashboardProps) {
                     <div className="ml-2">
                       <p className="text-xs text-gray-500">Budget Used</p>
                       <p className="text-sm font-medium text-gray-900">
-                        {formatCurrency(selectedProject.stats.budgetUsed)}
+                        {formatCurrency(selectedProject.stats?.budgetUsed || 0)}
                         <span className="text-xs text-gray-500 ml-1">
-                          ({selectedProject.stats.budgetUsedPercent.toFixed(1)}%)
+                          ({(selectedProject.stats?.budgetUsedPercent || 0).toFixed(1)}%)
                         </span>
                       </p>
                     </div>
@@ -332,8 +470,8 @@ export function ProjectDashboard({ className = '' }: ProjectDashboardProps) {
                     <div className="ml-2">
                       <p className="text-xs text-gray-500">Milestones</p>
                       <p className="text-sm font-medium text-gray-900">
-                        {selectedProject.stats.completedMilestones} /{' '}
-                        {selectedProject.stats.totalMilestones}
+                        {selectedProject.stats?.completedMilestones || 0} /{' '}
+                        {selectedProject.stats?.totalMilestones || 0}
                         <span className="text-xs text-gray-500 ml-1">complete</span>
                       </p>
                     </div>
@@ -382,24 +520,24 @@ export function ProjectDashboard({ className = '' }: ProjectDashboardProps) {
               <div className="mb-4">
                 <div className="flex justify-between text-sm text-gray-600 mb-1">
                   <span>Budget Progress</span>
-                  <span>{formatCurrency(selectedProject.stats.budgetRemaining)} remaining</span>
+                  <span>{formatCurrency(selectedProject.stats?.budgetRemaining || selectedProject.totalBudget)} remaining</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
                   <div
                     className={`h-2 rounded-full transition-all duration-300 ${
-                      selectedProject.stats.isOverBudget
+                      selectedProject.stats?.isOverBudget
                         ? 'bg-red-500'
-                        : selectedProject.stats.budgetUsedPercent > 85
+                        : (selectedProject.stats?.budgetUsedPercent || 0) > 85
                           ? 'bg-yellow-500'
                           : 'bg-green-500'
                     }`}
-                    style={{ width: `${Math.min(100, selectedProject.stats.budgetUsedPercent)}%` }}
+                    style={{ width: `${Math.min(100, selectedProject.stats?.budgetUsedPercent || 0)}%` }}
                   ></div>
                 </div>
-                {selectedProject.stats.isOverBudget && (
+                {selectedProject.stats?.isOverBudget && (
                   <p className="text-xs text-red-600 mt-1">
                     ⚠️ Over budget by{' '}
-                    {formatCurrency(Math.abs(selectedProject.stats.budgetRemaining))}
+                    {formatCurrency(Math.abs(selectedProject.stats.budgetRemaining || 0))}
                   </p>
                 )}
               </div>
@@ -408,19 +546,19 @@ export function ProjectDashboard({ className = '' }: ProjectDashboardProps) {
               <div className="grid grid-cols-3 gap-4 text-center">
                 <div>
                   <p className="text-2xl font-semibold text-gray-900">
-                    {selectedProject.stats.totalInvoices}
+                    {selectedProject.stats?.totalInvoices || 0}
                   </p>
                   <p className="text-xs text-gray-500">Invoices</p>
                 </div>
                 <div>
                   <p className="text-2xl font-semibold text-gray-900">
-                    {selectedProject.stats.totalTrades}
+                    {selectedProject.stats?.totalTrades || 0}
                   </p>
                   <p className="text-xs text-gray-500">Trades</p>
                 </div>
                 <div>
                   <p className="text-2xl font-semibold text-gray-900">
-                    {selectedProject.stats.totalMilestones}
+                    {selectedProject.stats?.totalMilestones || 0}
                   </p>
                   <p className="text-xs text-gray-500">Milestones</p>
                 </div>
@@ -430,16 +568,103 @@ export function ProjectDashboard({ className = '' }: ProjectDashboardProps) {
         )}
       </div>
 
+      {/* Estimate Manager */}
+      {selectedProject && (
+        <EstimateManager 
+          projectId={selectedProject.id} 
+          className="col-span-1 lg:col-span-2"
+        />
+      )}
+
+      {/* Cost Tracking Dashboard */}
+      {selectedProject && (
+        <CostTrackingDashboard 
+          projectId={selectedProject.id} 
+          className="col-span-1 lg:col-span-2"
+        />
+      )}
+
+      {/* Milestone Management */}
+      {selectedProject && (
+        <MilestoneManagement 
+          projectId={selectedProject.id} 
+          className="col-span-1 lg:col-span-2"
+        />
+      )}
+
       {/* Create Project Modal */}
       <CreateProjectModal
         isOpen={createModalOpen}
-        onClose={() => setCreateModalOpen(false)}
+        onClose={() => {
+          console.log('Modal onClose called')
+          setCreateModalOpen(false)
+        }}
         onProjectCreated={project => {
+          console.log('Project created:', project)
           setProjects(prev => [project, ...prev])
           setSelectedProject(project)
           setCreateModalOpen(false)
         }}
       />
+
+      {/* Edit Project Modal */}
+      {projectToEdit && (
+        <EditProjectModal
+          isOpen={editModalOpen}
+          onClose={() => {
+            setEditModalOpen(false)
+            setProjectToEdit(null)
+          }}
+          project={projectToEdit}
+          onProjectUpdated={handleProjectUpdated}
+          onProjectDeleted={handleProjectDeleted}
+        />
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && projectToDelete && (
+        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <div className="flex items-center mb-4">
+              <ExclamationTriangleIcon className="h-6 w-6 text-red-600 mr-2" />
+              <h3 className="text-lg font-medium text-gray-900">Delete Project</h3>
+            </div>
+            <p className="text-sm text-gray-500 mb-4">
+              Are you sure you want to delete "<strong>{projectToDelete.name}</strong>"? 
+              This will permanently delete:
+            </p>
+            <ul className="text-sm text-gray-600 mb-6 pl-4 space-y-1">
+              <li>• All project data and settings</li>
+              <li>• All trades and line items ({projectToDelete.stats?.totalTrades || 0} trades)</li>
+              <li>• All invoices ({projectToDelete.stats?.totalInvoices || 0} invoices)</li>
+              <li>• All milestones ({projectToDelete.stats?.totalMilestones || 0} milestones)</li>
+              <li>• Project budget: {formatCurrency(projectToDelete.totalBudget, projectToDelete.currency)}</li>
+            </ul>
+            <p className="text-sm text-red-600 font-medium mb-6">
+              This action cannot be undone.
+            </p>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => {
+                  setShowDeleteConfirm(false)
+                  setProjectToDelete(null)
+                }}
+                disabled={isDeleting}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmDelete}
+                disabled={isDeleting}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700 disabled:opacity-50"
+              >
+                {isDeleting ? 'Deleting...' : 'Delete Project'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
