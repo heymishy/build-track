@@ -11,7 +11,7 @@ async function checkProjectUsers(projectId) {
     // Get all users for this project
     const projectUsers = await prisma.projectUser.findMany({
       where: {
-        projectId: projectId
+        projectId: projectId,
       },
       include: {
         user: {
@@ -19,15 +19,15 @@ async function checkProjectUsers(projectId) {
             id: true,
             name: true,
             email: true,
-            role: true
-          }
-        }
-      }
+            role: true,
+          },
+        },
+      },
     })
 
     console.log(`📋 Project: ${projectId}`)
     console.log(`👥 Project Users (${projectUsers.length}):`)
-    
+
     projectUsers.forEach((pu, index) => {
       console.log(`  ${index + 1}. User ID: ${pu.userId}`)
       console.log(`     Email: ${pu.user.email}`)
@@ -45,8 +45,8 @@ async function checkProjectUsers(projectId) {
         id: true,
         name: true,
         description: true,
-        createdAt: true
-      }
+        createdAt: true,
+      },
     })
 
     if (project) {
@@ -65,8 +65,8 @@ async function checkProjectUsers(projectId) {
         id: true,
         name: true,
         email: true,
-        role: true
-      }
+        role: true,
+      },
     })
 
     console.log(`👤 Target User:`)
@@ -78,7 +78,6 @@ async function checkProjectUsers(projectId) {
     } else {
       console.log('   ❌ User not found!')
     }
-
   } catch (error) {
     console.error('❌ Error:', error)
   } finally {

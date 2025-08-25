@@ -6,11 +6,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withAuth, AuthUser } from '@/lib/middleware'
 import { prisma } from '@/lib/prisma'
-import { 
-  parseEstimateFromCSV, 
-  parseEstimateFromXLSX, 
+import {
+  parseEstimateFromCSV,
+  parseEstimateFromXLSX,
   parseEstimateFromPDF,
-  ParsedEstimate 
+  ParsedEstimate,
 } from '@/lib/estimate-parser'
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
@@ -18,13 +18,13 @@ const ALLOWED_FILE_TYPES = [
   'text/csv',
   'application/vnd.ms-excel',
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  'application/pdf'
+  'application/pdf',
 ]
 
 async function POST(request: NextRequest, user: AuthUser) {
   try {
     console.log('Estimate import API called')
-    
+
     // Parse the form data
     const formData = await request.formData()
     const file = formData.get('file') as File
@@ -34,41 +34,56 @@ async function POST(request: NextRequest, user: AuthUser) {
 
     // Validate file presence
     if (!file) {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'No file uploaded' 
-      }, { status: 400 })
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'No file uploaded',
+        },
+        { status: 400 }
+      )
     }
 
     // Validate file type
     if (!ALLOWED_FILE_TYPES.includes(file.type)) {
-      return NextResponse.json({
-        success: false,
-        error: 'Invalid file type. Only CSV, Excel (.xlsx, .xls), and PDF files are allowed.'
-      }, { status: 400 })
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Invalid file type. Only CSV, Excel (.xlsx, .xls), and PDF files are allowed.',
+        },
+        { status: 400 }
+      )
     }
 
     // Validate file size
     if (file.size > MAX_FILE_SIZE) {
-      return NextResponse.json({
-        success: false,
-        error: 'File too large. Maximum size is 10MB.'
-      }, { status: 413 })
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'File too large. Maximum size is 10MB.',
+        },
+        { status: 413 }
+      )
     }
 
     // Validate project parameters
     if (!createNewProject && !projectId) {
-      return NextResponse.json({
-        success: false,
-        error: 'Project ID is required when not creating a new project'
-      }, { status: 400 })
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Project ID is required when not creating a new project',
+        },
+        { status: 400 }
+      )
     }
 
     if (createNewProject && !projectName) {
-      return NextResponse.json({
-        success: false,
-        error: 'Project name is required when creating a new project'
-      }, { status: 400 })
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Project name is required when creating a new project',
+        },
+        { status: 400 }
+      )
     }
 
     // Verify user has access to existing project (if not creating new)
@@ -81,10 +96,13 @@ async function POST(request: NextRequest, user: AuthUser) {
       })
 
       if (!projectAccess) {
-        return NextResponse.json({
-          success: false,
-          error: 'You do not have access to this project'
-        }, { status: 403 })
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'You do not have access to this project',
+          },
+          { status: 403 }
+        )
       }
     }
 
@@ -107,10 +125,13 @@ async function POST(request: NextRequest, user: AuthUser) {
       }
     } catch (error) {
       console.error('Estimate parsing error:', error)
-      return NextResponse.json({
-        success: false,
-        error: `Failed to parse estimate file: ${error instanceof Error ? error.message : 'Unknown error'}`
-      }, { status: 500 })
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Failed to parse estimate file: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        },
+        { status: 500 }
+      )
     }
 
     // Create or update project
@@ -129,13 +150,13 @@ async function POST(request: NextRequest, user: AuthUser) {
           users: {
             create: {
               userId: user.id,
-              role: 'OWNER'
-            }
-          }
+              role: 'OWNER',
+            },
+          },
         },
         include: {
-          users: true
-        }
+          users: true,
+        },
       })
       targetProjectId = project.id
     } else {
@@ -144,16 +165,16 @@ async function POST(request: NextRequest, user: AuthUser) {
         where: { id: projectId },
         data: {
           totalBudget: parsedEstimate.totalBudget,
-          currency: parsedEstimate.currency
+          currency: parsedEstimate.currency,
         },
         include: {
           users: true,
           trades: {
             include: {
-              lineItems: true
-            }
-          }
-        }
+              lineItems: true,
+            },
+          },
+        },
       })
       targetProjectId = projectId
     }
@@ -168,8 +189,8 @@ async function POST(request: NextRequest, user: AuthUser) {
         let trade = await prisma.trade.findFirst({
           where: {
             projectId: targetProjectId,
-            name: tradeData.name
-          }
+            name: tradeData.name,
+          },
         })
 
         if (!trade) {
@@ -179,8 +200,8 @@ async function POST(request: NextRequest, user: AuthUser) {
               projectId: targetProjectId,
               name: tradeData.name,
               description: tradeData.description,
-              sortOrder: tradeData.sortOrder || 0
-            }
+              sortOrder: tradeData.sortOrder || 0,
+            },
           })
         }
 
@@ -196,33 +217,32 @@ async function POST(request: NextRequest, user: AuthUser) {
           equipmentCostEst: item.equipmentCost,
           markupPercent: item.markupPercent || 0,
           overheadPercent: item.overheadPercent || 0,
-          sortOrder: index
+          sortOrder: index,
         }))
 
         // Delete existing line items for this trade (if updating)
         if (!createNewProject) {
           await prisma.lineItem.deleteMany({
-            where: { tradeId: trade.id }
+            where: { tradeId: trade.id },
           })
         }
 
         // Create new line items
         const createdLineItems = await prisma.lineItem.createMany({
-          data: lineItemsData
+          data: lineItemsData,
         })
 
         createdTrades.push({
           id: trade.id,
           name: trade.name,
           lineItemsCount: createdLineItems.count,
-          totalCost: tradeData.totalCost
+          totalCost: tradeData.totalCost,
         })
-
       } catch (error) {
         console.error(`Error creating trade ${tradeData.name}:`, error)
         errors.push({
           tradeName: tradeData.name,
-          error: 'Failed to create trade and line items'
+          error: 'Failed to create trade and line items',
         })
       }
     }
@@ -237,7 +257,7 @@ async function POST(request: NextRequest, user: AuthUser) {
       materialCost: parsedEstimate.summary.totalMaterialCost,
       laborCost: parsedEstimate.summary.totalLaborCost,
       equipmentCost: parsedEstimate.summary.totalEquipmentCost,
-      errors: errors.length
+      errors: errors.length,
     }
 
     return NextResponse.json({
@@ -246,29 +266,34 @@ async function POST(request: NextRequest, user: AuthUser) {
         id: project.id,
         name: project.name,
         totalBudget: project.totalBudget,
-        currency: project.currency
+        currency: project.currency,
       },
       estimate: parsedEstimate,
       createdTrades,
       errors,
-      summary
+      summary,
     })
-
   } catch (error) {
     console.error('Estimate import API error:', error)
-    return NextResponse.json({
-      success: false,
-      error: 'Internal server error'
-    }, { status: 500 })
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Internal server error',
+      },
+      { status: 500 }
+    )
   }
 }
 
 // Handle unsupported methods
 export async function GET() {
-  return NextResponse.json({
-    success: false,
-    error: 'Method not allowed. Use POST to upload an estimate file.'
-  }, { status: 405 })
+  return NextResponse.json(
+    {
+      success: false,
+      error: 'Method not allowed. Use POST to upload an estimate file.',
+    },
+    { status: 405 }
+  )
 }
 
 // Apply authentication middleware

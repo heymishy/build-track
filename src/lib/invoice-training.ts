@@ -407,7 +407,7 @@ export class InvoiceTrainingManager {
         console.log('localStorage not available (server-side rendering)')
         return
       }
-      
+
       localStorage.setItem(
         'invoice-training-data',
         JSON.stringify({
@@ -431,7 +431,7 @@ export class InvoiceTrainingManager {
         console.log('localStorage not available (server-side rendering)')
         return
       }
-      
+
       const saved = localStorage.getItem('invoice-training-data')
       if (saved) {
         const data = JSON.parse(saved)

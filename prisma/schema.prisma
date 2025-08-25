@@ -22,9 +22,15 @@ model User {
   updatedAt DateTime @updatedAt
 
   // Relationships
-  projects    ProjectUser[]
-  invoices    Invoice[]
-  settings    UserSettings[]
+  projects         ProjectUser[]
+  invoices         Invoice[]
+  settings         UserSettings[]
+  documents        ProjectDocument[]
+  progressLogs     WeeklyProgressLog[]
+  laborEntries     LaborEntry[]
+  laborInvoices    LaborInvoice[]
+  stageTransitions StageTransition[]
+  supplierAccess   SupplierAccess[]
   
   @@map("users")
 }
@@ -47,6 +53,12 @@ model Project {
   trades            Trade[]
   milestones        Milestone[]
   invoices          Invoice[]
+  documents         ProjectDocument[]
+  progressLogs      WeeklyProgressLog[]
+  laborEntries      LaborEntry[]
+  laborInvoices     LaborInvoice[]
+  stageTransitions  StageTransition[]
+  supplierUploads   InvoiceUpload[]
   
   @@map("projects")
 }
@@ -154,6 +166,7 @@ model Invoice {
   project         Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
   user            User? @relation(fields: [userId], references: [id])
   lineItems       InvoiceLineItem[]
+  upload          InvoiceUpload?
   
   @@unique([projectId, invoiceNumber])
   @@map("invoices")
@@ -214,6 +227,146 @@ enum InvoiceStatus {
   REJECTED
 }
 
+enum DocumentCategory {
+  BLUEPRINT
+  PLAN
+  CONSENT
+  CONTRACT
+  PERMIT
+  PHOTO
+  INVOICE
+  REPORT
+  OTHER
+}
+
+enum LaborRole {
+  SENIOR_BUILDER
+  BUILDER
+  APPRENTICE
+  LABOURER
+  SPECIALIST
+}
+
+// Documents for projects (PDFs, plans, images, contracts)
+model ProjectDocument {
+  id          String   @id @default(cuid())
+  projectId   String
+  name        String   // Document name/title
+  fileName    String   // Original file name
+  fileUrl     String   // Storage URL
+  fileType    String   // MIME type
+  fileSize    Int      // File size in bytes
+  category    DocumentCategory @default(OTHER)
+  uploadedBy  String   // User ID who uploaded
+  stage       ProjectStatus    // Which stage this document belongs to
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relationships
+  project     Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  uploader    User @relation(fields: [uploadedBy], references: [id])
+
+  @@map("project_documents")
+}
+
+// Weekly progress logs for construction stage
+model WeeklyProgressLog {
+  id           String   @id @default(cuid())
+  projectId    String
+  weekStarting DateTime // Start of the week
+  weekEnding   DateTime // End of the week
+  summary      String   // Progress summary
+  issues       String?  // Issues encountered
+  nextWeekPlan String?  // Plans for next week
+  createdBy    String   // User ID
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relationships
+  project      Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  creator      User @relation(fields: [createdBy], references: [id])
+  photos       ProgressPhoto[]
+
+  @@map("weekly_progress_logs")
+}
+
+// Photos associated with progress logs
+model ProgressPhoto {
+  id           String   @id @default(cuid())
+  logId        String
+  fileName     String
+  fileUrl      String
+  caption      String?
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+
+  // Relationships
+  progressLog  WeeklyProgressLog @relation(fields: [logId], references: [id], onDelete: Cascade)
+
+  @@map("progress_photos")
+}
+
+// Labor tracking for construction stage
+model LaborEntry {
+  id         String   @id @default(cuid())
+  projectId  String
+  workDate   DateTime // Date work was performed
+  workerRole LaborRole
+  hoursWorked Decimal
+  hourlyRate Decimal  // Rate at time of work
+  description String? // Description of work performed
+  createdBy  String   // User ID who logged the entry
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relationships
+  project    Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  creator    User @relation(fields: [createdBy], references: [id])
+
+  @@map("labor_entries")
+}
+
+// Labor invoices generated from labor entries
+model LaborInvoice {
+  id              String   @id @default(cuid())
+  projectId       String
+  invoiceNumber   String
+  weekStarting    DateTime // Start of week for this invoice
+  weekEnding      DateTime // End of week for this invoice
+  totalHours      Decimal
+  subtotalAmount  Decimal  // Before GST
+  gstAmount       Decimal  // GST amount
+  totalAmount     Decimal  // Total including GST
+  status          InvoiceStatus @default(PENDING)
+  generatedBy     String   // User ID
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relationships
+  project         Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  generator       User @relation(fields: [generatedBy], references: [id])
+
+  @@unique([projectId, invoiceNumber])
+  @@map("labor_invoices")
+}
+
+// Stage transition history
+model StageTransition {
+  id            String   @id @default(cuid())
+  projectId     String
+  fromStatus    ProjectStatus?
+  toStatus      ProjectStatus
+  transitionedBy String   // User ID
+  reason        String?  // Optional reason for transition
+  createdAt     DateTime @default(now())
+
+  // Relationships
+  project       Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user          User @relation(fields: [transitionedBy], references: [id])
+
+  @@map("stage_transitions")
+}
+
 // User Settings for API keys and configuration persistence
 model UserSettings {
   id        String   @id @default(cuid())
@@ -229,4 +382,57 @@ model UserSettings {
 
   @@unique([userId, key])
   @@map("user_settings")
+}
+
+// Supplier Portal - Email-based access for invoice uploads
+model SupplierAccess {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String   // Supplier/subcontractor name
+  type      SupplierType @default(SUPPLIER)
+  isActive  Boolean  @default(true)
+  createdBy String   // Admin user who added this supplier
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relationships
+  creator   User @relation(fields: [createdBy], references: [id])
+  invoiceUploads InvoiceUpload[]
+
+  @@map("supplier_access")
+}
+
+// Invoice uploads via supplier portal
+model InvoiceUpload {
+  id            String   @id @default(cuid())
+  supplierEmail String   // Email address used for upload
+  projectId     String?  // Optional project assignment
+  fileName      String   // Original filename
+  fileUrl       String   // Storage URL for PDF
+  fileSize      Int      // File size in bytes
+  supplierName  String?  // Supplier name from upload form
+  notes         String?  // Optional notes from supplier
+  status        UploadStatus @default(PENDING)
+  processedAt   DateTime? // When it was converted to a full Invoice
+  invoiceId     String?  // Reference to created Invoice if processed
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relationships
+  supplier      SupplierAccess @relation(fields: [supplierEmail], references: [email])
+  project       Project? @relation(fields: [projectId], references: [id])
+  invoice       Invoice? @relation(fields: [invoiceId], references: [id])
+
+  @@map("invoice_uploads")
+}
+
+enum SupplierType {
+  SUPPLIER
+  SUBCONTRACTOR
+}
+
+enum UploadStatus {
+  PENDING      // Uploaded but not processed
+  PROCESSED    // Converted to full invoice
+  REJECTED     // Invalid or rejected upload
 }

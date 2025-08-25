@@ -28,34 +28,34 @@ export interface ParsingConfig {
   // Strategy selection
   defaultStrategy: ParsingStrategy['name']
   strategies: Record<ParsingStrategy['name'], ParsingStrategy>
-  
+
   // LLM providers
   llmProviders: Record<LLMProvider['name'], LLMProvider>
-  
+
   // Provider ordering
   providerOrder: string[]
-  
+
   // Fallback behavior
   enableFallback: boolean
   fallbackToTraditional: boolean
   fallbackToHuman: boolean
-  
+
   // Quality controls
   confidenceThresholds: {
-    autoApprove: number      // 0.95+ auto-approve
-    requireReview: number    // 0.7-0.95 needs review
+    autoApprove: number // 0.95+ auto-approve
+    requireReview: number // 0.7-0.95 needs review
     requireCorrection: number // <0.7 needs correction
   }
-  
+
   // Cost controls
   maxCostPerDocument: number
   dailyCostLimit: number
-  
+
   // Performance settings
   timeout: number
   retryAttempts: number
   batchSize: number
-  
+
   // Training integration
   useTrainingData: boolean
   collectTrainingData: boolean
@@ -65,48 +65,48 @@ export interface ParsingConfig {
 // Default configuration
 export const DEFAULT_PARSING_CONFIG: ParsingConfig = {
   defaultStrategy: 'hybrid',
-  
+
   // Provider ordering (default preference: accuracy, cost, availability)
   providerOrder: ['anthropic', 'gemini', 'openai'],
-  
+
   strategies: {
     'llm-primary': {
       name: 'llm-primary',
       description: 'LLM first, traditional fallback only',
       fallbackChain: [], // Will be dynamically set based on providerOrder
       confidenceThreshold: 0.8,
-      maxCostPerInvoice: 0.10
+      maxCostPerInvoice: 0.1,
     },
     'traditional-primary': {
       name: 'traditional-primary',
       description: 'Traditional parsing with LLM validation',
       fallbackChain: ['traditional'], // Will be dynamically extended
       confidenceThreshold: 0.7,
-      maxCostPerInvoice: 0.02
+      maxCostPerInvoice: 0.02,
     },
-    'hybrid': {
+    hybrid: {
       name: 'hybrid',
       description: 'LLM + traditional combined analysis',
       fallbackChain: [], // Will be dynamically set
       confidenceThreshold: 0.85,
-      maxCostPerInvoice: 0.05
+      maxCostPerInvoice: 0.05,
     },
     'cost-optimized': {
       name: 'cost-optimized',
       description: 'Traditional first, LLM only for low confidence',
       fallbackChain: ['traditional'], // Will be dynamically extended
       confidenceThreshold: 0.6,
-      maxCostPerInvoice: 0.01
+      maxCostPerInvoice: 0.01,
     },
     'accuracy-optimized': {
       name: 'accuracy-optimized',
       description: 'Multiple LLMs with consensus validation',
       fallbackChain: [], // Will be dynamically set
       confidenceThreshold: 0.95,
-      maxCostPerInvoice: 0.20
-    }
+      maxCostPerInvoice: 0.2,
+    },
   },
-  
+
   llmProviders: {
     anthropic: {
       name: 'anthropic',
@@ -116,8 +116,8 @@ export const DEFAULT_PARSING_CONFIG: ParsingConfig = {
       costPer1k: 0.003, // $3 per 1M input tokens
       rateLimits: {
         requestsPerMinute: 50,
-        tokensPerMinute: 40000
-      }
+        tokensPerMinute: 40000,
+      },
     },
     gemini: {
       name: 'gemini',
@@ -127,8 +127,8 @@ export const DEFAULT_PARSING_CONFIG: ParsingConfig = {
       costPer1k: 0.00015, // Much cheaper
       rateLimits: {
         requestsPerMinute: 60,
-        tokensPerMinute: 60000
-      }
+        tokensPerMinute: 60000,
+      },
     },
     openai: {
       name: 'openai',
@@ -138,46 +138,50 @@ export const DEFAULT_PARSING_CONFIG: ParsingConfig = {
       costPer1k: 0.00015,
       rateLimits: {
         requestsPerMinute: 30,
-        tokensPerMinute: 30000
-      }
-    }
+        tokensPerMinute: 30000,
+      },
+    },
   },
-  
+
   enableFallback: true,
   fallbackToTraditional: true,
   fallbackToHuman: true,
-  
+
   confidenceThresholds: {
     autoApprove: 0.95,
     requireReview: 0.7,
-    requireCorrection: 0.5
+    requireCorrection: 0.5,
   },
-  
-  maxCostPerDocument: 0.10,
-  dailyCostLimit: 10.00,
-  
+
+  maxCostPerDocument: 0.1,
+  dailyCostLimit: 10.0,
+
   timeout: 30000, // 30 seconds
   retryAttempts: 2,
   batchSize: 5,
-  
+
   useTrainingData: true,
   collectTrainingData: true,
-  trainingDataWeight: 0.3 // 30% traditional + training, 70% LLM
+  trainingDataWeight: 0.3, // 30% traditional + training, 70% LLM
 }
 
 /**
  * Build dynamic fallback chains based on provider order and strategy type
  */
-function buildFallbackChain(strategy: ParsingStrategy['name'], providerOrder: string[], enabledProviders: Set<string>): string[] {
+function buildFallbackChain(
+  strategy: ParsingStrategy['name'],
+  providerOrder: string[],
+  enabledProviders: Set<string>
+): string[] {
   const enabledLLMs = providerOrder.filter(provider => enabledProviders.has(provider))
-  
+
   switch (strategy) {
     case 'llm-primary':
       return [...enabledLLMs, 'traditional']
-    
+
     case 'traditional-primary':
       return ['traditional', ...enabledLLMs]
-    
+
     case 'hybrid':
       // Interleave LLMs with traditional for balanced approach
       const hybrid = []
@@ -185,20 +189,22 @@ function buildFallbackChain(strategy: ParsingStrategy['name'], providerOrder: st
       hybrid.push('traditional')
       if (enabledLLMs.length > 1) hybrid.push(...enabledLLMs.slice(1))
       return hybrid
-    
+
     case 'cost-optimized':
       // Traditional first, then cheapest LLMs
       const sortedByPrice = enabledLLMs.sort((a, b) => {
-        const priceA = DEFAULT_PARSING_CONFIG.llmProviders[a as LLMProvider['name']]?.costPer1k || Infinity
-        const priceB = DEFAULT_PARSING_CONFIG.llmProviders[b as LLMProvider['name']]?.costPer1k || Infinity
+        const priceA =
+          DEFAULT_PARSING_CONFIG.llmProviders[a as LLMProvider['name']]?.costPer1k || Infinity
+        const priceB =
+          DEFAULT_PARSING_CONFIG.llmProviders[b as LLMProvider['name']]?.costPer1k || Infinity
         return priceA - priceB
       })
       return ['traditional', ...sortedByPrice]
-    
+
     case 'accuracy-optimized':
       // All enabled LLMs in order, then traditional
       return [...enabledLLMs, 'traditional']
-    
+
     default:
       return ['traditional']
   }
@@ -209,7 +215,7 @@ function buildFallbackChain(strategy: ParsingStrategy['name'], providerOrder: st
  */
 export async function getParsingConfig(userId?: string): Promise<ParsingConfig> {
   const config = { ...DEFAULT_PARSING_CONFIG }
-  
+
   // Get settings from database if userId provided, otherwise use defaults
   let storedSettings
   if (userId) {
@@ -247,18 +253,18 @@ export async function getParsingConfig(userId?: string): Promise<ParsingConfig> 
       }
     })
   }
-  
+
   // Override with environment variables (takes precedence)
   if (process.env.ANTHROPIC_API_KEY) {
     config.llmProviders.anthropic.enabled = true
     config.llmProviders.anthropic.apiKey = process.env.ANTHROPIC_API_KEY
   }
-  
+
   if (process.env.GEMINI_API_KEY) {
     config.llmProviders.gemini.enabled = true
     config.llmProviders.gemini.apiKey = process.env.GEMINI_API_KEY
   }
-  
+
   if (process.env.OPENAI_API_KEY) {
     config.llmProviders.openai.enabled = true
     config.llmProviders.openai.apiKey = process.env.OPENAI_API_KEY
@@ -268,33 +274,37 @@ export async function getParsingConfig(userId?: string): Promise<ParsingConfig> 
   if (process.env.PDF_PROVIDER_ORDER) {
     config.providerOrder = process.env.PDF_PROVIDER_ORDER.split(',')
   }
-  
+
   // Build enabled providers set
   const enabledProviders = new Set(
     Object.entries(config.llmProviders)
       .filter(([_, provider]) => provider.enabled)
       .map(([name, _]) => name)
   )
-  
+
   // Dynamically build fallback chains for each strategy
   Object.keys(config.strategies).forEach(strategyName => {
     const strategy = strategyName as ParsingStrategy['name']
     config.strategies[strategy].fallbackChain = buildFallbackChain(
-      strategy, 
-      config.providerOrder, 
+      strategy,
+      config.providerOrder,
       enabledProviders
     )
   })
-  
+
   // Auto-select strategy based on available providers
-  if (!config.llmProviders.anthropic.enabled && !config.llmProviders.gemini.enabled && !config.llmProviders.openai.enabled) {
+  if (
+    !config.llmProviders.anthropic.enabled &&
+    !config.llmProviders.gemini.enabled &&
+    !config.llmProviders.openai.enabled
+  ) {
     config.defaultStrategy = 'traditional-primary'
   }
-  
+
   // Override strategy from environment
   if (process.env.PDF_PARSING_STRATEGY) {
     config.defaultStrategy = process.env.PDF_PARSING_STRATEGY as ParsingStrategy['name']
   }
-  
+
   return config
 }

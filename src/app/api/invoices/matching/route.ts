@@ -26,14 +26,17 @@ async function GET(request: NextRequest, user: AuthUser) {
   try {
     const { searchParams } = new URL(request.url)
     const projectId = searchParams.get('projectId')
-    
+
     if (!projectId) {
-      return NextResponse.json({
-        success: false,
-        error: 'Project ID is required'
-      }, { status: 400 })
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Project ID is required',
+        },
+        { status: 400 }
+      )
     }
-    
+
     // Verify user has access to this project
     if (user.role !== 'ADMIN') {
       const projectAccess = await prisma.projectUser.findFirst({
@@ -42,137 +45,195 @@ async function GET(request: NextRequest, user: AuthUser) {
           projectId,
         },
       })
-      
+
       if (!projectAccess) {
-        return NextResponse.json({
-          success: false,
-          error: 'You do not have access to this project'
-        }, { status: 403 })
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'You do not have access to this project',
+          },
+          { status: 403 }
+        )
       }
     }
-    
-    // Get pending invoices for this project
-    const pendingInvoices = await prisma.invoice.findMany({
+
+    // Get all invoices for this project
+    const invoices = await prisma.invoice.findMany({
       where: {
         projectId,
-        status: 'PENDING'
       },
       include: {
         lineItems: true,
         project: {
           select: {
             id: true,
-            name: true
-          }
-        }
+            name: true,
+          },
+        },
       },
       orderBy: {
-        createdAt: 'desc'
-      }
+        createdAt: 'desc',
+      },
     })
-    
+
     // Get all estimate line items for this project
     const estimateLineItems = await prisma.lineItem.findMany({
       where: {
         trade: {
-          projectId
-        }
+          projectId,
+        },
       },
       include: {
         trade: {
           select: {
             id: true,
-            name: true
-          }
+            name: true,
+          },
         },
         invoiceItems: {
           select: {
             id: true,
             invoiceId: true,
-            totalPrice: true
-          }
-        }
-      }
+            totalPrice: true,
+          },
+        },
+      },
     })
-    
-    // Prepare data for LLM matching service
-    const invoicesForMatching = pendingInvoices.map(invoice => ({
-      id: invoice.id,
-      invoiceNumber: invoice.invoiceNumber,
-      supplierName: invoice.supplierName,
-      lineItems: invoice.lineItems.map(item => ({
+
+    // Check if we need to run LLM matching by finding unmatched items
+    const unmatchedItems = invoices.flatMap(invoice => 
+      invoice.lineItems.filter(item => !item.lineItemId)
+    )
+
+    // Only run LLM matching if there are unmatched items
+    let batchResult
+    if (unmatchedItems.length > 0) {
+      console.log(`Found ${unmatchedItems.length} unmatched items, running LLM matching...`)
+      
+      // Prepare data for LLM matching service - only unmatched items
+      const invoicesForMatching = invoices.map(invoice => ({
+        id: invoice.id,
+        invoiceNumber: invoice.invoiceNumber,
+        supplierName: invoice.supplierName,
+        lineItems: invoice.lineItems
+          .filter(item => !item.lineItemId) // Only unmatched items
+          .map(item => ({
+            id: item.id,
+            description: item.description,
+            quantity: Number(item.quantity),
+            unitPrice: Number(item.unitPrice),
+            totalPrice: Number(item.totalPrice),
+            category: item.category,
+          })),
+      })).filter(invoice => invoice.lineItems.length > 0) // Only invoices with unmatched items
+
+      const estimatesForMatching = estimateLineItems.map(item => ({
         id: item.id,
         description: item.description,
         quantity: Number(item.quantity),
-        unitPrice: Number(item.unitPrice),
-        totalPrice: Number(item.totalPrice),
-        category: item.category
+        unit: item.unit,
+        materialCostEst: Number(item.materialCostEst),
+        laborCostEst: Number(item.laborCostEst),
+        equipmentCostEst: Number(item.equipmentCostEst),
+        tradeName: item.trade.name,
       }))
-    }))
 
-    const estimatesForMatching = estimateLineItems.map(item => ({
-      id: item.id,
-      description: item.description,
-      quantity: Number(item.quantity),
-      unit: item.unit,
-      materialCostEst: Number(item.materialCostEst),
-      laborCostEst: Number(item.laborCostEst),
-      equipmentCostEst: Number(item.equipmentCostEst),
-      tradeName: item.trade.name
-    }))
+      // Use LLM matching service with fallbacks
+      const llmMatchingService = new SimpleLLMMatchingService(user.id)
+      batchResult = await llmMatchingService.matchInvoicesToEstimates(
+        invoicesForMatching,
+        estimatesForMatching,
+        projectId
+      )
+    } else {
+      console.log('All items already matched, skipping LLM processing')
+      // Create empty result when no LLM processing is needed
+      batchResult = {
+        success: true,
+        matches: [],
+        fallbackUsed: false,
+        processingTime: 0,
+        cost: 0,
+        error: null
+      }
+    }
 
-    // Use LLM matching service with fallbacks
-    const llmMatchingService = new SimpleLLMMatchingService()
-    const batchResult = await llmMatchingService.matchInvoicesToEstimates(
-      invoicesForMatching,
-      estimatesForMatching,
-      projectId
-    )
-
-    // Convert LLM results to the expected format
+    // Convert results to the expected format, prioritizing existing matches from DB
     const matchingResults: MatchingResult[] = []
-    
-    for (const invoice of pendingInvoices) {
-      const invoiceMatches = batchResult.matches
-        .filter(match => {
-          const lineItem = invoice.lineItems.find(item => item.id === match.invoiceLineItemId)
-          return lineItem !== undefined
-        })
-        .map(match => ({
-          invoiceLineItemId: match.invoiceLineItemId,
-          estimateLineItemId: match.estimateLineItemId,
-          confidence: match.confidence,
-          reason: match.reasoning + (match.matchType ? ` (${match.matchType})` : ''),
-          matchType: match.matchType
-        }))
+
+    for (const invoice of invoices) {
+      const invoiceMatches: InvoiceLineItemMatch[] = []
+      
+      for (const invoiceLineItem of invoice.lineItems) {
+        // Check if there's an existing match in the database
+        if (invoiceLineItem.lineItemId) {
+          // Existing match from database - show as high confidence
+          invoiceMatches.push({
+            invoiceLineItemId: invoiceLineItem.id,
+            estimateLineItemId: invoiceLineItem.lineItemId,
+            confidence: 1.0, // Database matches are 100% confident
+            reason: 'Previously matched (database)',
+            matchType: 'existing',
+          })
+        } else {
+          // Look for LLM suggestion for unmatched items
+          const llmMatch = batchResult.matches.find(match => 
+            match.invoiceLineItemId === invoiceLineItem.id
+          )
+          
+          if (llmMatch) {
+            invoiceMatches.push({
+              invoiceLineItemId: llmMatch.invoiceLineItemId,
+              estimateLineItemId: llmMatch.estimateLineItemId,
+              confidence: llmMatch.confidence,
+              reason: llmMatch.reasoning + (llmMatch.matchType ? ` (${llmMatch.matchType})` : ''),
+              matchType: llmMatch.matchType || 'suggested',
+            })
+          } else {
+            // No match found - add as unmatched for manual override
+            invoiceMatches.push({
+              invoiceLineItemId: invoiceLineItem.id,
+              estimateLineItemId: null,
+              confidence: 0,
+              reason: 'No match found',
+              matchType: 'unmatched',
+            })
+          }
+        }
+      }
 
       matchingResults.push({
         invoiceId: invoice.id,
-        matches: invoiceMatches
+        matches: invoiceMatches,
       })
     }
-    
-    // Calculate summary statistics
-    const totalPendingInvoices = pendingInvoices.length
-    const totalPendingAmount = pendingInvoices.reduce((sum, inv) => sum + Number(inv.totalAmount), 0)
-    const totalLineItems = pendingInvoices.reduce((sum, inv) => sum + inv.lineItems.length, 0)
+
+    // Calculate summary statistics  
+    const totalInvoices = invoices.length
+    const totalAmount = invoices.reduce(
+      (sum, inv) => sum + Number(inv.totalAmount),
+      0
+    )
+    const totalLineItems = invoices.reduce((sum, inv) => sum + inv.lineItems.length, 0)
     const totalHighConfidenceMatches = matchingResults
       .flatMap(result => result.matches)
       .filter(match => match.confidence >= 0.7).length
-    
+
     // Add LLM processing metadata
     const llmMetadata = {
-      usedLLM: batchResult.success && !batchResult.fallbackUsed,
+      usedLLM: batchResult.success && !batchResult.fallbackUsed && unmatchedItems.length > 0,
       fallbackUsed: batchResult.fallbackUsed,
       processingTime: batchResult.processingTime,
       cost: batchResult.cost,
-      error: batchResult.error
+      error: batchResult.error,
+      cacheHit: unmatchedItems.length === 0, // Indicate when no LLM processing was needed
+      unmatchedItemsCount: unmatchedItems.length,
     }
-    
+
     return NextResponse.json({
       success: true,
       data: {
-        pendingInvoices: pendingInvoices.map(invoice => ({
+        invoices: invoices.map(invoice => ({
           ...invoice,
           totalAmount: Number(invoice.totalAmount),
           gstAmount: Number(invoice.gstAmount),
@@ -180,8 +241,8 @@ async function GET(request: NextRequest, user: AuthUser) {
             ...item,
             quantity: Number(item.quantity),
             unitPrice: Number(item.unitPrice),
-            totalPrice: Number(item.totalPrice)
-          }))
+            totalPrice: Number(item.totalPrice),
+          })),
         })),
         estimateLineItems: estimateLineItems.map(item => ({
           ...item,
@@ -190,26 +251,31 @@ async function GET(request: NextRequest, user: AuthUser) {
           laborCostEst: Number(item.laborCostEst),
           equipmentCostEst: Number(item.equipmentCostEst),
           markupPercent: Number(item.markupPercent),
-          overheadPercent: Number(item.overheadPercent)
+          overheadPercent: Number(item.overheadPercent),
         })),
         matchingResults,
         summary: {
-          totalPendingInvoices,
-          totalPendingAmount,
+          totalInvoices,
+          totalAmount,
           totalLineItems,
           totalHighConfidenceMatches,
-          matchingRate: totalLineItems > 0 ? Math.round((totalHighConfidenceMatches / totalLineItems) * 100) : 0
+          matchingRate:
+            totalLineItems > 0
+              ? Math.round((totalHighConfidenceMatches / totalLineItems) * 100)
+              : 0,
         },
-        llmMetadata
-      }
+        llmMetadata,
+      },
     })
-    
   } catch (error) {
     console.error('Error in invoice matching GET:', error)
-    return NextResponse.json({
-      success: false,
-      error: 'Failed to fetch invoice matching data'
-    }, { status: 500 })
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Failed to fetch invoice matching data',
+      },
+      { status: 500 }
+    )
   }
 }
 
@@ -217,14 +283,17 @@ async function POST(request: NextRequest, user: AuthUser) {
   try {
     const body = await request.json()
     const { projectId, matches } = body
-    
+
     if (!projectId || !matches || !Array.isArray(matches)) {
-      return NextResponse.json({
-        success: false,
-        error: 'Project ID and matches array are required'
-      }, { status: 400 })
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Project ID and matches array are required',
+        },
+        { status: 400 }
+      )
     }
-    
+
     // Verify user has access to this project
     if (user.role !== 'ADMIN') {
       const projectAccess = await prisma.projectUser.findFirst({
@@ -233,78 +302,83 @@ async function POST(request: NextRequest, user: AuthUser) {
           projectId,
         },
       })
-      
+
       if (!projectAccess) {
-        return NextResponse.json({
-          success: false,
-          error: 'You do not have access to this project'
-        }, { status: 403 })
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'You do not have access to this project',
+          },
+          { status: 403 }
+        )
       }
     }
-    
+
     // Apply the matches in a transaction
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async tx => {
       const updatedItems = []
       const errors = []
-      
+
       for (const match of matches) {
         if (!match.invoiceLineItemId) continue
-        
+
         try {
           // Update the invoice line item with the estimate link
           const updatedItem = await tx.invoiceLineItem.update({
             where: { id: match.invoiceLineItemId },
             data: {
-              lineItemId: match.estimateLineItemId || null
+              lineItemId: match.estimateLineItemId || null,
             },
             include: {
               invoice: {
                 select: {
                   id: true,
                   invoiceNumber: true,
-                  supplierName: true
-                }
+                  supplierName: true,
+                },
               },
               lineItem: {
                 include: {
                   trade: {
                     select: {
                       id: true,
-                      name: true
-                    }
-                  }
-                }
-              }
-            }
+                      name: true,
+                    },
+                  },
+                },
+              },
+            },
           })
-          
+
           updatedItems.push(updatedItem)
         } catch (error) {
           errors.push({
             invoiceLineItemId: match.invoiceLineItemId,
-            error: error instanceof Error ? error.message : 'Unknown error'
+            error: error instanceof Error ? error.message : 'Unknown error',
           })
         }
       }
-      
+
       return { updatedItems, errors }
     })
-    
+
     return NextResponse.json({
       success: true,
       data: {
         matchedItems: result.updatedItems.length,
         errors: result.errors,
-        updatedItems: result.updatedItems
-      }
+        updatedItems: result.updatedItems,
+      },
     })
-    
   } catch (error) {
     console.error('Error in invoice matching POST:', error)
-    return NextResponse.json({
-      success: false,
-      error: 'Failed to apply invoice matches'
-    }, { status: 500 })
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Failed to apply invoice matches',
+      },
+      { status: 500 }
+    )
   }
 }
 

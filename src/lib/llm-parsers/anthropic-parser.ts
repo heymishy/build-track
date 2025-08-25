@@ -3,7 +3,12 @@
  * High-quality parsing with Claude 3.5 Sonnet for maximum accuracy
  */
 
-import { BaseLLMParser, LLMParseRequest, LLMParseResponse, LLMParserConfig } from './base-llm-parser'
+import {
+  BaseLLMParser,
+  LLMParseRequest,
+  LLMParseResponse,
+  LLMParserConfig,
+} from './base-llm-parser'
 
 interface AnthropicResponse {
   content: Array<{
@@ -26,7 +31,7 @@ export class AnthropicParser extends BaseLLMParser {
 
   async parseInvoice(request: LLMParseRequest): Promise<LLMParseResponse> {
     const startTime = Date.now()
-    
+
     try {
       // Rate limiting check
       const canProceed = await this.checkRateLimit(this.config.apiKey, 50) // 50 per minute
@@ -41,16 +46,16 @@ export class AnthropicParser extends BaseLLMParser {
           metadata: {
             model: this.config.model,
             provider: 'anthropic',
-            reasoning: 'Rate limit exceeded'
-          }
+            reasoning: 'Rate limit exceeded',
+          },
         }
       }
 
       const prompt = this.generatePrompt(request)
-      
+
       // Make API call to Anthropic
       const response = await this.callAnthropicAPI(prompt, request.options)
-      
+
       if (!response.success) {
         return {
           success: false,
@@ -61,8 +66,8 @@ export class AnthropicParser extends BaseLLMParser {
           tokensUsed: { input: 0, output: 0 },
           metadata: {
             model: this.config.model,
-            provider: 'anthropic'
-          }
+            provider: 'anthropic',
+          },
         }
       }
 
@@ -87,8 +92,8 @@ export class AnthropicParser extends BaseLLMParser {
               metadata: {
                 model: this.config.model,
                 provider: 'anthropic',
-                reasoning: 'JSON parsing failed'
-              }
+                reasoning: 'JSON parsing failed',
+              },
             }
           }
         } else {
@@ -101,8 +106,8 @@ export class AnthropicParser extends BaseLLMParser {
             tokensUsed: response.data.usage,
             metadata: {
               model: this.config.model,
-              provider: 'anthropic'
-            }
+              provider: 'anthropic',
+            },
           }
         }
       }
@@ -111,7 +116,11 @@ export class AnthropicParser extends BaseLLMParser {
       const invoice = this.validateResponse(parsedData, request.text, request.pageNumber)
       const processingTime = Date.now() - startTime
       const tokensUsed = response.data.usage
-      const costEstimate = this.calculateCost(tokensUsed.input_tokens, tokensUsed.output_tokens, 0.003)
+      const costEstimate = this.calculateCost(
+        tokensUsed.input_tokens,
+        tokensUsed.output_tokens,
+        0.003
+      )
 
       return {
         success: true,
@@ -121,15 +130,14 @@ export class AnthropicParser extends BaseLLMParser {
         processingTime,
         tokensUsed: {
           input: tokensUsed.input_tokens,
-          output: tokensUsed.output_tokens
+          output: tokensUsed.output_tokens,
         },
         metadata: {
           model: this.config.model,
           provider: 'anthropic',
-          reasoning: parsedData.reasoning || 'Successfully parsed with Claude'
-        }
+          reasoning: parsedData.reasoning || 'Successfully parsed with Claude',
+        },
       }
-
     } catch (error) {
       return {
         success: false,
@@ -140,13 +148,16 @@ export class AnthropicParser extends BaseLLMParser {
         tokensUsed: { input: 0, output: 0 },
         metadata: {
           model: this.config.model,
-          provider: 'anthropic'
-        }
+          provider: 'anthropic',
+        },
       }
     }
   }
 
-  private async callAnthropicAPI(prompt: string, options?: any): Promise<{
+  private async callAnthropicAPI(
+    prompt: string,
+    options?: any
+  ): Promise<{
     success: boolean
     data?: AnthropicResponse
     error?: string
@@ -157,7 +168,7 @@ export class AnthropicParser extends BaseLLMParser {
         headers: {
           'Content-Type': 'application/json',
           'x-api-key': this.config.apiKey,
-          'anthropic-version': '2023-06-01'
+          'anthropic-version': '2023-06-01',
         },
         body: JSON.stringify({
           model: this.config.model,
@@ -166,37 +177,36 @@ export class AnthropicParser extends BaseLLMParser {
           messages: [
             {
               role: 'user',
-              content: prompt
-            }
-          ]
-        })
+              content: prompt,
+            },
+          ],
+        }),
       })
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
         return {
           success: false,
-          error: `Anthropic API error: ${response.status} - ${errorData.error?.message || errorData.error || 'Unknown error'}`
+          error: `Anthropic API error: ${response.status} - ${errorData.error?.message || errorData.error || 'Unknown error'}`,
         }
       }
 
       const data = await response.json()
       return {
         success: true,
-        data
+        data,
       }
-
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Network error'
+        error: error instanceof Error ? error.message : 'Network error',
       }
     }
   }
 
   protected generatePrompt(request: LLMParseRequest): string {
     const { text, context, pageNumber } = request
-    
+
     return `You are Claude, an expert invoice data extraction system for construction projects. Extract structured data from the following invoice text with high accuracy and provide detailed reasoning for your decisions.
 
 INVOICE TEXT (Page ${pageNumber || 1}):

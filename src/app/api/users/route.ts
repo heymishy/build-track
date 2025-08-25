@@ -11,10 +11,13 @@ async function GET(request: NextRequest, user: AuthUser) {
   try {
     // Only ADMIN users can view all users
     if (user.role !== 'ADMIN') {
-      return NextResponse.json({
-        success: false,
-        error: 'Only administrators can view user list'
-      }, { status: 403 })
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Only administrators can view user list',
+        },
+        { status: 403 }
+      )
     }
 
     // Get all users with their project access
@@ -33,15 +36,15 @@ async function GET(request: NextRequest, user: AuthUser) {
             createdAt: true,
             project: {
               select: {
-                name: true
-              }
-            }
-          }
-        }
+                name: true,
+              },
+            },
+          },
+        },
       },
       orderBy: {
-        createdAt: 'desc'
-      }
+        createdAt: 'desc',
+      },
     })
 
     // Transform the data to match our interface
@@ -56,21 +59,23 @@ async function GET(request: NextRequest, user: AuthUser) {
         projectId: p.projectId,
         projectName: p.project.name,
         role: p.role,
-        addedAt: p.createdAt.toISOString()
-      }))
+        addedAt: p.createdAt.toISOString(),
+      })),
     }))
 
     return NextResponse.json({
       success: true,
-      users: transformedUsers
+      users: transformedUsers,
     })
-
   } catch (error) {
     console.error('Get users error:', error)
-    return NextResponse.json({
-      success: false,
-      error: 'Failed to fetch users'
-    }, { status: 500 })
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Failed to fetch users',
+      },
+      { status: 500 }
+    )
   }
 }
 
@@ -78,44 +83,53 @@ async function POST(request: NextRequest, user: AuthUser) {
   try {
     // Only ADMIN users can create users
     if (user.role !== 'ADMIN') {
-      return NextResponse.json({
-        success: false,
-        error: 'Only administrators can create users'
-      }, { status: 403 })
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Only administrators can create users',
+        },
+        { status: 403 }
+      )
     }
 
     const { email, name, role, password } = await request.json()
 
     if (!email || !name || !role) {
-      return NextResponse.json({
-        success: false,
-        error: 'Email, name, and role are required'
-      }, { status: 400 })
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Email, name, and role are required',
+        },
+        { status: 400 }
+      )
     }
 
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
-      where: { email }
+      where: { email },
     })
 
     if (existingUser) {
-      return NextResponse.json({
-        success: false,
-        error: 'User with this email already exists'
-      }, { status: 400 })
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'User with this email already exists',
+        },
+        { status: 400 }
+      )
     }
 
     // Create new user
-    const hashedPassword = password ? 
-      require('bcryptjs').hashSync(password, 10) : 
-      require('bcryptjs').hashSync('defaultPassword123', 10) // Temporary password
+    const hashedPassword = password
+      ? require('bcryptjs').hashSync(password, 10)
+      : require('bcryptjs').hashSync('defaultPassword123', 10) // Temporary password
 
     const newUser = await prisma.user.create({
       data: {
         email,
         name,
         role,
-        password: hashedPassword
+        password: hashedPassword,
       },
       select: {
         id: true,
@@ -123,8 +137,8 @@ async function POST(request: NextRequest, user: AuthUser) {
         name: true,
         role: true,
         createdAt: true,
-        updatedAt: true
-      }
+        updatedAt: true,
+      },
     })
 
     return NextResponse.json({
@@ -133,16 +147,18 @@ async function POST(request: NextRequest, user: AuthUser) {
         ...newUser,
         createdAt: newUser.createdAt.toISOString(),
         updatedAt: newUser.updatedAt.toISOString(),
-        projects: []
-      }
+        projects: [],
+      },
     })
-
   } catch (error) {
     console.error('Create user error:', error)
-    return NextResponse.json({
-      success: false,
-      error: 'Failed to create user'
-    }, { status: 500 })
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Failed to create user',
+      },
+      { status: 500 }
+    )
   }
 }
 

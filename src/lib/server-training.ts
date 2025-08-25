@@ -40,22 +40,25 @@ async function fetchLearnedPatterns(): Promise<LearnedPattern[]> {
         createdAt: true,
       },
       orderBy: {
-        createdAt: 'desc'
+        createdAt: 'desc',
       },
-      take: 100 // Limit to recent training data
+      take: 100, // Limit to recent training data
     })
 
     // Parse and aggregate training patterns
-    const patterns = new Map<string, {
-      field: string
-      pattern: RegExp
-      confidence: number
-      examples: string[]
-    }>()
+    const patterns = new Map<
+      string,
+      {
+        field: string
+        pattern: RegExp
+        confidence: number
+        examples: string[]
+      }
+    >()
 
     for (const record of trainingRecords) {
       if (!record.notes) continue
-      
+
       try {
         const trainingData = JSON.parse(record.notes)
         if (trainingData.type !== 'training_data') continue
@@ -67,7 +70,7 @@ async function fetchLearnedPatterns(): Promise<LearnedPattern[]> {
           if (correctedValue && originalExtraction[field] !== correctedValue) {
             // This is a field that was corrected - learn from it
             const patternKey = `${field}_${String(correctedValue).toLowerCase()}`
-            
+
             if (patterns.has(patternKey)) {
               const existing = patterns.get(patternKey)!
               existing.confidence = Math.min(1.0, existing.confidence + 0.1)
@@ -75,7 +78,7 @@ async function fetchLearnedPatterns(): Promise<LearnedPattern[]> {
             } else {
               // Create simple patterns based on field type
               let pattern: RegExp
-              
+
               if (field.includes('amount') || field.includes('total') || field.includes('tax')) {
                 // Numeric fields - look for currency patterns
                 const escapedValue = String(correctedValue).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
@@ -94,7 +97,7 @@ async function fetchLearnedPatterns(): Promise<LearnedPattern[]> {
                 field,
                 pattern,
                 confidence: 0.7,
-                examples: [String(correctedValue)]
+                examples: [String(correctedValue)],
               })
             }
           }
@@ -110,13 +113,12 @@ async function fetchLearnedPatterns(): Promise<LearnedPattern[]> {
       pattern: pattern.pattern.source,
       flags: pattern.pattern.flags,
       confidence: pattern.confidence,
-      examples: [...new Set(pattern.examples)] // Remove duplicates
+      examples: [...new Set(pattern.examples)], // Remove duplicates
     }))
 
     cacheTimestamp = now
     console.log(`Loaded ${cachedPatterns.length} learned patterns from database`)
     return cachedPatterns
-
   } catch (error) {
     console.warn('Error fetching learned patterns:', error)
     return []
@@ -150,11 +152,15 @@ export async function applyLearnedPatterns(
             // Remove currency symbols and parse as number
             const numValue = parseFloat(value.replace(/[^0-9.-]/g, ''))
             if (!isNaN(numValue) && numValue > 0) {
-              console.log(`Applied learned pattern for ${field}: ${numValue} (confidence: ${pattern.confidence})`)
+              console.log(
+                `Applied learned pattern for ${field}: ${numValue} (confidence: ${pattern.confidence})`
+              )
               return Math.round(numValue * 100) / 100 // Round to 2 decimal places
             }
           } else if (value && value.length > 0) {
-            console.log(`Applied learned pattern for ${field}: ${value} (confidence: ${pattern.confidence})`)
+            console.log(
+              `Applied learned pattern for ${field}: ${value} (confidence: ${pattern.confidence})`
+            )
             return value
           }
         }

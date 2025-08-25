@@ -18,10 +18,10 @@ let storedSettings: StoredSettings = {
   apiKeys: {},
   defaultStrategy: 'hybrid',
   providerOrder: ['anthropic', 'gemini', 'openai'],
-  maxCostPerDocument: 0.10,
-  dailyCostLimit: 10.00,
+  maxCostPerDocument: 0.1,
+  dailyCostLimit: 10.0,
   enableFallback: true,
-  collectTrainingData: true
+  collectTrainingData: true,
 }
 
 export function getStoredSettings(): StoredSettings {
@@ -33,8 +33,11 @@ export function updateStoredSettings(updates: Partial<StoredSettings>): void {
   console.log('Settings updated:', {
     ...updates,
     apiKeys: Object.fromEntries(
-      Object.entries(updates.apiKeys || {}).map(([key, value]) => [key, value ? '[HIDDEN]' : undefined])
-    )
+      Object.entries(updates.apiKeys || {}).map(([key, value]) => [
+        key,
+        value ? '[HIDDEN]' : undefined,
+      ])
+    ),
   })
 }
 

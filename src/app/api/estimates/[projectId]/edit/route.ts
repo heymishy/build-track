@@ -9,11 +9,11 @@ import { prisma } from '@/lib/prisma'
 
 interface EditEstimateRequest {
   trades: {
-    id?: string  // If provided, update existing; if not, create new
+    id?: string // If provided, update existing; if not, create new
     name: string
     description?: string
     lineItems: {
-      id?: string  // If provided, update existing; if not, create new
+      id?: string // If provided, update existing; if not, create new
       description: string
       quantity: number
       unit: string
@@ -24,8 +24,8 @@ interface EditEstimateRequest {
       overheadPercent?: number
     }[]
   }[]
-  deletedTradeIds?: string[]  // Trades to delete
-  deletedLineItemIds?: string[]  // Line items to delete
+  deletedTradeIds?: string[] // Trades to delete
+  deletedLineItemIds?: string[] // Line items to delete
 }
 
 async function PUT(
@@ -38,51 +38,57 @@ async function PUT(
     const url = new URL(request.url)
     const pathSegments = url.pathname.split('/')
     const projectId = pathSegments[pathSegments.length - 2] // Get the projectId from /api/estimates/{projectId}/edit
-    
+
     if (!projectId) {
-      return NextResponse.json({
-        success: false,
-        error: 'Project ID is required'
-      }, { status: 400 })
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Project ID is required',
+        },
+        { status: 400 }
+      )
     }
     const body: EditEstimateRequest = await request.json()
-    
+
     console.log(`Editing estimate data for project: ${projectId}`)
-    
+
     // Verify user has access to this project
     if (user.role !== 'ADMIN') {
       const projectAccess = await prisma.projectUser.findFirst({
         where: {
           userId: user.id,
           projectId,
-          role: { in: ['OWNER', 'CONTRACTOR'] } // Only owners and contractors can edit estimates
+          role: { in: ['OWNER', 'CONTRACTOR'] }, // Only owners and contractors can edit estimates
         },
       })
 
       if (!projectAccess) {
-        return NextResponse.json({
-          success: false,
-          error: 'You do not have permission to edit estimates for this project'
-        }, { status: 403 })
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'You do not have permission to edit estimates for this project',
+          },
+          { status: 403 }
+        )
       }
     }
 
     // Start transaction for atomic updates
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async tx => {
       // Delete specified trades and their line items
       if (body.deletedTradeIds && body.deletedTradeIds.length > 0) {
         // First delete line items
         await tx.lineItem.deleteMany({
           where: {
-            tradeId: { in: body.deletedTradeIds }
-          }
+            tradeId: { in: body.deletedTradeIds },
+          },
         })
         // Then delete trades
         await tx.trade.deleteMany({
           where: {
             id: { in: body.deletedTradeIds },
-            projectId // Security: ensure trade belongs to this project
-          }
+            projectId, // Security: ensure trade belongs to this project
+          },
         })
       }
 
@@ -91,8 +97,8 @@ async function PUT(
         await tx.lineItem.deleteMany({
           where: {
             id: { in: body.deletedLineItemIds },
-            trade: { projectId } // Security: ensure line item belongs to this project
-          }
+            trade: { projectId }, // Security: ensure line item belongs to this project
+          },
         })
       }
 
@@ -101,19 +107,19 @@ async function PUT(
       // Process trades (create/update)
       for (const [index, tradeData] of body.trades.entries()) {
         let trade
-        
+
         if (tradeData.id) {
           // Update existing trade
           trade = await tx.trade.update({
-            where: { 
+            where: {
               id: tradeData.id,
-              projectId // Security: ensure trade belongs to this project
+              projectId, // Security: ensure trade belongs to this project
             },
             data: {
               name: tradeData.name,
               description: tradeData.description,
-              sortOrder: index
-            }
+              sortOrder: index,
+            },
           })
         } else {
           // Create new trade
@@ -122,8 +128,8 @@ async function PUT(
               projectId,
               name: tradeData.name,
               description: tradeData.description,
-              sortOrder: index
-            }
+              sortOrder: index,
+            },
           })
         }
 
@@ -131,13 +137,13 @@ async function PUT(
         const updatedLineItems = []
         for (const [lineIndex, lineItemData] of tradeData.lineItems.entries()) {
           let lineItem
-          
+
           if (lineItemData.id) {
             // Update existing line item
             lineItem = await tx.lineItem.update({
-              where: { 
+              where: {
                 id: lineItemData.id,
-                tradeId: trade.id // Security: ensure line item belongs to this trade
+                tradeId: trade.id, // Security: ensure line item belongs to this trade
               },
               data: {
                 description: lineItemData.description,
@@ -148,8 +154,8 @@ async function PUT(
                 equipmentCostEst: lineItemData.equipmentCost,
                 markupPercent: lineItemData.markupPercent || 0,
                 overheadPercent: lineItemData.overheadPercent || 0,
-                sortOrder: lineIndex
-              }
+                sortOrder: lineIndex,
+              },
             })
           } else {
             // Create new line item
@@ -164,25 +170,25 @@ async function PUT(
                 equipmentCostEst: lineItemData.equipmentCost,
                 markupPercent: lineItemData.markupPercent || 0,
                 overheadPercent: lineItemData.overheadPercent || 0,
-                sortOrder: lineIndex
-              }
+                sortOrder: lineIndex,
+              },
             })
           }
-          
+
           updatedLineItems.push(lineItem)
         }
-        
+
         updatedTrades.push({
           ...trade,
-          lineItems: updatedLineItems
+          lineItems: updatedLineItems,
         })
       }
 
       // Calculate new total budget
       const allLineItems = await tx.lineItem.findMany({
         where: {
-          trade: { projectId }
-        }
+          trade: { projectId },
+        },
       })
 
       const totalBudget = allLineItems.reduce((sum, item) => {
@@ -198,17 +204,19 @@ async function PUT(
       // Update project budget
       await tx.project.update({
         where: { id: projectId },
-        data: { totalBudget }
+        data: { totalBudget },
       })
 
       return {
         trades: updatedTrades,
         totalBudget,
-        totalLineItems: allLineItems.length
+        totalLineItems: allLineItems.length,
       }
     })
 
-    console.log(`Updated estimate data for project ${projectId}: ${result.trades.length} trades, ${result.totalLineItems} line items, total budget: $${result.totalBudget}`)
+    console.log(
+      `Updated estimate data for project ${projectId}: ${result.trades.length} trades, ${result.totalLineItems} line items, total budget: $${result.totalBudget}`
+    )
 
     return NextResponse.json({
       success: true,
@@ -217,16 +225,18 @@ async function PUT(
       summary: {
         totalBudget: result.totalBudget,
         tradesCount: result.trades.length,
-        lineItemsCount: result.totalLineItems
-      }
+        lineItemsCount: result.totalLineItems,
+      },
     })
-
   } catch (error) {
     console.error('Edit estimate data error:', error)
-    return NextResponse.json({
-      success: false,
-      error: 'Failed to update estimate data'
-    }, { status: 500 })
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Failed to update estimate data',
+      },
+      { status: 500 }
+    )
   }
 }
 

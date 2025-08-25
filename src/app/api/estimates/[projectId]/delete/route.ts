@@ -17,31 +17,37 @@ async function DELETE(
     const url = new URL(request.url)
     const pathSegments = url.pathname.split('/')
     const projectId = pathSegments[pathSegments.length - 2] // Get the projectId from /api/estimates/{projectId}/delete
-    
+
     if (!projectId) {
-      return NextResponse.json({
-        success: false,
-        error: 'Project ID is required'
-      }, { status: 400 })
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Project ID is required',
+        },
+        { status: 400 }
+      )
     }
-    
+
     console.log(`Deleting estimate data for project: ${projectId}`)
-    
+
     // Verify user has access to this project
     if (user.role !== 'ADMIN') {
       const projectAccess = await prisma.projectUser.findFirst({
         where: {
           userId: user.id,
           projectId,
-          role: { in: ['OWNER', 'CONTRACTOR'] } // Only owners and contractors can delete estimates
+          role: { in: ['OWNER', 'CONTRACTOR'] }, // Only owners and contractors can delete estimates
         },
       })
 
       if (!projectAccess) {
-        return NextResponse.json({
-          success: false,
-          error: 'You do not have permission to delete estimates for this project'
-        }, { status: 403 })
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'You do not have permission to delete estimates for this project',
+          },
+          { status: 403 }
+        )
       }
     }
 
@@ -49,8 +55,8 @@ async function DELETE(
     const trades = await prisma.trade.findMany({
       where: { projectId },
       include: {
-        lineItems: true
-      }
+        lineItems: true,
+      },
     })
 
     let totalLineItemsDeleted = 0
@@ -59,14 +65,14 @@ async function DELETE(
     // Delete all line items first (due to foreign key constraints)
     for (const trade of trades) {
       const lineItemCount = await prisma.lineItem.deleteMany({
-        where: { tradeId: trade.id }
+        where: { tradeId: trade.id },
       })
       totalLineItemsDeleted += lineItemCount.count
     }
 
     // Then delete all trades
     const tradesDeleted = await prisma.trade.deleteMany({
-      where: { projectId }
+      where: { projectId },
     })
     totalTradesDeleted = tradesDeleted.count
 
@@ -74,27 +80,31 @@ async function DELETE(
     await prisma.project.update({
       where: { id: projectId },
       data: {
-        totalBudget: 0
-      }
+        totalBudget: 0,
+      },
     })
 
-    console.log(`Deleted ${totalLineItemsDeleted} line items and ${totalTradesDeleted} trades from project ${projectId}`)
+    console.log(
+      `Deleted ${totalLineItemsDeleted} line items and ${totalTradesDeleted} trades from project ${projectId}`
+    )
 
     return NextResponse.json({
       success: true,
       message: 'Estimate data deleted successfully',
       deleted: {
         trades: totalTradesDeleted,
-        lineItems: totalLineItemsDeleted
-      }
+        lineItems: totalLineItemsDeleted,
+      },
     })
-
   } catch (error) {
     console.error('Delete estimate data error:', error)
-    return NextResponse.json({
-      success: false,
-      error: 'Failed to delete estimate data'
-    }, { status: 500 })
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Failed to delete estimate data',
+      },
+      { status: 500 }
+    )
   }
 }
 

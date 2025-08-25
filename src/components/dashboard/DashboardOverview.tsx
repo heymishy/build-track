@@ -246,7 +246,8 @@ export function DashboardOverview({ className = '' }: DashboardOverviewProps) {
       color: stats.totalBudget - stats.totalSpent < 0 ? 'text-red-600' : 'text-green-600',
       bgColor: stats.totalBudget - stats.totalSpent < 0 ? 'bg-red-50' : 'bg-green-50',
       subtitle: 'across all projects',
-      trendIcon: stats.totalBudget - stats.totalSpent < 0 ? ArrowTrendingDownIcon : ArrowTrendingUpIcon,
+      trendIcon:
+        stats.totalBudget - stats.totalSpent < 0 ? ArrowTrendingDownIcon : ArrowTrendingUpIcon,
     },
     {
       title: 'Average Project',

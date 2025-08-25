@@ -50,14 +50,14 @@ async function POST(request: NextRequest, user: AuthUser) {
     try {
       // Try to find an existing project for this user, or use the first available project
       const userProjects = await prisma.project.findMany({
-        where: { 
+        where: {
           projectUsers: {
             some: {
-              userId: user.id
-            }
-          }
+              userId: user.id,
+            },
+          },
         },
-        take: 1
+        take: 1,
       })
 
       if (userProjects.length > 0) {
@@ -74,10 +74,10 @@ async function POST(request: NextRequest, user: AuthUser) {
             projectUsers: {
               create: {
                 userId: user.id,
-                role: 'OWNER'
-              }
-            }
-          }
+                role: 'OWNER',
+              },
+            },
+          },
         })
       }
     } catch (error) {

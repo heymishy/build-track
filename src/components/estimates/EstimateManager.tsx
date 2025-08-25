@@ -13,7 +13,7 @@ import {
   EyeIcon,
   CalculatorIcon,
   ExclamationTriangleIcon,
-  PlusIcon
+  PlusIcon,
 } from '@heroicons/react/24/outline'
 import { EstimateCreationModal } from './EstimateCreationModal'
 import { AccuracyMeter } from './AccuracyMeter'
@@ -87,9 +87,9 @@ export function EstimateManager({ projectId, className = '' }: EstimateManagerPr
       const response = await fetch(`/api/estimates/${projectId}/delete`, {
         method: 'DELETE',
       })
-      
+
       const data = await response.json()
-      
+
       if (data.success) {
         setTrades([])
         setShowDeleteConfirm(false)
@@ -108,7 +108,7 @@ export function EstimateManager({ projectId, className = '' }: EstimateManagerPr
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-NZ', {
       style: 'currency',
-      currency: 'NZD'
+      currency: 'NZD',
     }).format(amount)
   }
 
@@ -116,19 +116,19 @@ export function EstimateManager({ projectId, className = '' }: EstimateManagerPr
     const materialCost = Number(item.materialCostEst) || 0
     const laborCost = Number(item.laborCostEst) || 0
     const equipmentCost = Number(item.equipmentCostEst) || 0
-    
+
     // Check if it's a mixed item (has significant amounts in multiple categories)
     const nonZeroCosts = [materialCost > 0, laborCost > 0, equipmentCost > 0].filter(Boolean).length
-    
+
     if (nonZeroCosts > 1) {
       return 'Mixed'
     }
-    
+
     // Single category items
     if (materialCost > laborCost && materialCost > equipmentCost) return 'Material'
     if (laborCost > materialCost && laborCost > equipmentCost) return 'Labor'
     if (equipmentCost > materialCost && equipmentCost > laborCost) return 'Equipment'
-    
+
     return 'Other'
   }
 
@@ -138,14 +138,14 @@ export function EstimateManager({ projectId, className = '' }: EstimateManagerPr
     const equipmentCost = Number(item.equipmentCostEst) || 0
     const markupPercent = Number(item.markupPercent) || 0
     const overheadPercent = Number(item.overheadPercent) || 0
-    
+
     const baseTotal = materialCost + laborCost + equipmentCost
     const markup = baseTotal * (markupPercent / 100)
     const overhead = baseTotal * (overheadPercent / 100)
     const totalCost = baseTotal + markup + overhead
-    
+
     const category = getLineItemCategory(item)
-    
+
     return { totalCost, category, materialCost, laborCost, equipmentCost }
   }
 
@@ -157,7 +157,7 @@ export function EstimateManager({ projectId, className = '' }: EstimateManagerPr
       const equipmentCost = Number(item.equipmentCostEst) || 0
       const markupPercent = Number(item.markupPercent) || 0
       const overheadPercent = Number(item.overheadPercent) || 0
-      
+
       const baseTotal = materialCost + laborCost + equipmentCost
       const markup = baseTotal * (markupPercent / 100)
       const overhead = baseTotal * (overheadPercent / 100)
@@ -204,7 +204,6 @@ export function EstimateManager({ projectId, className = '' }: EstimateManagerPr
 
   return (
     <div className={`bg-white rounded-lg shadow ${className}`}>
-      
       {/* Header */}
       <div className="px-6 py-4 border-b border-gray-200">
         <div className="flex items-center justify-between">
@@ -267,42 +266,56 @@ export function EstimateManager({ projectId, className = '' }: EstimateManagerPr
             {viewMode === 'detailed' ? (
               /* Detailed View - Show all line items in flat list */
               <div className="space-y-1">
-                {trades.flatMap((trade) => 
-                  trade.lineItems.map((item) => {
-                    const { totalCost, category, materialCost, laborCost, equipmentCost } = getPrimaryCostAndCategory(item)
+                {trades.flatMap(trade =>
+                  trade.lineItems.map(item => {
+                    const { totalCost, category, materialCost, laborCost, equipmentCost } =
+                      getPrimaryCostAndCategory(item)
                     const quantity = Number(item.quantity) || 0
                     const isMixed = category === 'Mixed'
 
                     return (
-                      <div key={item.id} className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded text-sm hover:bg-gray-100">
+                      <div
+                        key={item.id}
+                        className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded text-sm hover:bg-gray-100"
+                      >
                         <div className="flex-1">
                           <span className="text-gray-900 font-medium">{item.description}</span>
                           <span className="ml-2 text-xs text-gray-500">
                             {quantity > 1 ? `${quantity} ${item.unit}` : item.unit}
                           </span>
-                          <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${
-                            category === 'Material' ? 'bg-blue-100 text-blue-800' :
-                            category === 'Labor' ? 'bg-green-100 text-green-800' :
-                            category === 'Equipment' ? 'bg-orange-100 text-orange-800' :
-                            category === 'Mixed' ? 'bg-purple-100 text-purple-800' :
-                            'bg-gray-100 text-gray-800'
-                          }`}>
+                          <span
+                            className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${
+                              category === 'Material'
+                                ? 'bg-blue-100 text-blue-800'
+                                : category === 'Labor'
+                                  ? 'bg-green-100 text-green-800'
+                                  : category === 'Equipment'
+                                    ? 'bg-orange-100 text-orange-800'
+                                    : category === 'Mixed'
+                                      ? 'bg-purple-100 text-purple-800'
+                                      : 'bg-gray-100 text-gray-800'
+                            }`}
+                          >
                             {category}
                           </span>
-                          <span className="ml-2 text-xs text-gray-400">
-                            {trade.name}
-                          </span>
+                          <span className="ml-2 text-xs text-gray-400">{trade.name}</span>
                         </div>
-                        
+
                         {/* Show breakdown only for mixed items */}
                         {isMixed && (
                           <div className="text-xs text-gray-600 mr-4">
-                            {materialCost > 0 && <span className="mr-2">M: {formatCurrency(materialCost)}</span>}
-                            {laborCost > 0 && <span className="mr-2">L: {formatCurrency(laborCost)}</span>}
-                            {equipmentCost > 0 && <span className="mr-2">E: {formatCurrency(equipmentCost)}</span>}
+                            {materialCost > 0 && (
+                              <span className="mr-2">M: {formatCurrency(materialCost)}</span>
+                            )}
+                            {laborCost > 0 && (
+                              <span className="mr-2">L: {formatCurrency(laborCost)}</span>
+                            )}
+                            {equipmentCost > 0 && (
+                              <span className="mr-2">E: {formatCurrency(equipmentCost)}</span>
+                            )}
                           </div>
                         )}
-                        
+
                         <div className="text-right">
                           <span className="font-semibold text-gray-900">
                             {formatCurrency(totalCost)}
@@ -316,32 +329,53 @@ export function EstimateManager({ projectId, className = '' }: EstimateManagerPr
             ) : (
               /* Summary View - Show trade summaries */
               <div className="space-y-2">
-                {trades.map((trade) => {
-                  const materialTotal = trade.lineItems.reduce((sum, item) => sum + (Number(item.materialCostEst) || 0), 0)
-                  const laborTotal = trade.lineItems.reduce((sum, item) => sum + (Number(item.laborCostEst) || 0), 0)
-                  const equipmentTotal = trade.lineItems.reduce((sum, item) => sum + (Number(item.equipmentCostEst) || 0), 0)
-                  const primaryCategory = 
-                    materialTotal > 0 ? 'Material' :
-                    laborTotal > 0 ? 'Labor' :
-                    equipmentTotal > 0 ? 'Equipment' : 'Other'
+                {trades.map(trade => {
+                  const materialTotal = trade.lineItems.reduce(
+                    (sum, item) => sum + (Number(item.materialCostEst) || 0),
+                    0
+                  )
+                  const laborTotal = trade.lineItems.reduce(
+                    (sum, item) => sum + (Number(item.laborCostEst) || 0),
+                    0
+                  )
+                  const equipmentTotal = trade.lineItems.reduce(
+                    (sum, item) => sum + (Number(item.equipmentCostEst) || 0),
+                    0
+                  )
+                  const primaryCategory =
+                    materialTotal > 0
+                      ? 'Material'
+                      : laborTotal > 0
+                        ? 'Labor'
+                        : equipmentTotal > 0
+                          ? 'Equipment'
+                          : 'Other'
 
                   return (
-                    <div key={trade.id} className="flex items-center justify-between py-2 px-3 bg-white border border-gray-200 rounded text-sm">
+                    <div
+                      key={trade.id}
+                      className="flex items-center justify-between py-2 px-3 bg-white border border-gray-200 rounded text-sm"
+                    >
                       <div className="flex-1">
                         <span className="text-gray-900 font-medium">{trade.name}</span>
                         <span className="ml-2 text-xs text-gray-500">
                           {trade.lineItems.length} {trade.lineItems.length === 1 ? 'item' : 'items'}
                         </span>
-                        <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${
-                          primaryCategory === 'Material' ? 'bg-blue-100 text-blue-800' :
-                          primaryCategory === 'Labor' ? 'bg-green-100 text-green-800' :
-                          primaryCategory === 'Equipment' ? 'bg-orange-100 text-orange-800' :
-                          'bg-gray-100 text-gray-800'
-                        }`}>
+                        <span
+                          className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${
+                            primaryCategory === 'Material'
+                              ? 'bg-blue-100 text-blue-800'
+                              : primaryCategory === 'Labor'
+                                ? 'bg-green-100 text-green-800'
+                                : primaryCategory === 'Equipment'
+                                  ? 'bg-orange-100 text-orange-800'
+                                  : 'bg-gray-100 text-gray-800'
+                          }`}
+                        >
                           {primaryCategory}
                         </span>
                       </div>
-                      
+
                       <div className="text-right">
                         <span className="font-semibold text-gray-900">
                           {formatCurrency(calculateTradeTotal(trade))}
@@ -361,7 +395,7 @@ export function EstimateManager({ projectId, className = '' }: EstimateManagerPr
         <div className="px-6 py-4 border-t border-gray-200">
           <AccuracyMeter
             projectId={projectId}
-            onMeasureAccuracy={(accuracy) => {
+            onMeasureAccuracy={accuracy => {
               console.log('Accuracy measured:', accuracy)
             }}
           />
@@ -386,9 +420,9 @@ export function EstimateManager({ projectId, className = '' }: EstimateManagerPr
               <h3 className="text-lg font-medium text-gray-900">Delete All Estimate Data</h3>
             </div>
             <p className="text-sm text-gray-500 mb-6">
-              This will permanently delete all {trades.length} trades and their line items from this project. 
-              The total budget of {formatCurrency(calculateProjectTotal())} will be reset to $0.00.
-              This action cannot be undone.
+              This will permanently delete all {trades.length} trades and their line items from this
+              project. The total budget of {formatCurrency(calculateProjectTotal())} will be reset
+              to $0.00. This action cannot be undone.
             </p>
             <div className="flex justify-end space-x-3">
               <button

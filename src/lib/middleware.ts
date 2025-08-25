@@ -177,7 +177,7 @@ export function getUserFromRequest(request: NextRequest): AuthUser | null {
       cookieNames: request.cookies.getAll().map(cookie => cookie.name),
       url: request.url,
       cookieValue: cookieToken ? cookieToken.substring(0, 20) + '...' : null,
-      userAgent: request.headers.get('user-agent')?.substring(0, 50)
+      userAgent: request.headers.get('user-agent')?.substring(0, 50),
     })
 
     if (!token) {
@@ -205,8 +205,12 @@ export function getUserFromRequest(request: NextRequest): AuthUser | null {
       createdAt: new Date(),
       updatedAt: new Date(),
     }
-    
-    console.log('Successfully authenticated user:', { id: user.id, email: user.email, role: user.role })
+
+    console.log('Successfully authenticated user:', {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+    })
     return user
   } catch (error) {
     console.error('Error verifying JWT token:', error)

@@ -3,7 +3,12 @@
  * Cost-optimized parsing with Gemini 1.5 Flash for high-volume processing
  */
 
-import { BaseLLMParser, LLMParseRequest, LLMParseResponse, LLMParserConfig } from './base-llm-parser'
+import {
+  BaseLLMParser,
+  LLMParseRequest,
+  LLMParseResponse,
+  LLMParserConfig,
+} from './base-llm-parser'
 
 interface GeminiResponse {
   candidates: Array<{
@@ -31,7 +36,7 @@ export class GeminiParser extends BaseLLMParser {
 
   async parseInvoice(request: LLMParseRequest): Promise<LLMParseResponse> {
     const startTime = Date.now()
-    
+
     try {
       // Rate limiting check - Gemini allows higher rates
       const canProceed = await this.checkRateLimit(this.config.apiKey, 60) // 60 per minute
@@ -46,16 +51,16 @@ export class GeminiParser extends BaseLLMParser {
           metadata: {
             model: this.config.model,
             provider: 'gemini',
-            reasoning: 'Rate limit exceeded'
-          }
+            reasoning: 'Rate limit exceeded',
+          },
         }
       }
 
       const prompt = this.generateGeminiPrompt(request)
-      
+
       // Make API call to Gemini
       const response = await this.callGeminiAPI(prompt, request.options)
-      
+
       if (!response.success) {
         return {
           success: false,
@@ -66,15 +71,15 @@ export class GeminiParser extends BaseLLMParser {
           tokensUsed: { input: 0, output: 0 },
           metadata: {
             model: this.config.model,
-            provider: 'gemini'
-          }
+            provider: 'gemini',
+          },
         }
       }
 
       // Parse JSON response
       let parsedData: any
       const responseText = response.data.candidates[0]?.content?.parts[0]?.text || ''
-      
+
       try {
         parsedData = JSON.parse(responseText)
       } catch (error) {
@@ -90,15 +95,17 @@ export class GeminiParser extends BaseLLMParser {
               confidence: 0,
               costEstimate: this.calculateCost(0, 0, 0.00015),
               processingTime: Date.now() - startTime,
-              tokensUsed: response.data.usageMetadata ? {
-                input: response.data.usageMetadata.promptTokenCount,
-                output: response.data.usageMetadata.candidatesTokenCount
-              } : { input: 0, output: 0 },
+              tokensUsed: response.data.usageMetadata
+                ? {
+                    input: response.data.usageMetadata.promptTokenCount,
+                    output: response.data.usageMetadata.candidatesTokenCount,
+                  }
+                : { input: 0, output: 0 },
               metadata: {
                 model: this.config.model,
                 provider: 'gemini',
-                reasoning: 'JSON parsing failed'
-              }
+                reasoning: 'JSON parsing failed',
+              },
             }
           }
         } else {
@@ -108,14 +115,16 @@ export class GeminiParser extends BaseLLMParser {
             confidence: 0,
             costEstimate: this.calculateCost(0, 0, 0.00015),
             processingTime: Date.now() - startTime,
-            tokensUsed: response.data.usageMetadata ? {
-              input: response.data.usageMetadata.promptTokenCount,
-              output: response.data.usageMetadata.candidatesTokenCount
-            } : { input: 0, output: 0 },
+            tokensUsed: response.data.usageMetadata
+              ? {
+                  input: response.data.usageMetadata.promptTokenCount,
+                  output: response.data.usageMetadata.candidatesTokenCount,
+                }
+              : { input: 0, output: 0 },
             metadata: {
               model: this.config.model,
-              provider: 'gemini'
-            }
+              provider: 'gemini',
+            },
           }
         }
       }
@@ -125,8 +134,8 @@ export class GeminiParser extends BaseLLMParser {
       const processingTime = Date.now() - startTime
       const tokensUsed = response.data.usageMetadata
       const costEstimate = this.calculateCost(
-        tokensUsed?.promptTokenCount || 0, 
-        tokensUsed?.candidatesTokenCount || 0, 
+        tokensUsed?.promptTokenCount || 0,
+        tokensUsed?.candidatesTokenCount || 0,
         0.00015 // Gemini 1.5 Flash pricing
       )
 
@@ -138,15 +147,14 @@ export class GeminiParser extends BaseLLMParser {
         processingTime,
         tokensUsed: {
           input: tokensUsed?.promptTokenCount || 0,
-          output: tokensUsed?.candidatesTokenCount || 0
+          output: tokensUsed?.candidatesTokenCount || 0,
         },
         metadata: {
           model: this.config.model,
           provider: 'gemini',
-          reasoning: parsedData.reasoning || 'Successfully parsed with Gemini'
-        }
+          reasoning: parsedData.reasoning || 'Successfully parsed with Gemini',
+        },
       }
-
     } catch (error) {
       return {
         success: false,
@@ -157,92 +165,98 @@ export class GeminiParser extends BaseLLMParser {
         tokensUsed: { input: 0, output: 0 },
         metadata: {
           model: this.config.model,
-          provider: 'gemini'
-        }
+          provider: 'gemini',
+        },
       }
     }
   }
 
-  private async callGeminiAPI(prompt: string, options?: any): Promise<{
+  private async callGeminiAPI(
+    prompt: string,
+    options?: any
+  ): Promise<{
     success: boolean
     data?: GeminiResponse
     error?: string
   }> {
     try {
       const url = `${this.config.baseUrl}/${this.config.model}:generateContent?key=${this.config.apiKey}`
-      
+
       const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          contents: [{
-            parts: [{
-              text: prompt
-            }]
-          }],
+          contents: [
+            {
+              parts: [
+                {
+                  text: prompt,
+                },
+              ],
+            },
+          ],
           generationConfig: {
             temperature: options?.temperature || 0.1,
             maxOutputTokens: options?.maxTokens || 4000,
             topK: 40,
-            topP: 0.95
+            topP: 0.95,
           },
           safetySettings: [
             {
               category: 'HARM_CATEGORY_HARASSMENT',
-              threshold: 'BLOCK_NONE'
+              threshold: 'BLOCK_NONE',
             },
             {
               category: 'HARM_CATEGORY_HATE_SPEECH',
-              threshold: 'BLOCK_NONE'
+              threshold: 'BLOCK_NONE',
             },
             {
               category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
-              threshold: 'BLOCK_NONE'
+              threshold: 'BLOCK_NONE',
             },
             {
               category: 'HARM_CATEGORY_DANGEROUS_CONTENT',
-              threshold: 'BLOCK_NONE'
-            }
-          ]
-        })
+              threshold: 'BLOCK_NONE',
+            },
+          ],
+        }),
       })
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
         return {
           success: false,
-          error: `Gemini API error: ${response.status} - ${errorData.error?.message || errorData.error || 'Unknown error'}`
+          error: `Gemini API error: ${response.status} - ${errorData.error?.message || errorData.error || 'Unknown error'}`,
         }
       }
 
       const data = await response.json()
-      
+
       // Check for safety blocks or other issues
       if (data.candidates && data.candidates[0]?.finishReason !== 'STOP') {
         return {
           success: false,
-          error: `Gemini generation issue: ${data.candidates[0]?.finishReason || 'Unknown reason'}`
+          error: `Gemini generation issue: ${data.candidates[0]?.finishReason || 'Unknown reason'}`,
         }
       }
 
       return {
         success: true,
-        data
+        data,
       }
-
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Network error'
+        error: error instanceof Error ? error.message : 'Network error',
       }
     }
   }
 
   private generateGeminiPrompt(request: LLMParseRequest): string {
     const { text, context, pageNumber } = request
-    
+
     // Optimized prompt for Gemini - more concise to reduce token usage
     return `Extract invoice data from this construction invoice text. Focus on accuracy and provide confidence scoring.
 

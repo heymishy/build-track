@@ -17,8 +17,10 @@ import {
   ClockIcon,
   ExclamationTriangleIcon,
   XCircleIcon,
+  XMarkIcon,
 } from '@heroicons/react/24/outline'
 import { InvoiceApprovalModal } from './InvoiceApprovalModal'
+import { InvoiceCategorySummary } from './InvoiceCategorySummary'
 import { ParsedInvoice, MultiInvoiceResult } from '@/lib/pdf-parser'
 
 interface Invoice {
@@ -65,12 +67,20 @@ interface InvoiceManagementProps {
   uploadedPdfFile?: File | null
 }
 
-export function InvoiceManagement({ 
-  projectId, 
-  className = '', 
-  pendingParsedInvoices, 
+// Mock project data for category summary (should come from context in real implementation)
+const getCurrentProject = () => {
+  return {
+    id: 'mock-project-id',
+    name: 'Mock Project'
+  }
+}
+
+export function InvoiceManagement({
+  projectId,
+  className = '',
+  pendingParsedInvoices,
   onAssignParsedInvoices,
-  uploadedPdfFile
+  uploadedPdfFile,
 }: InvoiceManagementProps) {
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [loading, setLoading] = useState(true)
@@ -83,7 +93,10 @@ export function InvoiceManagement({
   const [viewMode, setViewMode] = useState<'saved' | 'pending' | 'all'>('all')
   const [reviewingInvoice, setReviewingInvoice] = useState<ParsedInvoice | null>(null)
   const [showPdfReviewModal, setShowPdfReviewModal] = useState(false)
-
+  const [detailTab, setDetailTab] = useState<'details' | 'categories'>('details')
+  
+  // Mock current project (in real implementation, this would come from context)
+  const currentProject = getCurrentProject()
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1)
@@ -268,7 +281,11 @@ export function InvoiceManagement({
             <h3 className="text-lg font-medium text-gray-900">Invoice Management</h3>
             {viewMode === 'all' && (
               <p className="mt-1 text-sm text-gray-500">
-                {(summary?.total || 0) + (pendingParsedInvoices?.totalInvoices || 0)} invoices • {formatCurrency((summary?.totalAmount || 0) + (pendingParsedInvoices?.totalAmount || 0))} total
+                {(summary?.total || 0) + (pendingParsedInvoices?.totalInvoices || 0)} invoices •{' '}
+                {formatCurrency(
+                  (summary?.totalAmount || 0) + (pendingParsedInvoices?.totalAmount || 0)
+                )}{' '}
+                total
               </p>
             )}
             {viewMode === 'saved' && summary && (
@@ -278,7 +295,8 @@ export function InvoiceManagement({
             )}
             {viewMode === 'pending' && pendingParsedInvoices && (
               <p className="mt-1 text-sm text-gray-500">
-                {pendingParsedInvoices.totalInvoices} pending invoices • {formatCurrency(pendingParsedInvoices.totalAmount)} total
+                {pendingParsedInvoices.totalInvoices} pending invoices •{' '}
+                {formatCurrency(pendingParsedInvoices.totalAmount)} total
               </p>
             )}
           </div>
@@ -303,7 +321,7 @@ export function InvoiceManagement({
               }`}
             >
               All Invoices
-              {((summary?.total || 0) + (pendingParsedInvoices?.totalInvoices || 0)) > 0 && (
+              {(summary?.total || 0) + (pendingParsedInvoices?.totalInvoices || 0) > 0 && (
                 <span className="ml-2 bg-gray-100 text-gray-900 py-0.5 px-2.5 rounded-full text-xs">
                   {(summary?.total || 0) + (pendingParsedInvoices?.totalInvoices || 0)}
                 </span>
@@ -378,10 +396,7 @@ export function InvoiceManagement({
       {error && (
         <div className="mx-6 mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
           <p className="text-sm text-red-800">{error}</p>
-          <button
-            onClick={() => setError(null)}
-            className="mt-2 text-xs text-red-600 underline"
-          >
+          <button onClick={() => setError(null)} className="mt-2 text-xs text-red-600 underline">
             Dismiss
           </button>
         </div>
@@ -566,20 +581,22 @@ export function InvoiceManagement({
         )}
 
         {/* Empty state for all modes */}
-        {((viewMode === 'all' && invoices.length === 0 && (!pendingParsedInvoices || pendingParsedInvoices.totalInvoices === 0)) ||
-          (viewMode === 'pending' && (!pendingParsedInvoices || pendingParsedInvoices.totalInvoices === 0))) && (
+        {((viewMode === 'all' &&
+          invoices.length === 0 &&
+          (!pendingParsedInvoices || pendingParsedInvoices.totalInvoices === 0)) ||
+          (viewMode === 'pending' &&
+            (!pendingParsedInvoices || pendingParsedInvoices.totalInvoices === 0))) && (
           <div className="px-6 py-12 text-center">
             <DocumentIcon className="mx-auto h-12 w-12 text-gray-400" />
             <h3 className="mt-2 text-sm font-medium text-gray-900">
               {viewMode === 'pending' ? 'No pending invoices' : 'No invoices found'}
             </h3>
             <p className="mt-1 text-sm text-gray-500">
-              {viewMode === 'pending' 
+              {viewMode === 'pending'
                 ? 'Upload a PDF to parse new invoices'
                 : searchTerm || statusFilter !== 'all'
                   ? 'Try adjusting your filters'
-                  : 'Upload your first invoice to get started'
-              }
+                  : 'Upload your first invoice to get started'}
             </p>
           </div>
         )}
@@ -612,77 +629,175 @@ export function InvoiceManagement({
         </div>
       )}
 
-      {/* Invoice Detail Modal */}
+      {/* Invoice Detail Modal with Tabs */}
       {selectedInvoice && (
-        <div className="fixed inset-0 z-50 overflow-y-auto">
-          <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-            <div className="fixed inset-0 bg-gray-500 bg-opacity-75" onClick={() => setSelectedInvoice(null)}></div>
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-11/12 max-w-6xl shadow-lg rounded-md bg-white">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-medium text-gray-900">
+                Invoice Details - {selectedInvoice.invoiceNumber}
+              </h3>
+              <button
+                onClick={() => setSelectedInvoice(null)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <XMarkIcon className="h-6 w-6" />
+              </button>
+            </div>
             
-            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
-              <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-medium text-gray-900">Invoice Details</h3>
-                  <button onClick={() => setSelectedInvoice(null)} className="text-gray-400 hover:text-gray-600">
-                    <XCircleIcon className="h-6 w-6" />
-                  </button>
-                </div>
-                
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-sm font-medium text-gray-700">Invoice Number</p>
-                      <p className="text-sm text-gray-900">{selectedInvoice.invoiceNumber}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-700">Supplier</p>
-                      <p className="text-sm text-gray-900">{selectedInvoice.supplierName}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-700">Date</p>
-                      <p className="text-sm text-gray-900">{formatDate(selectedInvoice.invoiceDate)}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-700">Total Amount</p>
-                      <p className="text-sm text-gray-900">{formatCurrency(selectedInvoice.totalAmount)}</p>
+            {/* Tab Navigation */}
+            <div className="border-b border-gray-200 mb-6">
+              <nav className="-mb-px flex space-x-8">
+                <button
+                  onClick={() => setDetailTab('details')}
+                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                    detailTab === 'details'
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  Invoice Details
+                </button>
+                <button
+                  onClick={() => setDetailTab('categories')}
+                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                    detailTab === 'categories'
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  Category Summary
+                </button>
+              </nav>
+            </div>
+
+            {/* Tab Content */}
+            {detailTab === 'details' && (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                  <div>
+                    <h4 className="font-medium text-gray-900 mb-2">Invoice Information</h4>
+                    <div className="space-y-2 text-sm">
+                      <p><span className="font-medium">Number:</span> {selectedInvoice.invoiceNumber}</p>
+                      <p><span className="font-medium">Supplier:</span> {selectedInvoice.supplierName}</p>
+                      <p><span className="font-medium">Date:</span> {formatDate(selectedInvoice.invoiceDate)}</p>
+                      <p><span className="font-medium">Total:</span> {formatCurrency(selectedInvoice.totalAmount)}</p>
+                      <p><span className="font-medium">Status:</span> 
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ml-2 ${getStatusColor(selectedInvoice.status)}`}>
+                          {getStatusIcon(selectedInvoice.status)}
+                          <span className="ml-1">{selectedInvoice.status}</span>
+                        </span>
+                      </p>
                     </div>
                   </div>
-
-                  {selectedInvoice.lineItems.length > 0 && (
+                  
+                  {selectedInvoice.pdfUrl && (
                     <div>
-                      <p className="text-sm font-medium text-gray-700 mb-2">Line Items</p>
-                      <div className="border border-gray-200 rounded-md">
-                        <table className="min-w-full divide-y divide-gray-200">
-                          <thead className="bg-gray-50">
-                            <tr>
-                              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
-                              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Qty</th>
-                              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Price</th>
-                              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Total</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-gray-200">
-                            {selectedInvoice.lineItems.map(item => (
-                              <tr key={item.id}>
-                                <td className="px-3 py-2 text-sm text-gray-900">{item.description}</td>
-                                <td className="px-3 py-2 text-sm text-gray-900">{item.quantity}</td>
-                                <td className="px-3 py-2 text-sm text-gray-900">{formatCurrency(item.unitPrice)}</td>
-                                <td className="px-3 py-2 text-sm text-gray-900">{formatCurrency(item.totalPrice)}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-                  )}
-
-                  {selectedInvoice.notes && (
-                    <div>
-                      <p className="text-sm font-medium text-gray-700">Notes</p>
-                      <p className="text-sm text-gray-900">{selectedInvoice.notes}</p>
+                      <h4 className="font-medium text-gray-900 mb-2">PDF Document</h4>
+                      <a
+                        href={selectedInvoice.pdfUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+                      >
+                        <DocumentIcon className="h-4 w-4 mr-2" />
+                        View PDF
+                      </a>
                     </div>
                   )}
                 </div>
-              </div>
+
+                {/* Line Items */}
+                {selectedInvoice.lineItems && selectedInvoice.lineItems.length > 0 && (
+                  <div className="mb-6">
+                    <h4 className="font-medium text-gray-900 mb-3">Line Items</h4>
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Description
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Quantity
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Unit Price
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Total
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Category
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {selectedInvoice.lineItems.map((item, index) => (
+                            <tr key={index}>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {item.description}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {Number(item.quantity).toFixed(2)}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {formatCurrency(Number(item.unitPrice))}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
+                                {formatCurrency(Number(item.totalPrice))}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                  {item.category}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {selectedInvoice.notes && (
+                  <div className="mb-6">
+                    <h4 className="font-medium text-gray-900 mb-2">Notes</h4>
+                    <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-md">{selectedInvoice.notes}</p>
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* Category Summary Tab */}
+            {detailTab === 'categories' && currentProject && (
+              <InvoiceCategorySummary
+                invoiceId={selectedInvoice.id}
+                projectId={projectId || currentProject.id}
+                onCategorize={() => {
+                  // Refresh the invoice data after categorization
+                  fetchInvoices()
+                }}
+              />
+            )}
+
+            <div className="flex justify-end space-x-3 mt-6">
+              <button
+                onClick={() => setSelectedInvoice(null)}
+                className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                Close
+              </button>
+              <button
+                onClick={() => {
+                  setSelectedInvoice(null)
+                  // Add approval logic here if needed
+                }}
+                disabled={selectedInvoice.status !== 'PENDING'}
+                className="px-4 py-2 bg-blue-600 border border-transparent rounded-md text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Approve Invoice
+              </button>
             </div>
           </div>
         </div>

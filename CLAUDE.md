@@ -2,304 +2,469 @@
 
 **Version:** 0.1.0  
 **Stack:** Next.js 15.4.7, React 19.1.0, TypeScript, Prisma, Tailwind CSS  
-**Database:** SQLite (dev) / PostgreSQL (prod)
+**Database:** SQLite (dev) / PostgreSQL (prod via Supabase)  
+**Deployment:** Vercel (prod) / Local (dev)
 
-## Quick Start Commands
+## 🏗️ Multi-Tier Architecture
+
+### Development Environment
+- **Database**: SQLite (`prisma/dev.db`) for rapid development
+- **Port**: 3006 (configured in package.json)
+- **Domain**: `http://localhost:3006`
+- **Features**: Hot reload, debug logging, Turbopack (experimental)
+
+### Production Environment  
+- **Platform**: Vercel deployment with Supabase PostgreSQL
+- **Database**: PostgreSQL via Supabase connection
+- **Domain**: `https://buildtrack.vercel.app` (configured in vercel.json)
+- **Features**: CDN, edge functions, auto-scaling, security headers
+
+### Key Differences Between Tiers
+| Aspect | Development | Production |
+|--------|-------------|------------|
+| Database | SQLite file | PostgreSQL (Supabase) |
+| Performance | Fast iteration | Optimized for scale |
+| Logging | Verbose debug | Error tracking only |
+| Security | Relaxed CORS | Strict CSP headers |
+| File Storage | Local filesystem | Vercel Blob storage |
+| Environment | `.env.local` | Vercel env variables |
+
+## 🚀 Quick Start Commands
 
 ```bash
 # Development
-npm run dev              # Start dev server with Turbopack
-npm run build           # Production build
-npm run start           # Start production server
+npm run dev              # Start dev server with Turbopack (port 3006)
+npm run dev:turbo        # Alternative Turbopack mode
+npm run build           # Production build test
+npm run start           # Start production server locally
 
-# Code Quality
+# Code Quality (REQUIRED before commits)
 npm run lint            # ESLint checking
-npm run typecheck       # TypeScript validation
+npm run typecheck       # TypeScript validation  
 npm run format          # Prettier formatting
-npm run format:check    # Check formatting
+npm run format:check    # Check formatting compliance
 
-# Testing
+# Testing (REQUIRED before production deployment)
 npm run test            # Jest unit tests
 npm run test:watch      # Jest in watch mode
-npm run test:coverage   # Test coverage report
+npm run test:coverage   # Test coverage report (90%+ required)
 npm run test:e2e        # Playwright E2E tests
-npm run test:e2e:ui     # Playwright with UI
-npm run test:all        # Run all tests
+npm run test:e2e:ui     # Playwright with UI debugging
+npm run test:e2e:prod   # E2E tests against production build
+npm run test:all        # Complete test suite
 
-# Database
-npx prisma generate     # Generate Prisma client
-npx prisma db push      # Push schema changes to DB
+# Database Management
+npx prisma generate     # Generate Prisma client (required after schema changes)
+npx prisma db push      # Push schema changes to database
 npx prisma studio       # Open database browser
+npx prisma migrate deploy  # Production migrations
+
+# Deployment
+npm run deploy:build    # Full pre-deployment validation
+npm run deploy:test     # Test deployment readiness
+npm run deploy:vercel   # Deploy to Vercel production
 ```
 
-## Architecture Overview
+## 📐 Architecture Overview
 
-### Core Structure
-
+### App Router Structure
 ```
 src/
-├── app/                    # Next.js App Router
-│   ├── api/               # API Routes
-│   │   ├── auth/          # Authentication endpoints
-│   │   ├── invoices/      # Invoice management
-│   │   └── projects/      # Project management
-│   ├── dashboard/         # Main dashboard page
-│   └── page.tsx          # Landing page
-├── components/            # React components
-│   ├── invoices/         # Invoice-related UI
-│   └── projects/         # Project-related UI
-├── contexts/             # React Context providers
+├── app/                      # Next.js 15 App Router
+│   ├── api/                  # Server-side API routes
+│   │   ├── auth/            # JWT authentication system
+│   │   ├── invoices/        # Invoice management + AI matching
+│   │   │   ├── matching/    # LLM-powered invoice matching
+│   │   │   └── uploads/     # Supplier portal uploads management
+│   │   ├── portal/          # PUBLIC supplier portal endpoints
+│   │   │   ├── validate/    # Email validation for supplier access
+│   │   │   └── upload/      # Invoice file upload + history
+│   │   ├── projects/        # Project CRUD + analytics
+│   │   │   └── [id]/       # Dynamic project routes
+│   │   ├── settings/        # System configuration
+│   │   ├── suppliers/       # Supplier access management (admin)
+│   │   └── system/         # Health checks + monitoring
+│   ├── dashboard/          # Main application dashboard
+│   ├── invoices/          # Invoice management UI
+│   ├── login/             # Authentication pages
+│   ├── portal/            # PUBLIC supplier portal page
+│   └── globals.css        # Global styling
+├── components/             # Reusable React components
+│   ├── auth/              # Login/register forms
+│   ├── dashboard/         # Dashboard widgets
+│   ├── invoices/          # Invoice processing UI
+│   │   └── InvoiceMatchingInterface.tsx  # AI matching UI
+│   ├── projects/          # Project management UI
+│   ├── suppliers/         # Supplier management interface
+│   └── ui/               # Base UI components
+├── contexts/              # React Context providers
 ├── hooks/                # Custom React hooks
-├── lib/                  # Utilities and configurations
-└── generated/            # Auto-generated files (Prisma)
+├── lib/                  # Utility libraries
+│   ├── llm-parsers/      # AI integration layer
+│   ├── middleware.ts     # Auth + request handling
+│   └── prisma.ts        # Database connection
+└── types/               # TypeScript definitions
 ```
 
 ### Key Design Patterns
 
-- **App Router**: Next.js 13+ routing with server components
-- **Context + Hooks**: State management with React Context API
+- **App Router**: Next.js 15 with React Server Components
+- **State Management**: React Context + Custom Hooks pattern
 - **Form Handling**: React Hook Form + Zod validation
 - **Database**: Prisma ORM with type-safe queries
-- **Authentication**: JWT tokens with custom middleware
-- **PDF Processing**: PDF.js for invoice parsing
-- **Testing**: Jest + RTL for units, Playwright for E2E
+- **Authentication**: JWT tokens via HTTP-only cookies
+- **AI Integration**: Multi-provider LLM system (Gemini primary)
+- **Testing**: Jest + RTL (unit) + Playwright (E2E)
+- **File Processing**: PDF.js for invoice parsing
 
-## Database Schema
+## 🔐 Authentication & Security
 
-### Core Entities
+### Multi-Layer Security
+- **JWT Tokens**: HTTP-only cookies with secure headers
+- **Role-Based Access**: ADMIN/USER/VIEWER with granular permissions
+- **API Protection**: `withAuth` middleware on all protected routes
+- **Password Security**: bcrypt with salt rounds
+- **CORS**: Strict origin policies in production
+- **CSP Headers**: Content Security Policy via vercel.json
 
-- **Users**: Authentication, roles (ADMIN/USER/VIEWER)
-- **Projects**: Construction projects with budgets and timelines
-- **ProjectUsers**: Many-to-many with role assignments (OWNER/CONTRACTOR/VIEWER)
-- **Trades**: Construction categories (Electrical, Plumbing, etc.)
-- **LineItems**: Detailed cost estimates within trades
-- **Invoices**: Supplier invoices with PDF parsing support
-- **InvoiceLineItems**: Invoice details mapped to estimates
-- **Milestones**: Progress tracking with payment milestones
-
-### Key Relationships
-
-- Projects → Trades → LineItems (hierarchical cost structure)
-- Invoices → InvoiceLineItems → LineItems (actual vs estimate mapping)
-- Users ↔ Projects (many-to-many with roles)
-
-## Authentication System
-
-### Implementation
-
-- **Middleware**: `src/lib/middleware.ts` with `withAuth` wrapper
-- **JWT Tokens**: HTTP-only cookies for session management
-- **Password Security**: bcrypt hashing with salt rounds
-- **Role-Based Access**: Three-tier system (User/Project levels)
-
-### Protected Routes
-
-```typescript
-// API Route Protection
-export const POST = withAuth(async (request: NextRequest) => {
-  // Handler implementation
-})
-
-// Middleware checks JWT tokens and sets user context
-```
-
-## PDF Invoice Processing
-
-### Core Functionality
-
-- **File Upload**: 10MB limit with drag-and-drop UI
-- **PDF Parsing**: PDF.js extraction of text and metadata
-- **Data Extraction**: Invoice numbers, dates, vendors, amounts, line items
-- **Project Assignment**: Link invoices to specific projects
-- **Status Tracking**: PENDING → APPROVED → PAID workflow
-
-### Parser Intelligence
-
-- Pattern matching for common invoice formats
-- Date normalization (multiple format support)
-- Currency detection and standardization
-- Line item structure recognition with confidence scoring
-
-## Smart Invoice Matching
-
-### Core Functionality
-
-- **LLM-Powered Matching**: Primary matching using large language models for intelligent analysis
-- **Multi-Level Fallbacks**: Logic-based fallback when LLM fails, manual matching as final option
-- **Batch Processing**: Process all invoices and estimates in a single LLM request for efficiency
-- **Real-time Feedback**: Shows which method was used (AI, logic, or manual)
-- **Interactive UX**: Modern interface for reviewing, overriding, and confirming matches
-
-### Three-Tier Matching System
-
-1. **LLM-Powered (Primary)**: Uses the existing parsing orchestrator to analyze all invoice line items against all project estimates in context, providing intelligent matches with detailed reasoning
-2. **Logic-Based (Fallback)**: String similarity, semantic analysis, price validation, and category matching when LLM fails
-3. **Manual (Override)**: Full user control with dropdown selections for any line item
-
-### API Endpoints
-
-- `GET /api/invoices/matching?projectId={id}` - Get LLM-powered matching suggestions with fallbacks
-- `POST /api/invoices/matching` - Apply selected matches to database
-
-### Key Files
-
-1. **`src/lib/simple-llm-matcher.ts`** - LLM-powered matching service with intelligent fallbacks
-2. **`src/app/api/invoices/matching/route.ts`** - Matching API using LLM service
-3. **`src/components/invoices/InvoiceMatchingInterface.tsx`** - Modern matching UI with manual overrides
-4. **`src/app/invoices/page.tsx`** - Invoice management with matching tabs
-5. **`src/components/dashboard/InvoiceMatchingWidget.tsx`** - Dashboard matching widget
-
-### LLM Integration
-
-- Designed to work with existing LLM provider configuration
-- Provides cost tracking and performance metrics  
-- Graceful degradation with logic-based fallback when LLM is unavailable
-- Manual override system as final fallback for complete user control
-
-## Testing Infrastructure
-
-### Unit Tests (Jest + RTL)
-
-```bash
-# Located in __tests__/
-__tests__/
-├── api/                  # API route tests
-├── components/           # Component tests
-├── hooks/               # Custom hook tests
-└── utils/               # Utility function tests
-```
-
-### E2E Tests (Playwright)
-
-```bash
-# Located in tests/e2e/
-tests/
-├── e2e/
-│   ├── pdf-parsing.spec.ts      # PDF upload and parsing
-│   └── pdf-upload-basic.spec.ts # Basic upload functionality
-└── fixtures/
-    └── generate-test-pdfs.js    # Test PDF generation
-```
-
-### Test Data Attributes
-
-Components include `data-testid` attributes for reliable E2E testing:
-
-- `data-testid="parsed-invoices"` - Invoice list container
-- `data-testid="project-selector"` - Project dropdown
-- `data-testid="invoice-item"` - Individual invoice items
-
-## Development Patterns
-
-### Component Structure
-
-```typescript
-// Standard component pattern
-interface ComponentProps {
-  // Props definition
-}
-
-export function Component({ props }: ComponentProps) {
-  // Hooks and state
-  // Event handlers
-  // JSX return
-}
-```
-
-### API Route Pattern
-
+### Protected Routes Pattern
 ```typescript
 import { withAuth } from '@/lib/middleware'
 
-export const GET = withAuth(async (request: NextRequest) => {
-  try {
-    // Implementation
-    return NextResponse.json(data)
-  } catch (error) {
-    return NextResponse.json({ error: 'Message' }, { status: 500 })
-  }
+export const GET = withAuth(async (request: NextRequest, user: AuthUser) => {
+  // Route automatically has user context and permission validation
+  return NextResponse.json(data)
+}, {
+  resource: 'projects',
+  action: 'read',
+  requireAuth: true
 })
 ```
 
-### Context Usage
+## 🤖 AI-Powered Invoice Matching
 
+### Smart Matching Architecture
+- **Primary**: Google Gemini 1.5 Flash for intelligent analysis
+- **Fallback**: Logic-based string similarity matching
+- **Override**: Manual user selection with persistent state
+- **Caching**: Results cached to avoid re-runs on tab changes
+- **Cost Optimization**: Batch processing, ~$0.001 per request
+
+### Critical Performance Issue & Solution
+**Problem**: Invoice matching tab triggers LLM on every open
+**Root Cause**: API route runs LLM matching on every GET request
+**Solution**: Implement result caching and conditional LLM execution
+
+### API Endpoints
+- `GET /api/invoices/matching?projectId={id}` - Smart matching with caching
+- `POST /api/invoices/matching` - Apply selected matches
+- `POST /api/invoices/approve` - Batch invoice approval
+
+### Key Files
+- `src/lib/simple-llm-matcher.ts` - AI matching service
+- `src/app/api/invoices/matching/route.ts` - Matching API endpoint  
+- `src/components/invoices/InvoiceMatchingInterface.tsx` - Matching UI
+
+## 🗄️ Database Schema
+
+### Core Entities & Relationships
+```mermaid
+erDiagram
+    User ||--o{ ProjectUser : has
+    Project ||--o{ ProjectUser : belongs_to
+    Project ||--o{ Trade : contains
+    Trade ||--o{ LineItem : has
+    Project ||--o{ Invoice : belongs_to
+    Invoice ||--o{ InvoiceLineItem : contains
+    LineItem ||--o{ InvoiceLineItem : matches
+    Project ||--o{ Milestone : tracks
+```
+
+### Key Models
+- **Users**: Authentication, roles (ADMIN/USER/VIEWER)
+- **Projects**: Construction projects with budgets, timelines
+- **ProjectUsers**: Many-to-many with role assignments
+- **Trades**: Construction categories (Electrical, Plumbing, etc.)
+- **LineItems**: Detailed cost estimates within trades
+- **Invoices**: Supplier invoices with AI parsing
+- **InvoiceLineItems**: Invoice details mapped to estimates
+- **Milestones**: Progress tracking with payment milestones
+
+## 🧪 Testing Strategy & Requirements
+
+### Test Coverage Requirements
+- **Unit Tests**: 90%+ coverage for business logic
+- **Integration Tests**: All API endpoints tested
+- **E2E Tests**: Critical user journeys covered
+- **Performance Tests**: API response times < 200ms
+
+### Pre-Commit Requirements
+```bash
+# MANDATORY before any commit
+npm run typecheck    # Must pass without errors
+npm run lint        # Must pass without warnings
+npm run test        # All unit tests must pass
+npm run format:check # Code must be formatted
+```
+
+### Pre-Deployment Requirements  
+```bash
+# MANDATORY before production deployment
+npm run test:all     # Complete test suite
+npm run deploy:build # Build validation
+npm run test:e2e:prod # E2E against production build
+```
+
+### Testing Tiers
+1. **Unit Tests** (`__tests__/`): Business logic, utilities, hooks
+2. **Integration Tests** (`__tests__/integration/`): API workflows
+3. **E2E Tests** (`tests/e2e/`): Complete user journeys
+4. **Production Tests**: Smoke tests against live environment
+
+### Test Data Attributes
+Components must include `data-testid` attributes:
+- `data-testid="invoice-matching-interface"` 
+- `data-testid="project-selector"`
+- `data-testid="apply-matches-button"`
+
+## 🔧 Development Workflow
+
+### Change Management Process
+1. **Analysis**: Understand impact across all tiers
+2. **Planning**: Update specifications and documentation
+3. **Implementation**: Code with tier-specific considerations  
+4. **Testing**: Validate across development and production builds
+5. **Documentation**: Update CLAUDE.md, prod-spec.md, README.md
+6. **Deployment**: Staged rollout with monitoring
+
+### Tier-Aware Development
+- **Database Changes**: Test SQLite → PostgreSQL compatibility
+- **Environment Variables**: Ensure dev/prod configuration alignment
+- **API Endpoints**: Validate CORS and security headers
+- **File Storage**: Test local → Vercel Blob migration paths
+- **Performance**: Profile both development and production builds
+
+### Critical Considerations
+- **Database Provider Switch**: SQLite (dev) vs PostgreSQL (prod)
+- **File Storage Switch**: Local filesystem vs Vercel Blob  
+- **Security Context**: Relaxed dev vs strict production policies
+- **Performance Impact**: Development speed vs production optimization
+
+## 📚 Documentation Standards
+
+### Required Updates for Every Change
+1. **CLAUDE.md**: Architecture and development impact
+2. **prod-spec.md**: Feature specifications and requirements
+3. **README.md**: User-facing setup and usage instructions
+4. **API Documentation**: OpenAPI spec updates for API changes
+5. **Test Documentation**: Test coverage and strategy updates
+
+### Documentation Tiers
+- **CLAUDE.md**: Technical architecture and development guide
+- **prod-spec.md**: Product requirements and specifications  
+- **README.md**: Quick start and user documentation
+- **DEPLOYMENT.md**: Production deployment procedures
+- **TESTING_STRATEGY.md**: Comprehensive testing approaches
+
+## ⚡ Performance & Monitoring
+
+### Performance Targets
+- **Page Load**: < 3s on 3G networks
+- **API Response**: < 200ms for standard operations  
+- **LLM Processing**: < 30s for batch matching operations
+- **Database Queries**: < 100ms for standard operations
+
+### Monitoring Stack
+- **Health Endpoint**: `/api/system/info` for system status
+- **Error Tracking**: Sentry integration (production)
+- **Performance**: Vercel Analytics and Core Web Vitals
+- **Database**: Query performance monitoring via Prisma
+
+### Optimization Strategies
+- **Bundle Splitting**: Automatic code splitting via Next.js
+- **Image Optimization**: Next.js built-in optimization
+- **Database**: Proper indexing and connection pooling
+- **Caching**: API response caching with intelligent invalidation
+
+## 🚀 Deployment Configuration
+
+### Vercel Configuration (`vercel.json`)
+- **Regions**: Sydney (syd1) for optimal NZ performance
+- **Functions**: 30s timeout, 1GB memory for LLM processing
+- **Security Headers**: Comprehensive security header configuration
+- **Redirects**: Authenticated user redirect to dashboard
+- **Cron Jobs**: Daily cleanup tasks
+
+### Environment Management
+- **Development**: `.env.local` for local configuration
+- **Production**: Vercel environment variables with secrets
+- **Staging**: Separate environment for pre-production testing
+
+## 🏢 Supplier Portal System
+
+### Overview
+Email-based authentication portal allowing suppliers and subcontractors to upload invoices directly to projects without requiring full system accounts.
+
+### Architecture
+- **Public Access**: `/portal` page accessible without authentication
+- **Email Validation**: Validates against approved supplier email list
+- **File Upload**: PDF-only uploads with 10MB size limit
+- **Project Assignment**: Optional project linking for organization
+- **Upload Tracking**: Complete audit trail for all submissions
+
+### Database Schema
 ```typescript
-// Access authenticated user
-const { user } = useAuth()
+// Supplier access whitelist (admin-managed)
+model SupplierAccess {
+  id          String       @id @default(cuid())
+  email       String       @unique
+  name        String       // Company/contractor name
+  type        SupplierType // SUPPLIER | SUBCONTRACTOR  
+  isActive    Boolean      @default(true)
+  createdBy   String       // Admin who added supplier
+  createdAt   DateTime     @default(now())
+  
+  invoiceUploads InvoiceUpload[]
+}
 
-// Get projects for current user
-const { projects, loading } = useProjects()
+// Invoice uploads via portal
+model InvoiceUpload {
+  id            String       @id @default(cuid())
+  supplierEmail String       // Links to SupplierAccess.email
+  projectId     String?      // Optional project assignment
+  fileName      String       // Original filename
+  fileUrl       String       // Storage URL
+  fileSize      Int         // File size validation
+  supplierName  String?     // Override company name
+  notes         String?     // Supplier notes
+  status        UploadStatus // PENDING | PROCESSED | REJECTED
+  processedAt   DateTime?   // When converted to Invoice
+  invoiceId     String?     // Reference to created Invoice
+  createdAt     DateTime    @default(now())
+}
 ```
 
-## Common Issues & Solutions
+### API Endpoints
 
-### Database Connection
+#### Public Portal APIs (No Authentication)
+- `POST /api/portal/validate` - Validate supplier email access
+- `POST /api/portal/upload` - Upload invoice file
+- `GET /api/portal/upload?email=...` - Get upload history
 
-- **Issue**: Prisma client not generated
-- **Solution**: Run `npx prisma generate` after schema changes
+#### Admin Management APIs (Authenticated)
+- `GET /api/suppliers` - List all suppliers
+- `POST /api/suppliers` - Add new supplier
+- `PATCH /api/suppliers/[id]` - Update supplier
+- `DELETE /api/suppliers/[id]` - Remove supplier
+- `GET /api/invoices/uploads` - View all uploads
+- `PATCH /api/invoices/uploads` - Update upload status
+- `POST /api/invoices/uploads` - Convert to full invoice
 
-### Authentication Middleware
+### Security Features
+- **Email Whitelist**: Only approved emails can access portal
+- **File Validation**: PDF-only, size limits, malware scanning
+- **Upload Tracking**: Complete audit trail with timestamps
+- **Admin Controls**: Activate/deactivate supplier access
+- **Project Isolation**: Optional project assignment for security
 
-- **Issue**: Unauthorized access to protected routes
-- **Solution**: Ensure JWT token is set and valid in cookies
+### Admin Workflow
+1. **Supplier Management**: Add/remove suppliers via Settings → Supplier Portal
+2. **Upload Review**: Monitor uploads via admin interface
+3. **Processing**: Convert uploads to full invoices when ready
+4. **Project Assignment**: Link uploads to specific projects
+5. **Status Updates**: Mark as processed/rejected with notes
 
-### PDF Parsing
+### Supplier Workflow  
+1. **Email Validation**: Enter approved email at `/portal`
+2. **File Upload**: Select PDF invoice, optional project/notes
+3. **Confirmation**: Receive upload confirmation with ID
+4. **Tracking**: View upload history and status updates
 
-- **Issue**: PDF text extraction failures
-- **Solution**: Check PDF format compatibility and file size limits
+### Production Considerations
+- **File Storage**: Integrate with Vercel Blob or AWS S3
+- **Notifications**: Email alerts for new uploads
+- **Backup Strategy**: Secure file backup and recovery
+- **Audit Compliance**: Maintain complete upload logs
+- **Performance**: Optimize for mobile/field usage
 
-### Test Setup
+### Integration Points
+- **Settings Page**: Supplier management interface
+- **Invoice Management**: View/process uploaded files
+- **Project Dashboard**: Show pending uploads per project
+- **Analytics**: Track supplier upload patterns
 
-- **Issue**: Playwright browser not installed
-- **Solution**: Run `npx playwright install` to download browsers
+## 🛠️ Common Issues & Solutions
 
-## Environment Setup
+### LLM Integration Issues
+- **Problem**: API runs LLM on every tab open
+- **Solution**: Implement result caching and conditional execution
+- **Prevention**: Cache results, check for existing matches
 
-### Required Environment Variables
+### Database Migration Issues  
+- **Problem**: SQLite → PostgreSQL compatibility
+- **Solution**: Test schema changes across both providers
+- **Prevention**: Use Prisma shadow database for validation
 
-```bash
-# .env.local
-DATABASE_URL="file:./dev.db"                    # SQLite for development
-NEXTAUTH_SECRET="your-secret-key"               # JWT secret
-NEXTAUTH_URL="http://localhost:3000"            # Auth callback URL
-```
+### Authentication Issues
+- **Problem**: JWT token validation across tiers
+- **Solution**: Consistent middleware configuration
+- **Prevention**: Validate auth flow in both environments
 
-### Development Database
+### File Upload Issues
+- **Problem**: Local filesystem vs Vercel Blob storage
+- **Solution**: Abstract file storage layer with environment detection
+- **Prevention**: Test file operations across both storage systems
 
-```bash
-# Initialize database
-npx prisma db push
+### Supplier Portal Security
+- **Problem**: Email-only authentication for external suppliers
+- **Solution**: Validate email against whitelist, track all uploads
+- **Prevention**: Regular audit of supplier access, file validation
 
-# Seed data (if seed script exists)
-npx prisma db seed
-```
+## 📝 Change Validation Checklist
 
-## Production Considerations
+### For Every Code Change
+- [ ] **Functionality**: Works in both dev and production environments
+- [ ] **Tests**: Unit tests updated and passing
+- [ ] **Types**: TypeScript compilation successful  
+- [ ] **Lint**: ESLint rules followed
+- [ ] **Format**: Code properly formatted with Prettier
+- [ ] **Documentation**: Relevant docs updated
 
-### Database Migration
+### For API Changes
+- [ ] **Authentication**: Proper middleware applied
+- [ ] **Validation**: Input validation with Zod schemas
+- [ ] **Error Handling**: Comprehensive error responses
+- [ ] **Performance**: Response time within targets
+- [ ] **Security**: CORS and security headers configured
 
-- Change `provider = "sqlite"` to `provider = "postgresql"` in schema.prisma
-- Update DATABASE_URL for PostgreSQL connection
-- Run `npx prisma db push` to apply schema
+### For Database Changes
+- [ ] **Schema**: Prisma schema updated
+- [ ] **Migration**: Compatible across SQLite and PostgreSQL
+- [ ] **Indexes**: Performance indexes added where needed
+- [ ] **Rollback**: Migration rollback strategy defined
 
-### File Storage
+### For UI Changes  
+- [ ] **Responsiveness**: Mobile and desktop compatibility
+- [ ] **Accessibility**: WCAG 2.1 AA compliance
+- [ ] **Performance**: Core Web Vitals maintained
+- [ ] **Testing**: E2E tests cover new functionality
 
-- Configure Vercel Blob for PDF storage in production
-- Update file upload handlers to use cloud storage
+## 🎯 Next Steps & Priorities
 
-### Performance
+### Immediate Issues
+1. **Fix LLM Caching**: Prevent unnecessary API calls on tab changes
+2. **Performance Optimization**: Implement result caching strategies
+3. **Test Coverage**: Achieve 90%+ coverage for critical paths
+4. **Documentation**: Ensure all specs reflect current architecture
 
-- Enable Next.js image optimization
-- Configure database connection pooling
-- Implement API response caching where appropriate
+### Architecture Improvements
+1. **Caching Layer**: Redis for session and API response caching
+2. **Background Jobs**: Queue system for LLM processing
+3. **Monitoring**: Enhanced observability and alerting
+4. **Security**: Additional security hardening measures
 
-## Key Files to Understand
+---
 
-1. **`src/contexts/AuthContext.tsx`** - Authentication state management
-2. **`src/lib/middleware.ts`** - Route protection and JWT handling
-3. **`src/lib/pdf-parser.ts`** - PDF text extraction logic
-4. **`prisma/schema.prisma`** - Database schema and relationships
-5. **`src/components/invoices/InvoiceAssignmentModal.tsx`** - Core invoice processing UI
-6. **`prod-spec.md`** - Complete feature specification and requirements
+This codebase follows Next.js 15 best practices with TypeScript, comprehensive multi-tier testing, and a focus on construction project cost management with AI-powered automation. Every change must be validated across development and production tiers to ensure functionality integrity.
 
-This codebase follows Next.js best practices with TypeScript, comprehensive testing, and a focus on construction project cost management with automated invoice processing.
+**Critical**: Always test changes across both SQLite (development) and PostgreSQL (production) database providers, and validate that functionality works consistently across local and Vercel deployment environments.

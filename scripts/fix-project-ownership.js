@@ -20,12 +20,12 @@ async function fixProjectOwnership(projectId, userId) {
                 id: true,
                 name: true,
                 email: true,
-                role: true
-              }
-            }
-          }
-        }
-      }
+                role: true,
+              },
+            },
+          },
+        },
+      },
     })
 
     if (!project) {
@@ -41,7 +41,7 @@ async function fixProjectOwnership(projectId, userId) {
 
     // Check if user already has access
     const existingAccess = project.users.find(u => u.userId === userId)
-    
+
     if (existingAccess) {
       if (existingAccess.role === 'OWNER') {
         console.log('✅ User already has OWNER access')
@@ -50,11 +50,11 @@ async function fixProjectOwnership(projectId, userId) {
         // Update existing access to OWNER
         await prisma.projectUser.update({
           where: {
-            id: existingAccess.id
+            id: existingAccess.id,
           },
           data: {
-            role: 'OWNER'
-          }
+            role: 'OWNER',
+          },
         })
         console.log(`✅ Updated user role from ${existingAccess.role} to OWNER`)
       }
@@ -64,8 +64,8 @@ async function fixProjectOwnership(projectId, userId) {
         data: {
           userId: userId,
           projectId: projectId,
-          role: 'OWNER'
-        }
+          role: 'OWNER',
+        },
       })
       console.log('✅ Added user as OWNER')
     }
@@ -81,19 +81,18 @@ async function fixProjectOwnership(projectId, userId) {
                 id: true,
                 name: true,
                 email: true,
-                role: true
-              }
-            }
-          }
-        }
-      }
+                role: true,
+              },
+            },
+          },
+        },
+      },
     })
 
     console.log('👥 Updated users:')
     updatedProject.users.forEach(u => {
       console.log(`  - ${u.user.email} (${u.role})`)
     })
-
   } catch (error) {
     console.error('❌ Error fixing project ownership:', error)
   } finally {
@@ -107,7 +106,9 @@ const userId = process.argv[3]
 
 if (!projectId || !userId) {
   console.log('Usage: node scripts/fix-project-ownership.js <projectId> <userId>')
-  console.log('Example: node scripts/fix-project-ownership.js cmekxod5p00034pq9vzq2he1r cmeixes7f00004ptbn5hsgshv')
+  console.log(
+    'Example: node scripts/fix-project-ownership.js cmekxod5p00034pq9vzq2he1r cmeixes7f00004ptbn5hsgshv'
+  )
   process.exit(1)
 }
 

@@ -58,7 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setIsLoading(false)
         return
       }
-      
+
       const savedUser = localStorage.getItem('user')
       if (savedUser) {
         const parsedUser = JSON.parse(savedUser)
@@ -80,7 +80,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (typeof window === 'undefined' || !window.localStorage) {
       return
     }
-    
+
     if (user) {
       localStorage.setItem('user', JSON.stringify(user))
     } else {

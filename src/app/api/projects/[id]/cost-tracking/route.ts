@@ -7,7 +7,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import { withAuth, AuthUser } from '@/lib/middleware'
 import { prisma } from '@/lib/prisma'
 
-async function GET(request: NextRequest, user: AuthUser, { params }: { params: Promise<{ id: string }> }) {
+async function GET(
+  request: NextRequest,
+  user: AuthUser,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
     const { id: projectId } = await params
 
@@ -21,10 +25,13 @@ async function GET(request: NextRequest, user: AuthUser, { params }: { params: P
       })
 
       if (!projectAccess) {
-        return NextResponse.json({
-          success: false,
-          error: 'You do not have access to this project'
-        }, { status: 403 })
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'You do not have access to this project',
+          },
+          { status: 403 }
+        )
       }
     }
 
@@ -43,43 +50,56 @@ async function GET(request: NextRequest, user: AuthUser, { params }: { params: P
                         id: true,
                         totalAmount: true,
                         status: true,
-                        invoiceDate: true
-                      }
-                    }
-                  }
-                }
-              }
-            }
+                        invoiceDate: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
           },
-          orderBy: { sortOrder: 'asc' }
-        }
-      }
+          orderBy: { sortOrder: 'asc' },
+        },
+      },
     })
 
     if (!project) {
-      return NextResponse.json({
-        success: false,
-        error: 'Project not found'
-      }, { status: 404 })
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Project not found',
+        },
+        { status: 404 }
+      )
     }
 
     // Calculate cost tracking data for each trade
     const tradesWithCosts = project.trades.map(trade => {
       // Calculate estimated totals from line items
-      const estimatedMaterial = trade.lineItems.reduce((sum, item) => 
-        sum + Number(item.materialCostEst), 0)
-      const estimatedLabor = trade.lineItems.reduce((sum, item) => 
-        sum + Number(item.laborCostEst), 0)
-      const estimatedEquipment = trade.lineItems.reduce((sum, item) => 
-        sum + Number(item.equipmentCostEst), 0)
-      
+      const estimatedMaterial = trade.lineItems.reduce(
+        (sum, item) => sum + Number(item.materialCostEst),
+        0
+      )
+      const estimatedLabor = trade.lineItems.reduce(
+        (sum, item) => sum + Number(item.laborCostEst),
+        0
+      )
+      const estimatedEquipment = trade.lineItems.reduce(
+        (sum, item) => sum + Number(item.equipmentCostEst),
+        0
+      )
+
       // Calculate markup and overhead
       const subtotal = estimatedMaterial + estimatedLabor + estimatedEquipment
-      const markupTotal = trade.lineItems.reduce((sum, item) => 
-        sum + (subtotal * Number(item.markupPercent) / 100), 0)
-      const overheadTotal = trade.lineItems.reduce((sum, item) => 
-        sum + (subtotal * Number(item.overheadPercent) / 100), 0)
-      
+      const markupTotal = trade.lineItems.reduce(
+        (sum, item) => sum + (subtotal * Number(item.markupPercent)) / 100,
+        0
+      )
+      const overheadTotal = trade.lineItems.reduce(
+        (sum, item) => sum + (subtotal * Number(item.overheadPercent)) / 100,
+        0
+      )
+
       const estimatedTotal = subtotal + markupTotal + overheadTotal
 
       // Calculate actual spent from invoices
@@ -121,11 +141,12 @@ async function GET(request: NextRequest, user: AuthUser, { params }: { params: P
           return sum
         }, 0)
 
-        const lineItemEstimate = Number(lineItem.materialCostEst) + 
-                                Number(lineItem.laborCostEst) + 
-                                Number(lineItem.equipmentCostEst)
-        const lineItemPercentComplete = lineItemEstimate > 0 ? 
-          Math.min((lineItemActual / lineItemEstimate) * 100, 100) : 0
+        const lineItemEstimate =
+          Number(lineItem.materialCostEst) +
+          Number(lineItem.laborCostEst) +
+          Number(lineItem.equipmentCostEst)
+        const lineItemPercentComplete =
+          lineItemEstimate > 0 ? Math.min((lineItemActual / lineItemEstimate) * 100, 100) : 0
 
         return {
           id: lineItem.id,
@@ -139,7 +160,7 @@ async function GET(request: NextRequest, user: AuthUser, { params }: { params: P
           overheadPercent: Number(lineItem.overheadPercent),
           totalEstimate: lineItemEstimate,
           actualSpent: lineItemActual,
-          percentComplete: lineItemPercentComplete
+          percentComplete: lineItemPercentComplete,
         }
       })
 
@@ -155,7 +176,7 @@ async function GET(request: NextRequest, user: AuthUser, { params }: { params: P
         percentSpent,
         variance,
         variancePercent,
-        status
+        status,
       }
     })
 
@@ -180,7 +201,7 @@ async function GET(request: NextRequest, user: AuthUser, { params }: { params: P
       tradesOnBudget,
       tradesOverBudget,
       tradesUnderBudget,
-      percentComplete
+      percentComplete,
     }
 
     return NextResponse.json({
@@ -191,16 +212,18 @@ async function GET(request: NextRequest, user: AuthUser, { params }: { params: P
         id: project.id,
         name: project.name,
         totalBudget: Number(project.totalBudget),
-        currency: project.currency
-      }
+        currency: project.currency,
+      },
     })
-
   } catch (error) {
     console.error('Error fetching cost tracking data:', error)
-    return NextResponse.json({
-      success: false,
-      error: 'Failed to fetch cost tracking data'
-    }, { status: 500 })
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Failed to fetch cost tracking data',
+      },
+      { status: 500 }
+    )
   }
 }
 

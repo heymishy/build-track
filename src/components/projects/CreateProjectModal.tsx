@@ -30,7 +30,7 @@ export function CreateProjectModal({ isOpen, onClose, onProjectCreated }: Create
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showEstimateImport, setShowEstimateImport] = useState(false)
-  
+
   useEffect(() => {
     if (isOpen) {
       // Ensure body scroll is locked when modal is open
@@ -38,13 +38,13 @@ export function CreateProjectModal({ isOpen, onClose, onProjectCreated }: Create
     } else {
       document.body.style.overflow = 'unset'
     }
-    
+
     // Cleanup on unmount
     return () => {
       document.body.style.overflow = 'unset'
     }
   }, [isOpen])
-  
+
   if (!isOpen) {
     return null
   }
@@ -111,27 +111,27 @@ export function CreateProjectModal({ isOpen, onClose, onProjectCreated }: Create
   }
 
   const modalContent = (
-    <div 
+    <div
       className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-50"
-      style={{ 
+      style={{
         position: 'fixed',
         top: 0,
         left: 0,
         right: 0,
         bottom: 0,
         zIndex: 9999,
-        backgroundColor: 'rgba(0, 0, 0, 0.5)'
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
       }}
-      onClick={(e) => {
+      onClick={e => {
         // Close modal when clicking backdrop
         if (e.target === e.currentTarget) {
           onClose()
         }
       }}
     >
-      <div 
+      <div
         className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto"
-        onClick={(e) => e.stopPropagation()}
+        onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center justify-between p-6 border-b">
           <h2 className="text-xl font-semibold text-gray-900">Create New Project</h2>
@@ -183,7 +183,9 @@ export function CreateProjectModal({ isOpen, onClose, onProjectCreated }: Create
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-sm font-medium text-gray-900">Project Estimate</h3>
-                <p className="text-sm text-gray-500">Import detailed cost breakdown from your estimate files</p>
+                <p className="text-sm text-gray-500">
+                  Import detailed cost breakdown from your estimate files
+                </p>
               </div>
               <button
                 type="button"
@@ -195,8 +197,8 @@ export function CreateProjectModal({ isOpen, onClose, onProjectCreated }: Create
               </button>
             </div>
             <div className="mt-3 text-xs text-gray-500">
-              Upload CSV, Excel, or PDF files with trade breakdowns, quantities, and costs.
-              This will auto-populate budget and create detailed cost tracking.
+              Upload CSV, Excel, or PDF files with trade breakdowns, quantities, and costs. This
+              will auto-populate budget and create detailed cost tracking.
             </div>
           </div>
 
@@ -312,7 +314,7 @@ export function CreateProjectModal({ isOpen, onClose, onProjectCreated }: Create
   return (
     <>
       {typeof window !== 'undefined' ? createPortal(modalContent, document.body) : null}
-      
+
       {/* Estimate Import Modal */}
       <EstimateImportModal
         isOpen={showEstimateImport}

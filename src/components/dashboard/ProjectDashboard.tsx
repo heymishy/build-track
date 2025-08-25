@@ -9,12 +9,19 @@ import {
   ExclamationTriangleIcon,
   CheckCircleIcon,
   BuildingOfficeIcon,
+  CalculatorIcon,
 } from '@heroicons/react/24/solid'
+import { Button } from '@/components/ui/Button'
+import { Card } from '@/components/ui/Card'
+import { Badge } from '@/components/ui/Badge'
+import { Modal } from '@/components/ui/Modal'
+import { tokens } from '@/lib/design-system'
 import { CreateProjectModal } from '@/components/projects/CreateProjectModal'
 import { EditProjectModal } from '@/components/projects/EditProjectModal'
-import { CostTrackingDashboard } from '@/components/estimates/CostTrackingDashboard'
 import { EstimateManager } from '@/components/estimates/EstimateManager'
 import { MilestoneManagement } from '@/components/projects/MilestoneManagement'
+import { CostTrackingDashboard } from '@/components/estimates/CostTrackingDashboard'
+import { ProjectAnalytics } from '@/components/analytics/ProjectAnalytics'
 
 interface Project {
   id: string
@@ -65,16 +72,33 @@ export function ProjectDashboard({ className = '' }: ProjectDashboardProps) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [projectToDelete, setProjectToDelete] = useState<Project | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [estimateViewMode, setEstimateViewMode] = useState<'manager' | 'editor'>('editor')
+  const [activeManagementTab, setActiveManagementTab] = useState<string>('overview')
 
   // Debug effect to track modal state changes
   useEffect(() => {
     console.log('ProjectDashboard: createModalOpen changed to:', createModalOpen)
   }, [createModalOpen])
 
-
   useEffect(() => {
     fetchProjects()
   }, [])
+
+  const formatCurrency = (amount: number, currency = 'NZD') => {
+    return new Intl.NumberFormat('en-NZ', {
+      style: 'currency',
+      currency: currency,
+    }).format(amount)
+  }
+
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return 'Not set'
+    return new Date(dateString).toLocaleDateString('en-NZ', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    })
+  }
 
   const fetchProjects = async () => {
     try {
@@ -97,20 +121,14 @@ export function ProjectDashboard({ className = '' }: ProjectDashboardProps) {
     }
   }
 
-  const getStatusColor = (status: string) => {
+  const getStatusVariant = (status: string): 'gray' | 'blue' | 'yellow' | 'green' | 'red' => {
     switch (status) {
-      case 'PLANNING':
-        return 'bg-gray-100 text-gray-800'
-      case 'IN_PROGRESS':
-        return 'bg-blue-100 text-blue-800'
-      case 'ON_HOLD':
-        return 'bg-yellow-100 text-yellow-800'
-      case 'COMPLETED':
-        return 'bg-green-100 text-green-800'
-      case 'CANCELLED':
-        return 'bg-red-100 text-red-800'
-      default:
-        return 'bg-gray-100 text-gray-800'
+      case 'PLANNING': return 'gray'
+      case 'IN_PROGRESS': return 'blue'
+      case 'ON_HOLD': return 'yellow'
+      case 'COMPLETED': return 'green'
+      case 'CANCELLED': return 'red'
+      default: return 'gray'
     }
   }
 
@@ -131,21 +149,6 @@ export function ProjectDashboard({ className = '' }: ProjectDashboardProps) {
     }
   }
 
-  const formatCurrency = (amount: number, currency = 'NZD') => {
-    return new Intl.NumberFormat('en-NZ', {
-      style: 'currency',
-      currency: currency,
-    }).format(amount)
-  }
-
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return 'Not set'
-    return new Date(dateString).toLocaleDateString('en-NZ', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    })
-  }
 
   const calculateProjectHealth = (project: Project) => {
     const { stats } = project
@@ -199,7 +202,7 @@ export function ProjectDashboard({ className = '' }: ProjectDashboardProps) {
   }
 
   const handleProjectUpdated = (updatedProject: Project) => {
-    setProjects(prev => prev.map(p => p.id === updatedProject.id ? updatedProject : p))
+    setProjects(prev => prev.map(p => (p.id === updatedProject.id ? updatedProject : p)))
     if (selectedProject?.id === updatedProject.id) {
       setSelectedProject(updatedProject)
     }
@@ -214,25 +217,25 @@ export function ProjectDashboard({ className = '' }: ProjectDashboardProps) {
 
   const handleConfirmDelete = async () => {
     if (!projectToDelete) return
-    
+
     try {
       setIsDeleting(true)
       const response = await fetch(`/api/projects/${projectToDelete.id}/delete`, {
         method: 'DELETE',
       })
-      
+
       const data = await response.json()
-      
+
       if (data.success) {
         // Remove from projects list
         setProjects(prev => prev.filter(p => p.id !== projectToDelete.id))
-        
+
         // Update selected project if needed
         if (selectedProject?.id === projectToDelete.id) {
           const remainingProjects = projects.filter(p => p.id !== projectToDelete.id)
           setSelectedProject(remainingProjects.length > 0 ? remainingProjects[0] : null)
         }
-        
+
         // Close modals
         setShowDeleteConfirm(false)
         setProjectToDelete(null)
@@ -259,7 +262,7 @@ export function ProjectDashboard({ className = '' }: ProjectDashboardProps) {
 
   if (loading) {
     return (
-      <div className={`bg-white rounded-lg shadow p-6 ${className}`}>
+      <Card className={className}>
         <div className="animate-pulse space-y-4">
           <div className="h-4 bg-gray-200 rounded w-1/4"></div>
           <div className="space-y-3">
@@ -268,51 +271,41 @@ export function ProjectDashboard({ className = '' }: ProjectDashboardProps) {
             <div className="h-4 bg-gray-200 rounded w-4/6"></div>
           </div>
         </div>
-      </div>
+      </Card>
     )
   }
 
   if (error) {
     return (
-      <div className={`bg-white rounded-lg shadow p-6 ${className}`}>
+      <Card className={className}>
         <div className="text-center py-4">
           <ExclamationTriangleIcon className="mx-auto h-12 w-12 text-red-400" />
           <h3 className="mt-2 text-sm font-medium text-gray-900">Error Loading Projects</h3>
           <p className="mt-1 text-sm text-gray-500">{error}</p>
-          <button
-            onClick={fetchProjects}
-            className="mt-4 inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
-          >
+          <Button onClick={fetchProjects} className="mt-4">
             Try Again
-          </button>
+          </Button>
         </div>
-      </div>
+      </Card>
     )
   }
 
   if (projects.length === 0) {
     return (
-      <div className={`bg-white rounded-lg shadow p-6 ${className}`}>
+      <Card className={className}>
         <div className="text-center py-8">
           <BuildingOfficeIcon className="mx-auto h-12 w-12 text-gray-400" />
           <h3 className="mt-2 text-sm font-medium text-gray-900">No Projects Yet</h3>
           <p className="mt-1 text-sm text-gray-500">Get started by creating your first project.</p>
-          <button
-            onClick={() => {
-              console.log('Create Project button clicked!')
-              console.log('Current createModalOpen state:', createModalOpen)
-              setCreateModalOpen(true)
-              console.log('setCreateModalOpen(true) called')
-              // Check state immediately after setting
-              console.log('State immediately after set:', createModalOpen)
-            }}
-            className="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          <Button
+            onClick={() => setCreateModalOpen(true)}
+            icon={<PlusIcon className="h-4 w-4" />}
+            className="mt-4"
           >
-            <PlusIcon className="h-4 w-4 mr-2" />
             Create Project
-          </button>
+          </Button>
         </div>
-      </div>
+      </Card>
     )
   }
 
@@ -332,11 +325,13 @@ export function ProjectDashboard({ className = '' }: ProjectDashboardProps) {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Project List */}
-        <div className="bg-white rounded-lg shadow">
-          <div className="px-4 py-5 sm:p-6">
-            <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
+        <Card>
+          <Card.Header>
+            <h3 className="text-lg leading-6 font-medium text-gray-900">
               Projects ({projects.length})
             </h3>
+          </Card.Header>
+          <Card.Body>
             <div className="space-y-3 max-h-96 overflow-y-auto">
               {projects.map(project => {
                 const health = calculateProjectHealth(project)
@@ -358,12 +353,12 @@ export function ProjectDashboard({ className = '' }: ProjectDashboardProps) {
                           <h4 className="text-sm font-medium text-gray-900 truncate">
                             {project.name}
                           </h4>
-                          <span
-                            className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(project.status)}`}
+                          <Badge 
+                            variant={getStatusVariant(project.status)}
+                            icon={getStatusIcon(project.status)}
                           >
-                            {getStatusIcon(project.status)}
-                            <span className="ml-1">{project.status.replace('_', ' ')}</span>
-                          </span>
+                            {project.status.replace('_', ' ')}
+                          </Badge>
                         </div>
                         <div className="mt-1 flex items-center space-x-4 text-xs text-gray-500">
                           <span>
@@ -379,67 +374,74 @@ export function ProjectDashboard({ className = '' }: ProjectDashboardProps) {
                 )
               })}
             </div>
-          </div>
-        </div>
+          </Card.Body>
+        </Card>
 
         {/* Project Details */}
         {selectedProject && (
-          <div className="bg-white rounded-lg shadow">
-            <div className="px-4 py-5 sm:p-6">
+          <Card>
+            <Card.Body>
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg leading-6 font-medium text-gray-900">
                   {selectedProject.name}
                 </h3>
                 <div className="flex items-center space-x-3">
-                  <button
+                  <Button
                     onClick={() => handleEditProject(selectedProject)}
-                    className="inline-flex items-center px-2 py-1 border border-gray-300 text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    variant="secondary"
+                    size="sm"
+                    icon={<PencilIcon className="h-3 w-3" />}
                     title="Edit project"
                   >
-                    <PencilIcon className="h-3 w-3 mr-1" />
                     Edit
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     onClick={async () => {
                       // Debug permissions first
                       try {
-                        const response = await fetch(`/api/projects/${selectedProject.id}/permissions`)
+                        const response = await fetch(
+                          `/api/projects/${selectedProject.id}/permissions`
+                        )
                         const data = await response.json()
                         console.log('Project permissions:', data)
-                        
+
                         if (!data.permissions?.canDelete) {
                           console.log('User cannot delete, trying to fix ownership...')
-                          const fixResponse = await fetch(`/api/projects/${selectedProject.id}/fix-ownership`, {
-                            method: 'POST'
-                          })
+                          const fixResponse = await fetch(
+                            `/api/projects/${selectedProject.id}/fix-ownership`,
+                            {
+                              method: 'POST',
+                            }
+                          )
                           const fixData = await fixResponse.json()
                           console.log('Fix ownership result:', fixData)
-                          
+
                           if (fixData.success) {
                             // Refresh the page or refetch projects
                             window.location.reload()
                             return
                           }
                         }
-                        
+
                         handleDeleteProject(selectedProject)
                       } catch (error) {
                         console.error('Error checking permissions:', error)
                         handleDeleteProject(selectedProject)
                       }
                     }}
-                    className="inline-flex items-center px-2 py-1 border border-red-300 text-xs font-medium rounded text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                    variant="error"
+                    size="sm"
+                    icon={<TrashIcon className="h-3 w-3" />}
                     title="Delete project"
                   >
-                    <TrashIcon className="h-3 w-3 mr-1" />
                     Delete
-                  </button>
-                  <span
-                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(selectedProject.status)}`}
+                  </Button>
+                  <Badge
+                    variant={getStatusVariant(selectedProject.status)}
+                    icon={getStatusIcon(selectedProject.status)}
                   >
-                    {getStatusIcon(selectedProject.status)}
-                    <span className="ml-1">{selectedProject.status.replace('_', ' ')}</span>
-                  </span>
+                    {selectedProject.status.replace('_', ' ')}
+                  </Badge>
                 </div>
               </div>
 
@@ -520,7 +522,12 @@ export function ProjectDashboard({ className = '' }: ProjectDashboardProps) {
               <div className="mb-4">
                 <div className="flex justify-between text-sm text-gray-600 mb-1">
                   <span>Budget Progress</span>
-                  <span>{formatCurrency(selectedProject.stats?.budgetRemaining || selectedProject.totalBudget)} remaining</span>
+                  <span>
+                    {formatCurrency(
+                      selectedProject.stats?.budgetRemaining || selectedProject.totalBudget
+                    )}{' '}
+                    remaining
+                  </span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
                   <div
@@ -531,7 +538,9 @@ export function ProjectDashboard({ className = '' }: ProjectDashboardProps) {
                           ? 'bg-yellow-500'
                           : 'bg-green-500'
                     }`}
-                    style={{ width: `${Math.min(100, selectedProject.stats?.budgetUsedPercent || 0)}%` }}
+                    style={{
+                      width: `${Math.min(100, selectedProject.stats?.budgetUsedPercent || 0)}%`,
+                    }}
                   ></div>
                 </div>
                 {selectedProject.stats?.isOverBudget && (
@@ -563,33 +572,124 @@ export function ProjectDashboard({ className = '' }: ProjectDashboardProps) {
                   <p className="text-xs text-gray-500">Milestones</p>
                 </div>
               </div>
-            </div>
-          </div>
+            </Card.Body>
+          </Card>
         )}
       </div>
 
-      {/* Estimate Manager */}
+      {/* Project Management Tools */}
       {selectedProject && (
-        <EstimateManager 
-          projectId={selectedProject.id} 
-          className="col-span-1 lg:col-span-2"
-        />
-      )}
-
-      {/* Cost Tracking Dashboard */}
-      {selectedProject && (
-        <CostTrackingDashboard 
-          projectId={selectedProject.id} 
-          className="col-span-1 lg:col-span-2"
-        />
-      )}
-
-      {/* Milestone Management */}
-      {selectedProject && (
-        <MilestoneManagement 
-          projectId={selectedProject.id} 
-          className="col-span-1 lg:col-span-2"
-        />
+        <Card className="col-span-1 lg:col-span-2">
+          <Card.Header>
+            <div className="border-b border-gray-200 pb-0">
+              <nav className="-mb-px flex space-x-8" aria-label="Management tabs">
+                <button
+                  onClick={() => setActiveManagementTab('overview')}
+                  className={`${
+                    activeManagementTab === 'overview'
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  } whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm`}
+                >
+                  Overview
+                </button>
+                <button
+                  onClick={() => setActiveManagementTab('estimates')}
+                  className={`${
+                    activeManagementTab === 'estimates'
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  } whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm`}
+                >
+                  Estimates & Trades
+                </button>
+                <button
+                  onClick={() => setActiveManagementTab('milestones')}
+                  className={`${
+                    activeManagementTab === 'milestones'
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  } whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm`}
+                >
+                  Milestones
+                </button>
+                <button
+                  onClick={() => setActiveManagementTab('cost-tracking')}
+                  className={`${
+                    activeManagementTab === 'cost-tracking'
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  } whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm`}
+                >
+                  Cost Tracking
+                </button>
+                <button
+                  onClick={() => setActiveManagementTab('analytics')}
+                  className={`${
+                    activeManagementTab === 'analytics'
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  } whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm`}
+                >
+                  Analytics
+                </button>
+              </nav>
+            </div>
+          </Card.Header>
+          <Card.Body>
+            {activeManagementTab === 'overview' && (
+              <div className="text-center py-8 text-gray-500">
+                <p className="mb-4">Project management overview for {selectedProject.name}</p>
+                <div className="grid grid-cols-2 gap-4 max-w-md mx-auto">
+                  <Button
+                    variant="secondary"
+                    onClick={() => setActiveManagementTab('estimates')}
+                    className="flex flex-col items-center p-4 h-auto"
+                  >
+                    <CalculatorIcon className="h-6 w-6 mb-2" />
+                    <span>Manage Estimates</span>
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    onClick={() => setActiveManagementTab('milestones')}
+                    className="flex flex-col items-center p-4 h-auto"
+                  >
+                    <ClockIcon className="h-6 w-6 mb-2" />
+                    <span>Track Milestones</span>
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    onClick={() => setActiveManagementTab('cost-tracking')}
+                    className="flex flex-col items-center p-4 h-auto"
+                  >
+                    <ChartBarIcon className="h-6 w-6 mb-2" />
+                    <span>Cost Tracking</span>
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    onClick={() => setActiveManagementTab('analytics')}
+                    className="flex flex-col items-center p-4 h-auto"
+                  >
+                    <ChartBarIcon className="h-6 w-6 mb-2" />
+                    <span>View Analytics</span>
+                  </Button>
+                </div>
+              </div>
+            )}
+            {activeManagementTab === 'estimates' && (
+              <EstimateManager projectId={selectedProject.id} />
+            )}
+            {activeManagementTab === 'milestones' && (
+              <MilestoneManagement project={selectedProject} />
+            )}
+            {activeManagementTab === 'cost-tracking' && (
+              <CostTrackingDashboard projectId={selectedProject.id} />
+            )}
+            {activeManagementTab === 'analytics' && (
+              <ProjectAnalytics projectId={selectedProject.id} />
+            )}
+          </Card.Body>
+        </Card>
       )}
 
       {/* Create Project Modal */}
@@ -630,19 +730,22 @@ export function ProjectDashboard({ className = '' }: ProjectDashboardProps) {
               <h3 className="text-lg font-medium text-gray-900">Delete Project</h3>
             </div>
             <p className="text-sm text-gray-500 mb-4">
-              Are you sure you want to delete "<strong>{projectToDelete.name}</strong>"? 
-              This will permanently delete:
+              Are you sure you want to delete "<strong>{projectToDelete.name}</strong>"? This will
+              permanently delete:
             </p>
             <ul className="text-sm text-gray-600 mb-6 pl-4 space-y-1">
               <li>• All project data and settings</li>
-              <li>• All trades and line items ({projectToDelete.stats?.totalTrades || 0} trades)</li>
+              <li>
+                • All trades and line items ({projectToDelete.stats?.totalTrades || 0} trades)
+              </li>
               <li>• All invoices ({projectToDelete.stats?.totalInvoices || 0} invoices)</li>
               <li>• All milestones ({projectToDelete.stats?.totalMilestones || 0} milestones)</li>
-              <li>• Project budget: {formatCurrency(projectToDelete.totalBudget, projectToDelete.currency)}</li>
+              <li>
+                • Project budget:{' '}
+                {formatCurrency(projectToDelete.totalBudget, projectToDelete.currency)}
+              </li>
             </ul>
-            <p className="text-sm text-red-600 font-medium mb-6">
-              This action cannot be undone.
-            </p>
+            <p className="text-sm text-red-600 font-medium mb-6">This action cannot be undone.</p>
             <div className="flex justify-end space-x-3">
               <button
                 onClick={() => {

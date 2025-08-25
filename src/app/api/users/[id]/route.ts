@@ -7,11 +7,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { withAuth, AuthUser } from '@/lib/middleware'
 import { prisma } from '@/lib/prisma'
 
-async function GET(
-  request: NextRequest, 
-  user: AuthUser,
-  context?: { params: { id: string } }
-) {
+async function GET(request: NextRequest, user: AuthUser, context?: { params: { id: string } }) {
   try {
     // Get user ID from URL path
     const url = new URL(request.url)
@@ -19,18 +15,24 @@ async function GET(
     const userId = pathSegments[pathSegments.length - 1]
 
     if (!userId) {
-      return NextResponse.json({
-        success: false,
-        error: 'User ID is required'
-      }, { status: 400 })
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'User ID is required',
+        },
+        { status: 400 }
+      )
     }
 
     // Users can view their own profile, admins can view any user
     if (user.role !== 'ADMIN' && user.id !== userId) {
-      return NextResponse.json({
-        success: false,
-        error: 'You can only view your own profile'
-      }, { status: 403 })
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'You can only view your own profile',
+        },
+        { status: 403 }
+      )
     }
 
     // Get user with project access
@@ -51,19 +53,22 @@ async function GET(
             project: {
               select: {
                 name: true,
-                description: true
-              }
-            }
-          }
-        }
-      }
+                description: true,
+              },
+            },
+          },
+        },
+      },
     })
 
     if (!targetUser) {
-      return NextResponse.json({
-        success: false,
-        error: 'User not found'
-      }, { status: 404 })
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'User not found',
+        },
+        { status: 404 }
+      )
     }
 
     // Transform the data
@@ -79,29 +84,27 @@ async function GET(
         projectName: p.project.name,
         projectDescription: p.project.description,
         role: p.role,
-        addedAt: p.createdAt.toISOString()
-      }))
+        addedAt: p.createdAt.toISOString(),
+      })),
     }
 
     return NextResponse.json({
       success: true,
-      user: transformedUser
+      user: transformedUser,
     })
-
   } catch (error) {
     console.error('Get user error:', error)
-    return NextResponse.json({
-      success: false,
-      error: 'Failed to fetch user'
-    }, { status: 500 })
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Failed to fetch user',
+      },
+      { status: 500 }
+    )
   }
 }
 
-async function PUT(
-  request: NextRequest,
-  user: AuthUser,
-  context?: { params: { id: string } }
-) {
+async function PUT(request: NextRequest, user: AuthUser, context?: { params: { id: string } }) {
   try {
     // Get user ID from URL path
     const url = new URL(request.url)
@@ -109,28 +112,37 @@ async function PUT(
     const userId = pathSegments[pathSegments.length - 1]
 
     if (!userId) {
-      return NextResponse.json({
-        success: false,
-        error: 'User ID is required'
-      }, { status: 400 })
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'User ID is required',
+        },
+        { status: 400 }
+      )
     }
 
     const { name, role } = await request.json()
 
     // Users can edit their own profile (but not role), admins can edit any user
     if (user.role !== 'ADMIN' && user.id !== userId) {
-      return NextResponse.json({
-        success: false,
-        error: 'You can only edit your own profile'
-      }, { status: 403 })
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'You can only edit your own profile',
+        },
+        { status: 403 }
+      )
     }
 
     // Non-admins cannot change roles
     if (user.role !== 'ADMIN' && role && role !== user.role) {
-      return NextResponse.json({
-        success: false,
-        error: 'You cannot change user roles'
-      }, { status: 403 })
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'You cannot change user roles',
+        },
+        { status: 403 }
+      )
     }
 
     // Prepare update data
@@ -148,8 +160,8 @@ async function PUT(
         name: true,
         role: true,
         createdAt: true,
-        updatedAt: true
-      }
+        updatedAt: true,
+      },
     })
 
     return NextResponse.json({
@@ -157,24 +169,22 @@ async function PUT(
       user: {
         ...updatedUser,
         createdAt: updatedUser.createdAt.toISOString(),
-        updatedAt: updatedUser.updatedAt.toISOString()
-      }
+        updatedAt: updatedUser.updatedAt.toISOString(),
+      },
     })
-
   } catch (error) {
     console.error('Update user error:', error)
-    return NextResponse.json({
-      success: false,
-      error: 'Failed to update user'
-    }, { status: 500 })
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Failed to update user',
+      },
+      { status: 500 }
+    )
   }
 }
 
-async function DELETE(
-  request: NextRequest,
-  user: AuthUser,
-  context?: { params: { id: string } }
-) {
+async function DELETE(request: NextRequest, user: AuthUser, context?: { params: { id: string } }) {
   try {
     // Get user ID from URL path
     const url = new URL(request.url)
@@ -182,26 +192,35 @@ async function DELETE(
     const userId = pathSegments[pathSegments.length - 1]
 
     if (!userId) {
-      return NextResponse.json({
-        success: false,
-        error: 'User ID is required'
-      }, { status: 400 })
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'User ID is required',
+        },
+        { status: 400 }
+      )
     }
 
     // Only admins can delete users
     if (user.role !== 'ADMIN') {
-      return NextResponse.json({
-        success: false,
-        error: 'Only administrators can delete users'
-      }, { status: 403 })
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Only administrators can delete users',
+        },
+        { status: 403 }
+      )
     }
 
     // Prevent deleting yourself
     if (user.id === userId) {
-      return NextResponse.json({
-        success: false,
-        error: 'You cannot delete your own account'
-      }, { status: 400 })
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'You cannot delete your own account',
+        },
+        { status: 400 }
+      )
     }
 
     // Check if user exists and get their project ownership
@@ -212,53 +231,61 @@ async function DELETE(
           where: { role: 'OWNER' },
           include: {
             project: {
-              select: { name: true }
-            }
-          }
-        }
-      }
+              select: { name: true },
+            },
+          },
+        },
+      },
     })
 
     if (!targetUser) {
-      return NextResponse.json({
-        success: false,
-        error: 'User not found'
-      }, { status: 404 })
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'User not found',
+        },
+        { status: 404 }
+      )
     }
 
     // Check if user owns any projects
     const ownedProjects = targetUser.projects.filter(p => p.role === 'OWNER')
     if (ownedProjects.length > 0) {
-      return NextResponse.json({
-        success: false,
-        error: `Cannot delete user who owns ${ownedProjects.length} project(s). Transfer ownership first.`,
-        ownedProjects: ownedProjects.map(p => p.project.name)
-      }, { status: 400 })
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Cannot delete user who owns ${ownedProjects.length} project(s). Transfer ownership first.`,
+          ownedProjects: ownedProjects.map(p => p.project.name),
+        },
+        { status: 400 }
+      )
     }
 
     // Delete user and all their project associations
     await prisma.$transaction([
       // Remove user from all projects
       prisma.projectUser.deleteMany({
-        where: { userId }
+        where: { userId },
       }),
       // Delete the user
       prisma.user.delete({
-        where: { id: userId }
-      })
+        where: { id: userId },
+      }),
     ])
 
     return NextResponse.json({
       success: true,
-      message: 'User deleted successfully'
+      message: 'User deleted successfully',
     })
-
   } catch (error) {
     console.error('Delete user error:', error)
-    return NextResponse.json({
-      success: false,
-      error: 'Failed to delete user'
-    }, { status: 500 })
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Failed to delete user',
+      },
+      { status: 500 }
+    )
   }
 }
 

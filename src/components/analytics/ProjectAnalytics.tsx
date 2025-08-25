@@ -45,12 +45,26 @@ interface AnalyticsData {
   }>
 }
 
+interface Project {
+  id: string
+  name: string
+  description: string
+  status: 'ACTIVE' | 'COMPLETED' | 'ON_HOLD'
+  budget: number
+  startDate: string
+  endDate: string
+  createdAt: string
+  updatedAt: string
+  ownerId: string
+}
+
 interface ProjectAnalyticsProps {
   className?: string
   projectId?: string // Optional: filter by specific project
+  project?: Project // Project data for detailed analytics
 }
 
-export function ProjectAnalytics({ className = '', projectId }: ProjectAnalyticsProps) {
+export function ProjectAnalytics({ className = '', projectId, project }: ProjectAnalyticsProps) {
   const [data, setData] = useState<AnalyticsData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -160,24 +174,32 @@ export function ProjectAnalytics({ className = '', projectId }: ProjectAnalytics
     }).format(amount)
   }
 
-  const formatPercentage = (value: number) => {
+  const formatPercentage = (value: number | undefined) => {
+    if (value === undefined || value === null || isNaN(value)) {
+      return '0.0%'
+    }
     const sign = value >= 0 ? '+' : ''
     return `${sign}${value.toFixed(1)}%`
   }
 
-  const getVarianceColor = (variance: number) => {
+  const getVarianceColor = (variance: number | undefined) => {
+    if (variance === undefined || variance === null || isNaN(variance)) return 'text-gray-600'
     if (variance > 5) return 'text-red-600'
     if (variance > 0) return 'text-yellow-600'
     return 'text-green-600'
   }
 
-  const getVarianceIcon = (variance: number) => {
+  const getVarianceIcon = (variance: number | undefined) => {
+    if (variance === undefined || variance === null || isNaN(variance)) return ArrowTrendingUpIcon
     return variance >= 0 ? ArrowTrendingUpIcon : ArrowTrendingDownIcon
   }
 
   if (loading) {
     return (
-      <div className={`bg-white rounded-lg shadow p-6 ${className}`}>
+      <div
+        className={`bg-white rounded-lg shadow p-6 ${className}`}
+        data-testid="analytics-loading"
+      >
         <div className="animate-pulse space-y-4">
           <div className="h-6 bg-gray-200 rounded w-1/4"></div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -196,7 +218,7 @@ export function ProjectAnalytics({ className = '', projectId }: ProjectAnalytics
         <div className="text-center py-8">
           <ExclamationTriangleIcon className="mx-auto h-12 w-12 text-red-400" />
           <h3 className="mt-2 text-sm font-medium text-gray-900">Analytics Unavailable</h3>
-          <p className="mt-1 text-sm text-gray-500">{error}</p>
+          <p className="mt-1 text-sm text-gray-500">{error || 'No analytics data available'}</p>
           <button
             onClick={fetchAnalytics}
             className="mt-4 inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
@@ -209,7 +231,10 @@ export function ProjectAnalytics({ className = '', projectId }: ProjectAnalytics
   }
 
   return (
-    <div className={`space-y-6 ${className}`}>
+    <div
+      className={`space-y-6 ${className} ${typeof window !== 'undefined' && window.innerWidth <= 768 ? 'mobile-layout' : ''}`}
+      data-testid="analytics-container"
+    >
       {/* Header */}
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-medium text-gray-900">
@@ -313,8 +338,9 @@ export function ProjectAnalytics({ className = '', projectId }: ProjectAnalytics
           <div className="p-6">
             <h3 className="text-lg font-medium text-gray-900 mb-4">Monthly Spending Trends</h3>
             <div className="space-y-3">
-              {data.monthlySpending.map((month, index) => {
-                const variance = ((month.amount - month.budget) / month.budget) * 100
+              {data.monthlySpending?.map((month, index) => {
+                const variance =
+                  month.budget > 0 ? ((month.amount - month.budget) / month.budget) * 100 : 0
                 const VarianceIcon = getVarianceIcon(variance)
 
                 return (
@@ -357,7 +383,7 @@ export function ProjectAnalytics({ className = '', projectId }: ProjectAnalytics
           <div className="p-6">
             <h3 className="text-lg font-medium text-gray-900 mb-4">Project Budget Performance</h3>
             <div className="space-y-3">
-              {data.budgetVarianceByProject.map((project, index) => {
+              {data.budgetVarianceByProject?.map((project, index) => {
                 const VarianceIcon = getVarianceIcon(project.variance)
 
                 return (
@@ -401,7 +427,7 @@ export function ProjectAnalytics({ className = '', projectId }: ProjectAnalytics
           <div className="p-6">
             <h3 className="text-lg font-medium text-gray-900 mb-4">Top Vendors</h3>
             <div className="space-y-3">
-              {data.topVendors.map((vendor, index) => (
+              {data.topVendors?.map((vendor, index) => (
                 <div
                   key={index}
                   className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
@@ -429,7 +455,7 @@ export function ProjectAnalytics({ className = '', projectId }: ProjectAnalytics
           <div className="p-6">
             <h3 className="text-lg font-medium text-gray-900 mb-4">Spending Categories</h3>
             <div className="space-y-4">
-              {data.spendingByCategory.map((category, index) => (
+              {data.spendingByCategory?.map((category, index) => (
                 <div key={index} className="space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium text-gray-700">{category.category}</span>

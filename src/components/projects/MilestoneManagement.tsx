@@ -16,7 +16,7 @@ import {
   PlusIcon,
   PencilIcon,
   TrashIcon,
-  FlagIcon
+  FlagIcon,
 } from '@heroicons/react/24/outline'
 
 interface Milestone {
@@ -41,24 +41,40 @@ interface MilestoneSummary {
   overallProgress: number
 }
 
+interface Project {
+  id: string
+  name: string
+  description?: string
+  status: 'PLANNING' | 'IN_PROGRESS' | 'ON_HOLD' | 'COMPLETED' | 'CANCELLED'
+  budget: number
+  startDate?: string
+  endDate?: string
+  createdAt: string
+  updatedAt: string
+  ownerId: string
+}
+
 interface MilestoneManagementProps {
-  projectId: string
+  project: Project
   className?: string
 }
 
-export function MilestoneManagement({ projectId, className = '' }: MilestoneManagementProps) {
+export function MilestoneManagement({ project, className = '' }: MilestoneManagementProps) {
+  const projectId = project.id
   const [milestones, setMilestones] = useState<Milestone[]>([])
   const [summary, setSummary] = useState<MilestoneSummary | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [editingMilestone, setEditingMilestone] = useState<Milestone | null>(null)
+  const [showEditModal, setShowEditModal] = useState(false)
   const [formData, setFormData] = useState({
     name: '',
     description: '',
     targetDate: '',
     paymentAmount: '',
-    status: 'PENDING' as const
+    percentComplete: '',
+    status: 'PENDING' as const,
   })
 
   useEffect(() => {
@@ -70,7 +86,7 @@ export function MilestoneManagement({ projectId, className = '' }: MilestoneMana
       setLoading(true)
       const response = await fetch(`/api/projects/${projectId}/milestones`)
       const data = await response.json()
-      
+
       if (data.success) {
         setMilestones(data.milestones)
         setSummary(data.summary)
@@ -87,7 +103,7 @@ export function MilestoneManagement({ projectId, className = '' }: MilestoneMana
 
   const handleCreateMilestone = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     try {
       const response = await fetch(`/api/projects/${projectId}/milestones`, {
         method: 'POST',
@@ -97,16 +113,23 @@ export function MilestoneManagement({ projectId, className = '' }: MilestoneMana
           description: formData.description || null,
           targetDate: formData.targetDate,
           paymentAmount: parseFloat(formData.paymentAmount),
-          sortOrder: milestones.length
-        })
+          sortOrder: milestones.length,
+        }),
       })
-      
+
       const data = await response.json()
-      
+
       if (data.success) {
         await fetchMilestones() // Refresh the list
         setShowCreateModal(false)
-        setFormData({ name: '', description: '', targetDate: '', paymentAmount: '', status: 'PENDING' })
+        setFormData({
+          name: '',
+          description: '',
+          targetDate: '',
+          paymentAmount: '',
+          percentComplete: '',
+          status: 'PENDING',
+        })
       } else {
         setError(data.error || 'Failed to create milestone')
       }
@@ -121,20 +144,61 @@ export function MilestoneManagement({ projectId, className = '' }: MilestoneMana
       const response = await fetch(`/api/projects/${projectId}/milestones/${milestoneId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updates)
+        body: JSON.stringify(updates),
       })
-      
+
       const data = await response.json()
-      
+
       if (data.success) {
         await fetchMilestones() // Refresh the list
         setEditingMilestone(null)
+        setShowEditModal(false)
       } else {
         setError(data.error || 'Failed to update milestone')
       }
     } catch (err) {
       setError('Failed to update milestone')
       console.error('Update milestone error:', err)
+    }
+  }
+
+  const handleEditMilestone = (milestone: Milestone) => {
+    setEditingMilestone(milestone)
+    setFormData({
+      name: milestone.name,
+      description: milestone.description || '',
+      targetDate: milestone.targetDate.split('T')[0], // Format for date input
+      paymentAmount: milestone.paymentAmount.toString(),
+      percentComplete: milestone.percentComplete.toString(),
+      status: milestone.status,
+    })
+    setShowEditModal(true)
+  }
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    if (!editingMilestone) return
+
+    try {
+      const updates: Partial<Milestone> = {
+        name: formData.name,
+        description: formData.description || undefined,
+        targetDate: formData.targetDate,
+        paymentAmount: parseFloat(formData.paymentAmount),
+        percentComplete: parseFloat(formData.percentComplete),
+        status: formData.status,
+      }
+
+      // Auto-set actual date if completing
+      if (formData.status === 'COMPLETED' && editingMilestone.status !== 'COMPLETED') {
+        updates.actualDate = new Date().toISOString()
+      }
+
+      await handleUpdateMilestone(editingMilestone.id, updates)
+    } catch (err) {
+      setError('Failed to update milestone')
+      console.error('Edit milestone error:', err)
     }
   }
 
@@ -145,11 +209,11 @@ export function MilestoneManagement({ projectId, className = '' }: MilestoneMana
 
     try {
       const response = await fetch(`/api/projects/${projectId}/milestones/${milestoneId}`, {
-        method: 'DELETE'
+        method: 'DELETE',
       })
-      
+
       const data = await response.json()
-      
+
       if (data.success) {
         await fetchMilestones() // Refresh the list
       } else {
@@ -233,11 +297,14 @@ export function MilestoneManagement({ projectId, className = '' }: MilestoneMana
             </h3>
             {summary && (
               <p className="mt-1 text-sm text-gray-500">
-                {summary.completedMilestones} of {summary.totalMilestones} completed • {formatCurrency(summary.completedPaymentAmount)} of {formatCurrency(summary.totalPaymentAmount)} earned • {summary.overallProgress}% progress
+                {summary.completedMilestones} of {summary.totalMilestones} completed •{' '}
+                {formatCurrency(summary.completedPaymentAmount)} of{' '}
+                {formatCurrency(summary.totalPaymentAmount)} earned • {summary.overallProgress}%
+                progress
               </p>
             )}
           </div>
-          
+
           <button
             onClick={() => setShowCreateModal(true)}
             className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
@@ -255,7 +322,7 @@ export function MilestoneManagement({ projectId, className = '' }: MilestoneMana
               <span className="font-medium">{summary.overallProgress}%</span>
             </div>
             <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
-              <div 
+              <div
                 className="bg-blue-600 h-2 rounded-full transition-all duration-300"
                 style={{ width: `${summary.overallProgress}%` }}
               ></div>
@@ -267,10 +334,7 @@ export function MilestoneManagement({ projectId, className = '' }: MilestoneMana
       {error && (
         <div className="mx-6 mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
           <p className="text-sm text-red-800">{error}</p>
-          <button
-            onClick={() => setError(null)}
-            className="mt-2 text-xs text-red-600 underline"
-          >
+          <button onClick={() => setError(null)} className="mt-2 text-xs text-red-600 underline">
             Dismiss
           </button>
         </div>
@@ -304,18 +368,20 @@ export function MilestoneManagement({ projectId, className = '' }: MilestoneMana
                         <h4 className="text-sm font-medium text-gray-900 truncate">
                           {milestone.name}
                         </h4>
-                        <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(milestone.status)}`}>
+                        <div
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(milestone.status)}`}
+                        >
                           {getStatusIcon(milestone.status)}
                           <span className="ml-1">{milestone.status.replace('_', ' ')}</span>
                         </div>
                       </div>
-                      
+
                       {milestone.description && (
                         <p className="mt-1 text-sm text-gray-500 truncate">
                           {milestone.description}
                         </p>
                       )}
-                      
+
                       <div className="mt-2 flex items-center space-x-4 text-xs text-gray-500">
                         <span className="flex items-center">
                           <CalendarIcon className="h-3 w-3 mr-1" />
@@ -334,6 +400,44 @@ export function MilestoneManagement({ projectId, className = '' }: MilestoneMana
                           </span>
                         )}
                       </div>
+
+                      {/* Progress Bar */}
+                      {milestone.percentComplete > 0 && milestone.status !== 'COMPLETED' && (
+                        <div className="mt-2">
+                          <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
+                            <span>Progress</span>
+                            <span>{milestone.percentComplete}%</span>
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-1.5">
+                            <div
+                              className={`h-1.5 rounded-full transition-all duration-300 ${
+                                milestone.percentComplete >= 100
+                                  ? 'bg-green-500'
+                                  : milestone.percentComplete >= 75
+                                    ? 'bg-blue-500'
+                                    : milestone.percentComplete >= 50
+                                      ? 'bg-yellow-500'
+                                      : 'bg-gray-400'
+                              }`}
+                              style={{ width: `${milestone.percentComplete}%` }}
+                            ></div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Overdue Warning */}
+                      {milestone.status !== 'COMPLETED' &&
+                        new Date(milestone.targetDate) < new Date() && (
+                          <div className="mt-2 flex items-center text-xs text-red-600">
+                            <ExclamationTriangleIcon className="h-3 w-3 mr-1" />
+                            Overdue by{' '}
+                            {Math.ceil(
+                              (new Date().getTime() - new Date(milestone.targetDate).getTime()) /
+                                (1000 * 60 * 60 * 24)
+                            )}{' '}
+                            days
+                          </div>
+                        )}
                     </div>
                   </div>
                 </div>
@@ -342,10 +446,13 @@ export function MilestoneManagement({ projectId, className = '' }: MilestoneMana
                   {/* Status Dropdown */}
                   <select
                     value={milestone.status}
-                    onChange={(e) => handleUpdateMilestone(milestone.id, { 
-                      status: e.target.value as any,
-                      actualDate: e.target.value === 'COMPLETED' ? new Date().toISOString() : undefined
-                    })}
+                    onChange={e =>
+                      handleUpdateMilestone(milestone.id, {
+                        status: e.target.value as any,
+                        actualDate:
+                          e.target.value === 'COMPLETED' ? new Date().toISOString() : undefined,
+                      })
+                    }
                     className="text-xs border-gray-300 rounded-md focus:border-blue-500 focus:ring-blue-500"
                   >
                     <option value="PENDING">Pending</option>
@@ -356,7 +463,7 @@ export function MilestoneManagement({ projectId, className = '' }: MilestoneMana
 
                   {/* Action Buttons */}
                   <button
-                    onClick={() => setEditingMilestone(milestone)}
+                    onClick={() => handleEditMilestone(milestone)}
                     className="p-1 text-gray-400 hover:text-blue-600"
                     title="Edit milestone"
                   >
@@ -380,55 +487,67 @@ export function MilestoneManagement({ projectId, className = '' }: MilestoneMana
       {showCreateModal && (
         <div className="fixed inset-0 z-50 overflow-y-auto">
           <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-            <div className="fixed inset-0 bg-gray-500 bg-opacity-75" onClick={() => setShowCreateModal(false)}></div>
-            
-            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+            <div
+              className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
+              onClick={() => setShowCreateModal(false)}
+            ></div>
+
+            {/* This span hack is required for centering on mobile Safari */}
+            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+            <div className="relative inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full z-50">
               <form onSubmit={handleCreateMilestone}>
                 <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                   <h3 className="text-lg font-medium text-gray-900 mb-4">Add New Milestone</h3>
-                  
+
                   <div className="space-y-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
                       <input
                         type="text"
                         value={formData.name}
-                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        onChange={e => setFormData({ ...formData, name: e.target.value })}
                         className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                         placeholder="e.g., Foundation Complete"
                         required
                       />
                     </div>
-                    
+
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Description
+                      </label>
                       <textarea
                         value={formData.description}
-                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                        onChange={e => setFormData({ ...formData, description: e.target.value })}
                         rows={3}
                         className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                         placeholder="Optional description"
                       />
                     </div>
-                    
+
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Target Date</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Target Date
+                      </label>
                       <input
                         type="date"
                         value={formData.targetDate}
-                        onChange={(e) => setFormData({ ...formData, targetDate: e.target.value })}
+                        onChange={e => setFormData({ ...formData, targetDate: e.target.value })}
                         className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                         required
                       />
                     </div>
-                    
+
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Payment Amount (NZD)</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Payment Amount (NZD)
+                      </label>
                       <input
                         type="number"
                         step="0.01"
                         value={formData.paymentAmount}
-                        onChange={(e) => setFormData({ ...formData, paymentAmount: e.target.value })}
+                        onChange={e => setFormData({ ...formData, paymentAmount: e.target.value })}
                         className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                         placeholder="0.00"
                         required
@@ -436,7 +555,7 @@ export function MilestoneManagement({ projectId, className = '' }: MilestoneMana
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
                   <button
                     type="submit"
@@ -447,6 +566,139 @@ export function MilestoneManagement({ projectId, className = '' }: MilestoneMana
                   <button
                     type="button"
                     onClick={() => setShowCreateModal(false)}
+                    className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Milestone Modal */}
+      {showEditModal && editingMilestone && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div
+              className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
+              onClick={() => {
+                setShowEditModal(false)
+                setEditingMilestone(null)
+              }}
+            ></div>
+
+            {/* This span hack is required for centering on mobile Safari */}
+            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+            <div className="relative inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full z-50">
+              <form onSubmit={handleEditSubmit}>
+                <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">Edit Milestone</h3>
+
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                      <input
+                        type="text"
+                        value={formData.name}
+                        onChange={e => setFormData({ ...formData, name: e.target.value })}
+                        className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                        placeholder="e.g., Foundation Complete"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Description
+                      </label>
+                      <textarea
+                        value={formData.description}
+                        onChange={e => setFormData({ ...formData, description: e.target.value })}
+                        rows={3}
+                        className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                        placeholder="Optional description"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Target Date
+                      </label>
+                      <input
+                        type="date"
+                        value={formData.targetDate}
+                        onChange={e => setFormData({ ...formData, targetDate: e.target.value })}
+                        className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Payment Amount (NZD)
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={formData.paymentAmount}
+                        onChange={e => setFormData({ ...formData, paymentAmount: e.target.value })}
+                        className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                        placeholder="0.00"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Progress ({formData.percentComplete}%)
+                      </label>
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={formData.percentComplete}
+                        onChange={e => setFormData({ ...formData, percentComplete: e.target.value })}
+                        className="block w-full"
+                      />
+                      <div className="flex justify-between text-xs text-gray-500 mt-1">
+                        <span>0%</span>
+                        <span>50%</span>
+                        <span>100%</span>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                      <select
+                        value={formData.status}
+                        onChange={e => setFormData({ ...formData, status: e.target.value as any })}
+                        className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                      >
+                        <option value="PENDING">Pending</option>
+                        <option value="IN_PROGRESS">In Progress</option>
+                        <option value="COMPLETED">Completed</option>
+                        <option value="OVERDUE">Overdue</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                  <button
+                    type="submit"
+                    className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm"
+                  >
+                    Update Milestone
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowEditModal(false)
+                      setEditingMilestone(null)
+                    }}
                     className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
                   >
                     Cancel

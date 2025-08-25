@@ -42,9 +42,9 @@ interface AccuracyResult {
 async function POST(request: NextRequest, user: AuthUser) {
   try {
     const body: AccuracyMeasureRequest = await request.json()
-    
+
     console.log('Measuring estimate import accuracy:', body)
-    
+
     // Calculate various accuracy metrics
     const accuracy: AccuracyResult = {
       overallAccuracy: 0,
@@ -54,7 +54,7 @@ async function POST(request: NextRequest, user: AuthUser) {
       missingTrades: [],
       incorrectAmounts: [],
       accuracyGrade: 'F',
-      recommendations: []
+      recommendations: [],
     }
 
     // 1. Total Amount Accuracy
@@ -62,9 +62,11 @@ async function POST(request: NextRequest, user: AuthUser) {
       const totalDifference = Math.abs(body.expectedTotal - body.actualTotal)
       const totalPercentError = (totalDifference / body.expectedTotal) * 100
       accuracy.totalAccuracy = Math.max(0, 100 - totalPercentError)
-      
+
       if (totalPercentError > 20) {
-        accuracy.recommendations.push(`Total amount has ${totalPercentError.toFixed(1)}% error - consider improving parsing patterns`)
+        accuracy.recommendations.push(
+          `Total amount has ${totalPercentError.toFixed(1)}% error - consider improving parsing patterns`
+        )
       }
     }
 
@@ -73,13 +75,15 @@ async function POST(request: NextRequest, user: AuthUser) {
       const lineItemDifference = Math.abs(body.expectedLineItems - body.actualLineItems)
       const lineItemPercentError = (lineItemDifference / body.expectedLineItems) * 100
       accuracy.lineItemAccuracy = Math.max(0, 100 - lineItemPercentError)
-      
+
       if (body.actualLineItems < body.expectedLineItems) {
         const missing = body.expectedLineItems - body.actualLineItems
         accuracy.recommendations.push(`Missing ${missing} line items - check for parsing gaps`)
       } else if (body.actualLineItems > body.expectedLineItems) {
         const extra = body.actualLineItems - body.expectedLineItems
-        accuracy.recommendations.push(`${extra} extra line items detected - may include totals or duplicates`)
+        accuracy.recommendations.push(
+          `${extra} extra line items detected - may include totals or duplicates`
+        )
       }
     }
 
@@ -88,54 +92,55 @@ async function POST(request: NextRequest, user: AuthUser) {
       const totalTrades = body.trades.length
       const foundTrades = body.trades.filter(trade => trade.found).length
       accuracy.tradeAccuracy = (foundTrades / totalTrades) * 100
-      
+
       // Track missing trades
-      accuracy.missingTrades = body.trades
-        .filter(trade => !trade.found)
-        .map(trade => trade.name)
-      
+      accuracy.missingTrades = body.trades.filter(trade => !trade.found).map(trade => trade.name)
+
       // Track amount discrepancies
       body.trades.forEach(trade => {
         if (trade.found && trade.actualAmount && trade.expectedAmount) {
           const difference = Math.abs(trade.expectedAmount - trade.actualAmount)
           const percentError = (difference / trade.expectedAmount) * 100
-          
-          if (percentError > 10) { // More than 10% error
+
+          if (percentError > 10) {
+            // More than 10% error
             accuracy.incorrectAmounts.push({
               trade: trade.name,
               expected: trade.expectedAmount,
               actual: trade.actualAmount,
               difference,
-              percentError
+              percentError,
             })
           }
         }
       })
-      
+
       if (accuracy.missingTrades.length > 0) {
         accuracy.recommendations.push(`Missing trades: ${accuracy.missingTrades.join(', ')}`)
       }
-      
+
       if (accuracy.incorrectAmounts.length > 0) {
-        accuracy.recommendations.push(`${accuracy.incorrectAmounts.length} trades have significant amount errors`)
+        accuracy.recommendations.push(
+          `${accuracy.incorrectAmounts.length} trades have significant amount errors`
+        )
       }
     }
 
     // 4. Calculate Overall Accuracy (weighted average)
     const weights = {
-      total: 0.4,      // Total amount is most important
-      lineItems: 0.3,  // Line item count is important
-      trades: 0.3      // Trade detection is important
+      total: 0.4, // Total amount is most important
+      lineItems: 0.3, // Line item count is important
+      trades: 0.3, // Trade detection is important
     }
-    
-    accuracy.overallAccuracy = 
-      (accuracy.totalAccuracy * weights.total) +
-      (accuracy.lineItemAccuracy * weights.lineItems) +
-      (accuracy.tradeAccuracy * weights.trades)
+
+    accuracy.overallAccuracy =
+      accuracy.totalAccuracy * weights.total +
+      accuracy.lineItemAccuracy * weights.lineItems +
+      accuracy.tradeAccuracy * weights.trades
 
     // 5. Assign Grade
     if (accuracy.overallAccuracy >= 95) accuracy.accuracyGrade = 'A'
-    else if (accuracy.overallAccuracy >= 85) accuracy.accuracyGrade = 'B'  
+    else if (accuracy.overallAccuracy >= 85) accuracy.accuracyGrade = 'B'
     else if (accuracy.overallAccuracy >= 75) accuracy.accuracyGrade = 'C'
     else if (accuracy.overallAccuracy >= 65) accuracy.accuracyGrade = 'D'
     else accuracy.accuracyGrade = 'F'
@@ -154,7 +159,9 @@ async function POST(request: NextRequest, user: AuthUser) {
         accuracy.recommendations.push('Regex patterns may be too restrictive - add more variations')
       }
       if (accuracy.lineItemAccuracy < accuracy.tradeAccuracy) {
-        accuracy.recommendations.push('Found trades but missing line items - check item extraction logic')
+        accuracy.recommendations.push(
+          'Found trades but missing line items - check item extraction logic'
+        )
       }
     }
 
@@ -172,7 +179,7 @@ async function POST(request: NextRequest, user: AuthUser) {
       grade: accuracy.accuracyGrade,
       totalAccuracy: accuracy.totalAccuracy.toFixed(1) + '%',
       lineItemAccuracy: accuracy.lineItemAccuracy.toFixed(1) + '%',
-      tradeAccuracy: accuracy.tradeAccuracy.toFixed(1) + '%'
+      tradeAccuracy: accuracy.tradeAccuracy.toFixed(1) + '%',
     })
 
     return NextResponse.json({
@@ -183,19 +190,25 @@ async function POST(request: NextRequest, user: AuthUser) {
         method: body.importMethod,
         overallAccuracy: Number(accuracy.overallAccuracy.toFixed(1)),
         grade: accuracy.accuracyGrade,
-        totalDifference: body.expectedTotal && body.actualTotal ? 
-          Math.abs(body.expectedTotal - body.actualTotal) : 0,
-        missingItems: body.expectedLineItems && body.actualLineItems ?
-          Math.max(0, body.expectedLineItems - body.actualLineItems) : 0
-      }
+        totalDifference:
+          body.expectedTotal && body.actualTotal
+            ? Math.abs(body.expectedTotal - body.actualTotal)
+            : 0,
+        missingItems:
+          body.expectedLineItems && body.actualLineItems
+            ? Math.max(0, body.expectedLineItems - body.actualLineItems)
+            : 0,
+      },
     })
-
   } catch (error) {
     console.error('Accuracy measurement error:', error)
-    return NextResponse.json({
-      success: false,
-      error: 'Failed to measure accuracy'
-    }, { status: 500 })
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Failed to measure accuracy',
+      },
+      { status: 500 }
+    )
   }
 }
 

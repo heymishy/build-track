@@ -14,13 +14,13 @@ const nextConfig: NextConfig = {
     if (isServer) {
       config.resolve.alias.canvas = false
     }
-    
+
     // Handle pdfjs-dist worker
     config.resolve.alias = {
       ...config.resolve.alias,
       'pdfjs-dist/build/pdf.worker.entry': 'pdfjs-dist/build/pdf.worker.min.js',
     }
-    
+
     return config
   },
 }

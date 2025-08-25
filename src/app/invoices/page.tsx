@@ -15,7 +15,7 @@ import {
   DocumentTextIcon,
   SparklesIcon,
   CursorArrowRaysIcon,
-  EyeIcon
+  EyeIcon,
 } from '@heroicons/react/24/outline'
 
 interface Project {
@@ -45,16 +45,18 @@ export default function InvoicesPage() {
       setLoading(true)
       const response = await fetch('/api/projects')
       const data = await response.json()
-      
+
       if (data.success) {
         // Filter projects that have invoices
         const projectsWithInvoices = data.projects.filter((p: Project) => p.stats.totalInvoices > 0)
         setProjects(projectsWithInvoices)
-        
+
         // Auto-select first project with pending invoices, or first project
-        const projectWithPending = projectsWithInvoices.find((p: Project) => p.stats.pendingInvoiceAmount > 0)
+        const projectWithPending = projectsWithInvoices.find(
+          (p: Project) => p.stats.pendingInvoiceAmount > 0
+        )
         const defaultProject = projectWithPending || projectsWithInvoices[0]
-        
+
         if (defaultProject) {
           setSelectedProjectId(defaultProject.id)
           // If project has pending invoices, default to matching tab
@@ -106,9 +108,7 @@ export default function InvoicesPage() {
         title="Invoice Management"
         description="Manage and match invoices against project estimates"
         icon={DocumentTextIcon}
-        breadcrumbs={[
-          { label: 'Invoice Management' }
-        ]}
+        breadcrumbs={[{ label: 'Invoice Management' }]}
       />
 
       <div className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
@@ -161,11 +161,11 @@ export default function InvoicesPage() {
                     Choose a project to manage its invoices
                   </p>
                 </div>
-                
+
                 <div className="flex items-center space-x-4">
                   <select
                     value={selectedProjectId}
-                    onChange={(e) => setSelectedProjectId(e.target.value)}
+                    onChange={e => setSelectedProjectId(e.target.value)}
                     className="block w-64 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                   >
                     <option value="">Select a project...</option>
@@ -177,7 +177,7 @@ export default function InvoicesPage() {
                   </select>
                 </div>
               </div>
-              
+
               {selectedProject && (
                 <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div className="bg-gray-50 rounded-lg p-3">
@@ -191,7 +191,7 @@ export default function InvoicesPage() {
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="bg-yellow-50 rounded-lg p-3">
                     <div className="flex items-center">
                       <CursorArrowRaysIcon className="h-5 w-5 text-yellow-400 mr-2" />
@@ -203,7 +203,7 @@ export default function InvoicesPage() {
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="bg-blue-50 rounded-lg p-3">
                     <div className="flex items-center">
                       <SparklesIcon className="h-5 w-5 text-blue-400 mr-2" />
@@ -236,7 +236,7 @@ export default function InvoicesPage() {
                         <EyeIcon className="h-4 w-4 inline mr-2" />
                         Invoice Management
                       </button>
-                      
+
                       <button
                         onClick={() => setActiveTab('matching')}
                         className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
@@ -264,7 +264,7 @@ export default function InvoicesPage() {
                         className="border-0 shadow-none rounded-none"
                       />
                     )}
-                    
+
                     {activeTab === 'matching' && (
                       <InvoiceMatchingInterface
                         projectId={selectedProjectId}

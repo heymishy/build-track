@@ -12,17 +12,17 @@ async function GET(request: NextRequest, user: AuthUser) {
   try {
     const service = new SettingsService(user.id)
     const settings = await service.getSettings()
-    
+
     return NextResponse.json({
       success: true,
-      settings
+      settings,
     })
   } catch (error) {
     console.error('Error retrieving settings:', error)
     return NextResponse.json(
       {
         success: false,
-        error: 'Failed to retrieve settings'
+        error: 'Failed to retrieve settings',
       },
       { status: 500 }
     )
@@ -33,12 +33,12 @@ async function POST(request: NextRequest, user: AuthUser) {
   try {
     const body = await request.json()
     const { key, value } = body
-    
+
     if (!key) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Setting key is required'
+          error: 'Setting key is required',
         },
         { status: 400 }
       )
@@ -46,17 +46,17 @@ async function POST(request: NextRequest, user: AuthUser) {
 
     const service = new SettingsService(user.id)
     await service.updateSetting(key, value)
-    
+
     return NextResponse.json({
       success: true,
-      message: 'Setting updated successfully'
+      message: 'Setting updated successfully',
     })
   } catch (error) {
     console.error('Error updating setting:', error)
     return NextResponse.json(
       {
         success: false,
-        error: 'Failed to update setting'
+        error: 'Failed to update setting',
       },
       { status: 500 }
     )

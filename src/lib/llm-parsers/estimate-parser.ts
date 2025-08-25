@@ -76,7 +76,7 @@ export class LLMEstimateParser {
 
     try {
       console.log('Starting LLM-based PDF estimate parsing...')
-      
+
       // Call Gemini directly with PDF buffer
       const result = await this.callGeminiWithPDF(request)
 
@@ -86,7 +86,7 @@ export class LLMEstimateParser {
           confidence: 0,
           costEstimate: result.cost || 0,
           processingTime: Date.now() - startTime,
-          error: result.error || 'LLM PDF parsing failed to extract estimate data'
+          error: result.error || 'LLM PDF parsing failed to extract estimate data',
         }
       }
 
@@ -94,11 +94,11 @@ export class LLMEstimateParser {
 
       // Convert the LLM response to estimate format
       const estimate = this.convertInvoiceToEstimate(result.data, request.filename)
-      
+
       console.log('Converted estimate:', {
         trades: estimate.trades.length,
         lineItems: estimate.summary.totalLineItems,
-        total: estimate.totalBudget
+        total: estimate.totalBudget,
       })
 
       return {
@@ -111,10 +111,9 @@ export class LLMEstimateParser {
           model: 'Gemini-PDF',
           provider: 'Direct-PDF',
           extractedTrades: estimate.trades.length,
-          extractedLineItems: estimate.summary.totalLineItems
-        }
+          extractedLineItems: estimate.summary.totalLineItems,
+        },
       }
-
     } catch (error) {
       console.error('LLM PDF estimate parsing error:', error)
       return {
@@ -122,7 +121,7 @@ export class LLMEstimateParser {
         confidence: 0,
         costEstimate: 0,
         processingTime: Date.now() - startTime,
-        error: error instanceof Error ? error.message : 'Unknown LLM PDF parsing error'
+        error: error instanceof Error ? error.message : 'Unknown LLM PDF parsing error',
       }
     }
   }
@@ -132,10 +131,10 @@ export class LLMEstimateParser {
 
     try {
       console.log('Starting LLM-based text estimate parsing...')
-      
+
       // Generate estimate-specific prompt
       const estimatePrompt = this.generateEstimatePrompt(request)
-      
+
       // Call LLM directly instead of using invoice orchestrator (which expects single invoices)
       const result = await this.callLLMDirectly(estimatePrompt, request)
 
@@ -145,7 +144,7 @@ export class LLMEstimateParser {
           confidence: 0,
           costEstimate: result.cost || 0,
           processingTime: Date.now() - startTime,
-          error: result.error || 'LLM parsing failed to extract estimate data'
+          error: result.error || 'LLM parsing failed to extract estimate data',
         }
       }
 
@@ -153,11 +152,11 @@ export class LLMEstimateParser {
 
       // Convert the LLM response to estimate format
       const estimate = this.convertInvoiceToEstimate(result.data, request.filename)
-      
+
       console.log('Converted estimate:', {
         trades: estimate.trades.length,
         lineItems: estimate.summary.totalLineItems,
-        total: estimate.totalBudget
+        total: estimate.totalBudget,
       })
 
       return {
@@ -170,10 +169,9 @@ export class LLMEstimateParser {
           model: 'LLM-based',
           provider: 'Orchestrator',
           extractedTrades: estimate.trades.length,
-          extractedLineItems: estimate.summary.totalLineItems
-        }
+          extractedLineItems: estimate.summary.totalLineItems,
+        },
       }
-
     } catch (error) {
       console.error('LLM estimate parsing error:', error)
       return {
@@ -181,7 +179,7 @@ export class LLMEstimateParser {
         confidence: 0,
         costEstimate: 0,
         processingTime: Date.now() - startTime,
-        error: error instanceof Error ? error.message : 'Unknown LLM parsing error'
+        error: error instanceof Error ? error.message : 'Unknown LLM parsing error',
       }
     }
   }
@@ -192,7 +190,9 @@ export class LLMEstimateParser {
     // Analyze the document structure to create a more targeted prompt
     const lines = text.split('\n').filter(line => line.trim())
     const sampleTrades = this.extractSampleTrades(text)
-    const documentType = text.toLowerCase().includes('sub contractors') ? 'contractor breakdown' : 'general estimate'
+    const documentType = text.toLowerCase().includes('sub contractors')
+      ? 'contractor breakdown'
+      : 'general estimate'
 
     return `Extract construction estimate data from this ${documentType}. Analyze the document structure and extract EVERY cost line item.
 
@@ -229,18 +229,19 @@ REQUIRED JSON FORMAT (return ONLY this JSON):
     const samples = []
     let match
     let count = 0
-    
+
     while ((match = tradePattern.exec(text)) !== null && count < 5) {
-      const tradeName = match[1].trim()
+      const tradeName = match[1]
+        .trim()
         .replace(/\s+(quote|quoted|tbc|to be|discussed).*$/i, '')
         .trim()
-      
+
       if (tradeName.length > 2 && !tradeName.toLowerCase().includes('total')) {
         samples.push(tradeName)
         count++
       }
     }
-    
+
     return samples
   }
 
@@ -249,14 +250,20 @@ REQUIRED JSON FORMAT (return ONLY this JSON):
       // Get parsing configuration to access API keys - pass userId for user-specific config
       const { getParsingConfig } = await import('@/lib/pdf-parsing-config')
       const config = await getParsingConfig(this.userId)
-      
-      console.log('Estimate parsing - Available providers:', Object.keys(config.llmProviders).filter(key => config.llmProviders[key].enabled))
-      console.log('Estimate parsing - Provider details:', Object.entries(config.llmProviders).map(([key, provider]) => ({
-        name: key,
-        enabled: provider.enabled,
-        hasApiKey: !!provider.apiKey
-      })))
-      
+
+      console.log(
+        'Estimate parsing - Available providers:',
+        Object.keys(config.llmProviders).filter(key => config.llmProviders[key].enabled)
+      )
+      console.log(
+        'Estimate parsing - Provider details:',
+        Object.entries(config.llmProviders).map(([key, provider]) => ({
+          name: key,
+          enabled: provider.enabled,
+          hasApiKey: !!provider.apiKey,
+        }))
+      )
+
       // Try Gemini first if available (good for structured responses)
       if (config.llmProviders.gemini.enabled && config.llmProviders.gemini.apiKey) {
         console.log('Using Gemini for estimate parsing')
@@ -265,9 +272,9 @@ REQUIRED JSON FORMAT (return ONLY this JSON):
           apiKey: config.llmProviders.gemini.apiKey!,
           model: config.llmProviders.gemini.model,
           timeout: config.timeout,
-          maxRetries: config.retryAttempts
+          maxRetries: config.retryAttempts,
         })
-        
+
         // Create a custom LLM request specifically for estimates
         const llmRequest = {
           text: this.generateEstimatePrompt(request), // Use our custom prompt
@@ -276,17 +283,17 @@ REQUIRED JSON FORMAT (return ONLY this JSON):
             temperature: 0.1,
             maxTokens: 8000,
             includeConfidence: true,
-            structured: true
-          }
+            structured: true,
+          },
         }
-        
+
         const response = await parser.parseInvoice(llmRequest)
         console.log('Gemini response received:', {
           success: response.success,
           hasInvoice: !!response.invoice,
-          confidence: response.confidence
+          confidence: response.confidence,
         })
-        
+
         // Try to extract the JSON from the response
         if (response.success && response.invoice) {
           try {
@@ -295,24 +302,27 @@ REQUIRED JSON FORMAT (return ONLY this JSON):
               response.invoice.description,
               response.invoice.rawText,
               response.invoice.vendorName,
-              JSON.stringify(response.invoice)
+              JSON.stringify(response.invoice),
             ]
-            
-            console.log('Full response object for debugging:', JSON.stringify(response.invoice, null, 2))
-            
+
+            console.log(
+              'Full response object for debugging:',
+              JSON.stringify(response.invoice, null, 2)
+            )
+
             let parsedData = null
             for (const responseText of possibleFields) {
               if (!responseText) continue
-              
+
               console.log('Checking field for JSON:', responseText.substring(0, 100) + '...')
-              
+
               // Try multiple JSON extraction patterns
               const patterns = [
-                /\{[\s\S]*?"invoices"[\s\S]*?\}/,  // Original pattern
-                /\{[\s\S]*?\}/,  // Any JSON object
-                /"invoices"\s*:\s*\[[\s\S]*?\]/  // Just the invoices array
+                /\{[\s\S]*?"invoices"[\s\S]*?\}/, // Original pattern
+                /\{[\s\S]*?\}/, // Any JSON object
+                /"invoices"\s*:\s*\[[\s\S]*?\]/, // Just the invoices array
               ]
-              
+
               for (const pattern of patterns) {
                 const jsonMatch = responseText.match(pattern)
                 if (jsonMatch) {
@@ -321,42 +331,46 @@ REQUIRED JSON FORMAT (return ONLY this JSON):
                     console.log('Successfully parsed JSON with pattern:', pattern.source)
                     break
                   } catch (e) {
-                    console.log('JSON parse failed for pattern:', pattern.source, 'Error:', e.message)
+                    console.log(
+                      'JSON parse failed for pattern:',
+                      pattern.source,
+                      'Error:',
+                      e.message
+                    )
                     continue
                   }
                 }
               }
-              
+
               if (parsedData) break
             }
-            
+
             if (parsedData) {
               console.log('Successfully extracted estimate data:', parsedData)
-              
+
               return {
                 success: true,
                 data: parsedData,
                 confidence: parsedData.confidence || response.confidence,
                 cost: response.costEstimate,
-                error: null
+                error: null,
               }
             }
-            
           } catch (parseError) {
             console.error('Failed to extract JSON from Gemini response:', parseError)
           }
         }
-        
+
         console.log('Gemini parsing failed, will fallback to traditional parsing')
         return {
           success: false,
           data: null,
           confidence: 0,
           cost: response?.costEstimate || 0,
-          error: 'Failed to extract structured data from LLM response'
+          error: 'Failed to extract structured data from LLM response',
         }
       }
-      
+
       // Fallback to Anthropic if available
       if (config.llmProviders.anthropic.enabled && config.llmProviders.anthropic.apiKey) {
         console.log('Using Anthropic for estimate parsing')
@@ -365,9 +379,9 @@ REQUIRED JSON FORMAT (return ONLY this JSON):
           apiKey: config.llmProviders.anthropic.apiKey!,
           model: config.llmProviders.anthropic.model,
           timeout: config.timeout,
-          maxRetries: config.retryAttempts
+          maxRetries: config.retryAttempts,
         })
-        
+
         const llmRequest = {
           text: prompt,
           pageNumber: request.pageNumber,
@@ -375,23 +389,22 @@ REQUIRED JSON FORMAT (return ONLY this JSON):
             temperature: 0.1,
             maxTokens: 8000, // Higher limit for multiple items
             includeConfidence: true,
-            structured: true
-          }
+            structured: true,
+          },
         }
-        
+
         const response = await parser.parseInvoice(llmRequest)
-        
+
         return {
           success: response.success,
           data: response.invoice,
           confidence: response.confidence,
           cost: response.costEstimate,
-          error: response.error
+          error: response.error,
         }
       }
-      
+
       throw new Error('No LLM providers available for estimate parsing')
-      
     } catch (error) {
       console.error('Direct LLM call failed:', error)
       return {
@@ -399,7 +412,7 @@ REQUIRED JSON FORMAT (return ONLY this JSON):
         data: null,
         confidence: 0,
         cost: 0,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       }
     }
   }
@@ -438,7 +451,7 @@ REQUIRED JSON FORMAT (return ONLY this JSON):
           data: null,
           confidence: 0,
           cost: 0,
-          error: `Failed to parse JSON response: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`
+          error: `Failed to parse JSON response: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`,
         }
       }
 
@@ -447,9 +460,8 @@ REQUIRED JSON FORMAT (return ONLY this JSON):
         data: parsedData,
         confidence: parsedData.confidence || 0.8,
         cost: 0.01, // Rough estimate for cost
-        error: null
+        error: null,
       }
-
     } catch (error) {
       console.error('Gemini direct call error:', error)
       return {
@@ -457,7 +469,7 @@ REQUIRED JSON FORMAT (return ONLY this JSON):
         data: null,
         confidence: 0,
         cost: 0,
-        error: error instanceof Error ? error.message : 'Unknown Gemini error'
+        error: error instanceof Error ? error.message : 'Unknown Gemini error',
       }
     }
   }
@@ -467,7 +479,7 @@ REQUIRED JSON FORMAT (return ONLY this JSON):
       // Get parsing configuration to access API keys
       const { getParsingConfig } = await import('@/lib/pdf-parsing-config')
       const config = await getParsingConfig(this.userId)
-      
+
       if (!config.llmProviders.gemini.enabled || !config.llmProviders.gemini.apiKey) {
         throw new Error('Gemini not configured for PDF parsing')
       }
@@ -477,7 +489,7 @@ REQUIRED JSON FORMAT (return ONLY this JSON):
       // Import Google Generative AI directly
       const { GoogleGenerativeAI } = await import('@google/generative-ai')
       const genAI = new GoogleGenerativeAI(config.llmProviders.gemini.apiKey)
-      
+
       // Use the model that supports file uploads
       const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
 
@@ -487,15 +499,15 @@ REQUIRED JSON FORMAT (return ONLY this JSON):
 
       // Convert buffer to base64 for Gemini
       const pdfBase64 = request.pdfBuffer.toString('base64')
-      
+
       const result = await model.generateContent([
         {
           inlineData: {
             data: pdfBase64,
-            mimeType: 'application/pdf'
-          }
+            mimeType: 'application/pdf',
+          },
         },
-        prompt
+        prompt,
       ])
 
       const response = await result.response
@@ -508,49 +520,49 @@ REQUIRED JSON FORMAT (return ONLY this JSON):
       try {
         // Clean the response text first
         let cleanedText = text.trim()
-        
+
         // Remove markdown code block markers and any text before/after JSON
         cleanedText = cleanedText.replace(/```json\s*/g, '').replace(/```\s*$/g, '')
         cleanedText = cleanedText.replace(/^[^{]*/, '').replace(/[^}]*$/, '') // Remove text before { and after }
-        
+
         console.log('Cleaned Gemini response:', cleanedText.substring(0, 500) + '...')
-        
+
         // Try to find and parse JSON in the response
         const jsonMatch = cleanedText.match(/\{[\s\S]*\}/)
         if (jsonMatch) {
           let jsonString = jsonMatch[0]
-          
+
           // Fix common JSON issues more comprehensively
           jsonString = jsonString
-            .replace(/,\s*\]/g, ']')  // Remove trailing commas in arrays
-            .replace(/,\s*\}/g, '}')  // Remove trailing commas in objects
-            .replace(/:\s*null(?=\s*[,\}])/g, ': ""')  // Replace null with empty string
-            .replace(/:\s*undefined(?=\s*[,\}])/g, ': ""')  // Replace undefined with empty string
-            .replace(/([{,]\s*)"([^"]+)"\s*:\s*"([^"]*)"/g, '$1"$2": "$3"')  // Ensure proper quoting
-            .replace(/([{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g, '$1"$2":')  // Quote unquoted keys
-            .replace(/:\s*'([^']*)'/g, ': "$1"')  // Convert single quotes to double quotes
-            .replace(/\n\s*/g, ' ')  // Remove newlines and extra spaces
-            .replace(/\s+/g, ' ')    // Normalize whitespace
-          
+            .replace(/,\s*\]/g, ']') // Remove trailing commas in arrays
+            .replace(/,\s*\}/g, '}') // Remove trailing commas in objects
+            .replace(/:\s*null(?=\s*[,\}])/g, ': ""') // Replace null with empty string
+            .replace(/:\s*undefined(?=\s*[,\}])/g, ': ""') // Replace undefined with empty string
+            .replace(/([{,]\s*)"([^"]+)"\s*:\s*"([^"]*)"/g, '$1"$2": "$3"') // Ensure proper quoting
+            .replace(/([{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g, '$1"$2":') // Quote unquoted keys
+            .replace(/:\s*'([^']*)'/g, ': "$1"') // Convert single quotes to double quotes
+            .replace(/\n\s*/g, ' ') // Remove newlines and extra spaces
+            .replace(/\s+/g, ' ') // Normalize whitespace
+
           console.log('Attempting to parse cleaned JSON:', jsonString.substring(0, 300) + '...')
-          
+
           // Try parsing with multiple attempts
           try {
             parsedData = JSON.parse(jsonString)
             console.log('Successfully parsed Gemini PDF JSON:', parsedData)
           } catch (firstError) {
             console.log('First parse attempt failed, trying alternative cleaning...')
-            
+
             // More aggressive cleaning for malformed JSON
             const alternativeJson = jsonString
-              .replace(/[^\x20-\x7E]/g, '')  // Remove non-ASCII characters
-              .replace(/\\n/g, ' ')          // Replace literal \n with space
-              .replace(/\\r/g, ' ')          // Replace literal \r with space
-              .replace(/\s+"/g, '"')         // Clean spaces before quotes
-              .replace(/"\s+:/g, '":')       // Clean spaces after keys
-              .replace(/:\s+"/g, ':"')       // Clean spaces after colons
-              .replace(/,\s+"/g, ',"')       // Clean spaces after commas
-            
+              .replace(/[^\x20-\x7E]/g, '') // Remove non-ASCII characters
+              .replace(/\\n/g, ' ') // Replace literal \n with space
+              .replace(/\\r/g, ' ') // Replace literal \r with space
+              .replace(/\s+"/g, '"') // Clean spaces before quotes
+              .replace(/"\s+:/g, '":') // Clean spaces after keys
+              .replace(/:\s+"/g, ':"') // Clean spaces after colons
+              .replace(/,\s+"/g, ',"') // Clean spaces after commas
+
             parsedData = JSON.parse(alternativeJson)
             console.log('Successfully parsed Gemini PDF JSON on second attempt:', parsedData)
           }
@@ -565,7 +577,7 @@ REQUIRED JSON FORMAT (return ONLY this JSON):
           data: null,
           confidence: 0,
           cost: 0,
-          error: `Failed to parse JSON response: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`
+          error: `Failed to parse JSON response: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`,
         }
       }
 
@@ -575,9 +587,8 @@ REQUIRED JSON FORMAT (return ONLY this JSON):
         confidence: parsedData.confidence || 0.9,
         cost: 0.01, // Rough estimate for cost
         totalCost: 0.01,
-        error: null
+        error: null,
       }
-
     } catch (error) {
       console.error('Gemini PDF call error:', error)
       return {
@@ -586,7 +597,7 @@ REQUIRED JSON FORMAT (return ONLY this JSON):
         confidence: 0,
         cost: 0,
         totalCost: 0,
-        error: error instanceof Error ? error.message : 'Unknown Gemini PDF error'
+        error: error instanceof Error ? error.message : 'Unknown Gemini PDF error',
       }
     }
   }
@@ -652,15 +663,12 @@ Expected total range: $400,000 - $500,000 NZD with 20-30 line items.
 Analyze the PDF now and extract ALL line items:`
   }
 
-  private convertInvoiceToEstimate(
-    invoiceData: any, 
-    filename: string
-  ): ParsedEstimate {
+  private convertInvoiceToEstimate(invoiceData: any, filename: string): ParsedEstimate {
     console.log('Converting invoice data to estimate:', invoiceData)
-    
+
     // Handle different response formats from LLM
     let invoices: any[] = []
-    
+
     if (invoiceData.invoices && Array.isArray(invoiceData.invoices)) {
       // LLM returned the expected format with invoices array
       invoices = invoiceData.invoices
@@ -674,7 +682,7 @@ Analyze the PDF now and extract ALL line items:`
       invoices = [invoiceData]
       console.log('Found single invoice, wrapping in array')
     }
-    
+
     const lineItems: EstimateLineItem[] = []
     let totalBudget = 0
 
@@ -682,13 +690,14 @@ Analyze the PDF now and extract ALL line items:`
     for (let i = 0; i < invoices.length; i++) {
       const invoice = invoices[i]
       console.log(`Processing invoice ${i + 1}:`, invoice)
-      
+
       const tradeName = this.extractTradeFromVendor(invoice.vendorName || `Trade ${i + 1}`)
       const total = invoice.total || invoice.amount || 0
-      
+
       console.log(`Trade: ${tradeName}, Amount: ${total}`)
-      
-      if (total > 0) { // Only add if we have a valid amount
+
+      if (total > 0) {
+        // Only add if we have a valid amount
         totalBudget += total
 
         // Create line item for this trade
@@ -703,7 +712,7 @@ Analyze the PDF now and extract ALL line items:`
           overheadPercent: 0,
           totalCost: total,
           tradeName,
-          category: 'LABOR'
+          category: 'LABOR',
         }
 
         lineItems.push(lineItem)
@@ -712,7 +721,7 @@ Analyze the PDF now and extract ALL line items:`
         console.warn('Skipping invoice with no amount:', invoice)
       }
     }
-    
+
     console.log(`Total line items created: ${lineItems.length}, Total budget: ${totalBudget}`)
 
     // Group by trade
@@ -752,7 +761,7 @@ Analyze the PDF now and extract ALL line items:`
         totalLaborCost: tradeLaborCost,
         totalEquipmentCost: tradeEquipmentCost,
         totalCost: tradeTotalCost,
-        sortOrder: index
+        sortOrder: index,
       })
 
       totalMaterialCost += tradeMaterialCost
@@ -771,48 +780,48 @@ Analyze the PDF now and extract ALL line items:`
         totalMaterialCost,
         totalLaborCost,
         totalEquipmentCost,
-        grandTotal: totalBudget
+        grandTotal: totalBudget,
       },
       metadata: {
         source: 'pdf',
         filename,
         parseDate: new Date().toISOString(),
-        rowCount: lineItems.length
-      }
+        rowCount: lineItems.length,
+      },
     }
   }
 
   private extractTradeFromVendor(vendorName: string): string {
     const vendor = vendorName.toLowerCase()
-    
+
     // Trade mapping for estimate parsing
     const tradeMap: { [key: string]: string } = {
-      'concrete': 'Concrete & Foundations',
-      'plumber': 'Plumbing', 
-      'plumbing': 'Plumbing',
-      'electrician': 'Electrical',
-      'electrical': 'Electrical',
-      'roofing': 'Roofing',
-      'roof': 'Roofing',
-      'aluminium': 'Windows & Doors',
-      'aluminum': 'Windows & Doors', 
-      'joinery': 'Windows & Doors',
-      'plasterer': 'Plastering',
-      'plastering': 'Plastering',
-      'door': 'Windows & Doors',
-      'doors': 'Windows & Doors',
-      'tiler': 'Tiling',
-      'tiling': 'Tiling',
-      'painter': 'Painting',
-      'painting': 'Painting',
-      'flooring': 'Flooring',
-      'framing': 'Framing',
-      'insulation': 'Insulation',
-      'hvac': 'HVAC',
-      'kitchen': 'Kitchen & Bathrooms',
-      'bathroom': 'Kitchen & Bathrooms',
-      'landscaping': 'Landscaping',
-      'excavation': 'Site Work'
+      concrete: 'Concrete & Foundations',
+      plumber: 'Plumbing',
+      plumbing: 'Plumbing',
+      electrician: 'Electrical',
+      electrical: 'Electrical',
+      roofing: 'Roofing',
+      roof: 'Roofing',
+      aluminium: 'Windows & Doors',
+      aluminum: 'Windows & Doors',
+      joinery: 'Windows & Doors',
+      plasterer: 'Plastering',
+      plastering: 'Plastering',
+      door: 'Windows & Doors',
+      doors: 'Windows & Doors',
+      tiler: 'Tiling',
+      tiling: 'Tiling',
+      painter: 'Painting',
+      painting: 'Painting',
+      flooring: 'Flooring',
+      framing: 'Framing',
+      insulation: 'Insulation',
+      hvac: 'HVAC',
+      kitchen: 'Kitchen & Bathrooms',
+      bathroom: 'Kitchen & Bathrooms',
+      landscaping: 'Landscaping',
+      excavation: 'Site Work',
     }
 
     // Find matching trade

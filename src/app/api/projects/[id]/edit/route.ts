@@ -17,77 +17,88 @@ interface EditProjectRequest {
   status?: 'PLANNING' | 'IN_PROGRESS' | 'ON_HOLD' | 'COMPLETED' | 'CANCELLED'
 }
 
-async function PUT(
-  request: NextRequest,
-  user: AuthUser,
-  context?: { params: { id: string } }
-) {
+async function PUT(request: NextRequest, user: AuthUser, context?: { params: { id: string } }) {
   try {
     // Get project ID from URL pathname since context.params might be undefined
     const url = new URL(request.url)
     const pathSegments = url.pathname.split('/')
     const projectId = pathSegments[pathSegments.length - 2] // Get the ID from /api/projects/{id}/edit
-    
+
     if (!projectId) {
-      return NextResponse.json({
-        success: false,
-        error: 'Project ID is required'
-      }, { status: 400 })
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Project ID is required',
+        },
+        { status: 400 }
+      )
     }
     const body: EditProjectRequest = await request.json()
-    
+
     console.log(`Editing project: ${projectId}`, body)
-    
+
     // Verify user has access to edit this project
     if (user.role !== 'ADMIN') {
       const projectAccess = await prisma.projectUser.findFirst({
         where: {
           userId: user.id,
           projectId,
-          role: { in: ['OWNER', 'CONTRACTOR'] } // Owners and contractors can edit
+          role: { in: ['OWNER', 'CONTRACTOR'] }, // Owners and contractors can edit
         },
       })
 
       if (!projectAccess) {
-        return NextResponse.json({
-          success: false,
-          error: 'You do not have permission to edit this project'
-        }, { status: 403 })
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'You do not have permission to edit this project',
+          },
+          { status: 403 }
+        )
       }
     }
 
     // Validate input
     if (!body.name || body.name.trim().length === 0) {
-      return NextResponse.json({
-        success: false,
-        error: 'Project name is required'
-      }, { status: 400 })
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Project name is required',
+        },
+        { status: 400 }
+      )
     }
 
     if (body.totalBudget !== undefined && body.totalBudget < 0) {
-      return NextResponse.json({
-        success: false,
-        error: 'Total budget cannot be negative'
-      }, { status: 400 })
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Total budget cannot be negative',
+        },
+        { status: 400 }
+      )
     }
 
     // Check if project exists
     const existingProject = await prisma.project.findUnique({
-      where: { id: projectId }
+      where: { id: projectId },
     })
 
     if (!existingProject) {
-      return NextResponse.json({
-        success: false,
-        error: 'Project not found'
-      }, { status: 404 })
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Project not found',
+        },
+        { status: 404 }
+      )
     }
 
     // Prepare update data
     const updateData: any = {
       name: body.name.trim(),
       description: body.description?.trim() || null,
-      updatedAt: new Date()
+      updatedAt: new Date(),
     }
 
     // Only update fields that are provided
@@ -118,18 +129,18 @@ async function PUT(
               select: {
                 id: true,
                 name: true,
-                email: true
-              }
-            }
-          }
+                email: true,
+              },
+            },
+          },
         },
         trades: {
           include: {
-            lineItems: true
-          }
+            lineItems: true,
+          },
         },
-        milestones: true
-      }
+        milestones: true,
+      },
     })
 
     console.log(`Successfully updated project ${projectId}`)
@@ -150,17 +161,22 @@ async function PUT(
         updatedAt: updatedProject.updatedAt,
         users: updatedProject.users,
         tradesCount: updatedProject.trades.length,
-        lineItemsCount: updatedProject.trades.reduce((sum, trade) => sum + trade.lineItems.length, 0),
-        milestonesCount: updatedProject.milestones.length
-      }
+        lineItemsCount: updatedProject.trades.reduce(
+          (sum, trade) => sum + trade.lineItems.length,
+          0
+        ),
+        milestonesCount: updatedProject.milestones.length,
+      },
     })
-
   } catch (error) {
     console.error('Edit project error:', error)
-    return NextResponse.json({
-      success: false,
-      error: 'Failed to update project'
-    }, { status: 500 })
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Failed to update project',
+      },
+      { status: 500 }
+    )
   }
 }
 

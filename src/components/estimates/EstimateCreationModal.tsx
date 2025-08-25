@@ -11,7 +11,7 @@ import {
   XMarkIcon,
   DocumentArrowUpIcon,
   PencilSquareIcon,
-  ArrowLeftIcon
+  ArrowLeftIcon,
 } from '@heroicons/react/24/outline'
 import { EstimateImportModal } from './EstimateImportModal'
 import { ManualEstimateCreator } from './ManualEstimateCreator'
@@ -31,7 +31,7 @@ export function EstimateCreationModal({
   onClose,
   onComplete,
   projectId,
-  allowCreateProject = true
+  allowCreateProject = true,
 }: EstimateCreationModalProps) {
   const [mode, setMode] = useState<CreationMode>('selection')
 
@@ -66,11 +66,10 @@ export function EstimateCreationModal({
     return (
       <Dialog open={isOpen} onClose={handleModalClose} className="relative z-50">
         <div className="fixed inset-0 bg-black bg-opacity-25" />
-        
+
         <div className="fixed inset-0 overflow-y-auto">
           <div className="flex min-h-full items-start justify-center p-4">
             <Dialog.Panel className="mx-auto max-w-7xl w-full bg-white rounded-lg shadow-xl max-h-[90vh] overflow-y-auto">
-              
               {/* Header */}
               <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-white sticky top-0 z-10">
                 <div className="flex items-center">
@@ -107,11 +106,10 @@ export function EstimateCreationModal({
   return (
     <Dialog open={isOpen} onClose={handleModalClose} className="relative z-50">
       <div className="fixed inset-0 bg-black bg-opacity-25" />
-      
+
       <div className="fixed inset-0 overflow-y-auto">
         <div className="flex min-h-full items-center justify-center p-4">
           <Dialog.Panel className="mx-auto max-w-md w-full bg-white rounded-lg shadow-xl">
-            
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-gray-200">
               <Dialog.Title className="text-lg font-medium text-gray-900">
@@ -138,8 +136,8 @@ export function EstimateCreationModal({
                   <div className="text-left">
                     <h3 className="font-medium text-gray-900">Import from File</h3>
                     <p className="text-sm text-gray-500 mt-1">
-                      Upload a PDF, Excel, or CSV file with your estimate data. 
-                      Perfect for existing estimates or QS reports.
+                      Upload a PDF, Excel, or CSV file with your estimate data. Perfect for existing
+                      estimates or QS reports.
                     </p>
                     <div className="flex items-center mt-2 text-xs text-blue-600">
                       <span className="bg-blue-100 px-2 py-1 rounded">AI-Powered</span>
@@ -157,8 +155,8 @@ export function EstimateCreationModal({
                   <div className="text-left">
                     <h3 className="font-medium text-gray-900">Create Manually</h3>
                     <p className="text-sm text-gray-500 mt-1">
-                      Build your estimate from scratch with flexible input options.
-                      Perfect for new projects or detailed custom estimates.
+                      Build your estimate from scratch with flexible input options. Perfect for new
+                      projects or detailed custom estimates.
                     </p>
                     <div className="flex items-center mt-2 text-xs text-green-600">
                       <span className="bg-green-100 px-2 py-1 rounded">Flexible</span>
@@ -169,7 +167,10 @@ export function EstimateCreationModal({
               </div>
 
               <div className="mt-6 text-xs text-gray-500">
-                <p>💡 <strong>Tip:</strong> You can always switch between methods or import additional data later.</p>
+                <p>
+                  💡 <strong>Tip:</strong> You can always switch between methods or import
+                  additional data later.
+                </p>
               </div>
             </div>
           </Dialog.Panel>

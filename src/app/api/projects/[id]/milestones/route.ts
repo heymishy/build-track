@@ -7,7 +7,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import { withAuth, AuthUser } from '@/lib/middleware'
 import { prisma } from '@/lib/prisma'
 
-async function GET(request: NextRequest, user: AuthUser, { params }: { params: Promise<{ id: string }> }) {
+async function GET(
+  request: NextRequest,
+  user: AuthUser,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
     const { id: projectId } = await params
 
@@ -21,17 +25,20 @@ async function GET(request: NextRequest, user: AuthUser, { params }: { params: P
       })
 
       if (!projectAccess) {
-        return NextResponse.json({
-          success: false,
-          error: 'You do not have access to this project'
-        }, { status: 403 })
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'You do not have access to this project',
+          },
+          { status: 403 }
+        )
       }
     }
 
     // Get milestones for this project
     const milestones = await prisma.milestone.findMany({
       where: { projectId },
-      orderBy: { sortOrder: 'asc' }
+      orderBy: { sortOrder: 'asc' },
     })
 
     // Calculate summary stats
@@ -47,39 +54,49 @@ async function GET(request: NextRequest, user: AuthUser, { params }: { params: P
       milestones: milestones.map(milestone => ({
         ...milestone,
         paymentAmount: Number(milestone.paymentAmount),
-        percentComplete: Number(milestone.percentComplete)
+        percentComplete: Number(milestone.percentComplete),
       })),
       summary: {
         totalMilestones,
         completedMilestones,
         totalPaymentAmount,
         completedPaymentAmount,
-        overallProgress: totalMilestones > 0 ? Math.round((completedMilestones / totalMilestones) * 100) : 0
-      }
+        overallProgress:
+          totalMilestones > 0 ? Math.round((completedMilestones / totalMilestones) * 100) : 0,
+      },
     })
-
   } catch (error) {
     console.error('Error fetching milestones:', error)
-    return NextResponse.json({
-      success: false,
-      error: 'Failed to fetch milestones'
-    }, { status: 500 })
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Failed to fetch milestones',
+      },
+      { status: 500 }
+    )
   }
 }
 
-async function POST(request: NextRequest, user: AuthUser, { params }: { params: Promise<{ id: string }> }) {
+async function POST(
+  request: NextRequest,
+  user: AuthUser,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
     const { id: projectId } = await params
     const body = await request.json()
-    
+
     const { name, description, targetDate, paymentAmount, sortOrder } = body
 
     // Validate required fields
     if (!name || !targetDate || paymentAmount === undefined) {
-      return NextResponse.json({
-        success: false,
-        error: 'Name, target date, and payment amount are required'
-      }, { status: 400 })
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Name, target date, and payment amount are required',
+        },
+        { status: 400 }
+      )
     }
 
     // Verify user has access to modify this project
@@ -88,15 +105,18 @@ async function POST(request: NextRequest, user: AuthUser, { params }: { params: 
         where: {
           userId: user.id,
           projectId,
-          role: { in: ['OWNER', 'CONTRACTOR'] }
+          role: { in: ['OWNER', 'CONTRACTOR'] },
         },
       })
 
       if (!projectAccess) {
-        return NextResponse.json({
-          success: false,
-          error: 'You do not have permission to modify this project'
-        }, { status: 403 })
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'You do not have permission to modify this project',
+          },
+          { status: 403 }
+        )
       }
     }
 
@@ -110,25 +130,30 @@ async function POST(request: NextRequest, user: AuthUser, { params }: { params: 
         paymentAmount: Number(paymentAmount),
         sortOrder: sortOrder || 0,
         status: 'PENDING',
-        percentComplete: 0
-      }
+        percentComplete: 0,
+      },
     })
 
-    return NextResponse.json({
-      success: true,
-      milestone: {
-        ...milestone,
-        paymentAmount: Number(milestone.paymentAmount),
-        percentComplete: Number(milestone.percentComplete)
-      }
-    }, { status: 201 })
-
+    return NextResponse.json(
+      {
+        success: true,
+        milestone: {
+          ...milestone,
+          paymentAmount: Number(milestone.paymentAmount),
+          percentComplete: Number(milestone.percentComplete),
+        },
+      },
+      { status: 201 }
+    )
   } catch (error) {
     console.error('Error creating milestone:', error)
-    return NextResponse.json({
-      success: false,
-      error: 'Failed to create milestone'
-    }, { status: 500 })
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Failed to create milestone',
+      },
+      { status: 500 }
+    )
   }
 }
 

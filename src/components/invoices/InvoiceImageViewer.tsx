@@ -54,7 +54,7 @@ export function InvoiceImageViewer({
     try {
       setLoading(true)
       setError(null)
-      
+
       console.log(`Loading PDF page ${pageNumber} for invoice viewer`)
 
       if (typeof pdfFile === 'string') {
@@ -66,7 +66,7 @@ export function InvoiceImageViewer({
 
       // For File objects, we'll convert PDF to image using PDF.js
       const pdfjs = await import('pdfjs-dist')
-      
+
       // Set up worker - use local worker to avoid CORS issues
       if (!pdfjs.GlobalWorkerOptions.workerSrc) {
         pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js'
@@ -162,9 +162,7 @@ export function InvoiceImageViewer({
             >
               <ChevronLeftIcon className="h-5 w-5" />
             </button>
-            <span className="text-sm text-gray-700 min-w-0">
-              Page {pageNumber}
-            </span>
+            <span className="text-sm text-gray-700 min-w-0">Page {pageNumber}</span>
             <button
               disabled
               className="p-1 rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -221,7 +219,7 @@ export function InvoiceImageViewer({
                 }}
                 className="border border-gray-200 rounded shadow-sm"
               />
-              
+
               {/* Highlight Regions - if any */}
               {highlightRegions
                 .filter(region => region.page === currentPage)

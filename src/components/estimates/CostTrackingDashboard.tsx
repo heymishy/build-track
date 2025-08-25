@@ -13,7 +13,7 @@ import {
   CheckCircleIcon,
   BuildingOffice2Icon,
   ArrowTrendingUpIcon,
-  ArrowTrendingDownIcon
+  ArrowTrendingDownIcon,
 } from '@heroicons/react/24/outline'
 
 interface Trade {
@@ -97,7 +97,7 @@ export function CostTrackingDashboard({ projectId, className = '' }: CostTrackin
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-NZ', {
       style: 'currency',
-      currency: 'NZD'
+      currency: 'NZD',
     }).format(amount)
   }
 
@@ -122,10 +122,14 @@ export function CostTrackingDashboard({ projectId, className = '' }: CostTrackin
 
   const getStatusText = (status: Trade['status']) => {
     switch (status) {
-      case 'under_budget': return 'Under Budget'
-      case 'on_budget': return 'On Budget'
-      case 'over_budget': return 'Over Budget'
-      case 'no_estimate': return 'No Estimate'
+      case 'under_budget':
+        return 'Under Budget'
+      case 'on_budget':
+        return 'On Budget'
+      case 'over_budget':
+        return 'Over Budget'
+      case 'no_estimate':
+        return 'No Estimate'
     }
   }
 
@@ -164,7 +168,6 @@ export function CostTrackingDashboard({ projectId, className = '' }: CostTrackin
 
   return (
     <div className={`bg-white rounded-lg shadow ${className}`}>
-      
       {/* Header */}
       <div className="px-6 py-4 border-b border-gray-200">
         <div className="flex items-center justify-between">
@@ -215,10 +218,14 @@ export function CostTrackingDashboard({ projectId, className = '' }: CostTrackin
             </div>
             <div className="text-center">
               <p className="text-sm text-gray-500">Variance</p>
-              <p className={`text-lg font-semibold ${getVarianceColor(summary.totalVariance, summary.variancePercent)}`}>
-                {summary.totalVariance >= 0 ? '+' : ''}{formatCurrency(summary.totalVariance)}
+              <p
+                className={`text-lg font-semibold ${getVarianceColor(summary.totalVariance, summary.variancePercent)}`}
+              >
+                {summary.totalVariance >= 0 ? '+' : ''}
+                {formatCurrency(summary.totalVariance)}
                 <span className="text-sm ml-1">
-                  ({summary.variancePercent >= 0 ? '+' : ''}{summary.variancePercent.toFixed(1)}%)
+                  ({summary.variancePercent >= 0 ? '+' : ''}
+                  {summary.variancePercent.toFixed(1)}%)
                 </span>
               </p>
             </div>
@@ -242,7 +249,9 @@ export function CostTrackingDashboard({ projectId, className = '' }: CostTrackin
             </div>
             <div className="flex items-center">
               <div className="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
-              <span className="text-sm text-gray-600">Under Budget: {summary.tradesUnderBudget}</span>
+              <span className="text-sm text-gray-600">
+                Under Budget: {summary.tradesUnderBudget}
+              </span>
             </div>
           </div>
         </div>
@@ -260,9 +269,8 @@ export function CostTrackingDashboard({ projectId, className = '' }: CostTrackin
           </div>
         ) : (
           <div className="space-y-4">
-            {trades.map((trade) => (
+            {trades.map(trade => (
               <div key={trade.id} className="border border-gray-200 rounded-lg p-4">
-                
                 {/* Trade Header */}
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center">
@@ -295,8 +303,11 @@ export function CostTrackingDashboard({ projectId, className = '' }: CostTrackin
                   </div>
                   <div>
                     <p className="text-xs text-gray-500">Variance</p>
-                    <p className={`text-sm font-medium ${getVarianceColor(trade.variance, trade.variancePercent)}`}>
-                      {trade.variance >= 0 ? '+' : ''}{formatCurrency(trade.variance)}
+                    <p
+                      className={`text-sm font-medium ${getVarianceColor(trade.variance, trade.variancePercent)}`}
+                    >
+                      {trade.variance >= 0 ? '+' : ''}
+                      {formatCurrency(trade.variance)}
                     </p>
                   </div>
                   <div>
@@ -307,9 +318,7 @@ export function CostTrackingDashboard({ projectId, className = '' }: CostTrackin
                   </div>
                   <div>
                     <p className="text-xs text-gray-500">Line Items</p>
-                    <p className="text-sm font-medium text-gray-900">
-                      {trade.lineItems.length}
-                    </p>
+                    <p className="text-sm font-medium text-gray-900">{trade.lineItems.length}</p>
                   </div>
                 </div>
 
@@ -320,8 +329,8 @@ export function CostTrackingDashboard({ projectId, className = '' }: CostTrackin
                       trade.status === 'over_budget'
                         ? 'bg-red-500'
                         : trade.status === 'on_budget'
-                        ? 'bg-green-500'
-                        : 'bg-blue-500'
+                          ? 'bg-green-500'
+                          : 'bg-blue-500'
                     }`}
                     style={{ width: `${Math.min(trade.percentSpent, 100)}%` }}
                   ></div>
@@ -332,7 +341,7 @@ export function CostTrackingDashboard({ projectId, className = '' }: CostTrackin
                   <div className="mt-4 pt-4 border-t border-gray-100">
                     <h4 className="text-sm font-medium text-gray-900 mb-2">Line Items</h4>
                     <div className="space-y-2">
-                      {trade.lineItems.slice(0, 5).map((item) => (
+                      {trade.lineItems.slice(0, 5).map(item => (
                         <div key={item.id} className="flex justify-between items-center text-sm">
                           <div className="flex-1">
                             <p className="text-gray-900">{item.description}</p>

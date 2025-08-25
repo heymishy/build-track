@@ -15,7 +15,7 @@ import {
   EyeIcon,
   BuildingOfficeIcon,
   EnvelopeIcon,
-  CalendarIcon
+  CalendarIcon,
 } from '@heroicons/react/24/outline'
 
 interface User {
@@ -57,11 +57,11 @@ export function UserManagement() {
   const loadData = async () => {
     try {
       setLoading(true)
-      
+
       // Load users and projects in parallel
       const [usersResponse, projectsResponse] = await Promise.all([
         fetch('/api/users', { credentials: 'include' }),
-        fetch('/api/projects', { credentials: 'include' })
+        fetch('/api/projects', { credentials: 'include' }),
       ])
 
       if (usersResponse.ok) {
@@ -79,7 +79,6 @@ export function UserManagement() {
       } else {
         throw new Error('Failed to load projects')
       }
-
     } catch (err) {
       console.error('Failed to load user management data:', err)
       setError(err instanceof Error ? err.message : 'Failed to load data')
@@ -92,7 +91,7 @@ export function UserManagement() {
     return new Date(dateString).toLocaleDateString('en-NZ', {
       year: 'numeric',
       month: 'short',
-      day: 'numeric'
+      day: 'numeric',
     })
   }
 
@@ -120,10 +119,10 @@ export function UserManagement() {
       const response = await fetch(`/api/users/${editingUser.id}`, {
         method: 'PUT',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
         credentials: 'include',
-        body: JSON.stringify(updatedUser)
+        body: JSON.stringify(updatedUser),
       })
 
       if (response.ok) {
@@ -147,7 +146,7 @@ export function UserManagement() {
     try {
       const response = await fetch(`/api/users/${userId}`, {
         method: 'DELETE',
-        credentials: 'include'
+        credentials: 'include',
       })
 
       if (response.ok) {
@@ -203,9 +202,7 @@ export function UserManagement() {
             <UsersIcon className="h-5 w-5" />
             User Management
           </h2>
-          <p className="text-sm text-gray-600 mt-1">
-            Manage user accounts and project permissions
-          </p>
+          <p className="text-sm text-gray-600 mt-1">Manage user accounts and project permissions</p>
         </div>
         <button
           onClick={() => setShowAddUser(true)}
@@ -221,9 +218,9 @@ export function UserManagement() {
         <div className="px-6 py-4 border-b border-gray-200">
           <h3 className="text-sm font-medium text-gray-900">All Users ({users.length})</h3>
         </div>
-        
+
         <div className="divide-y divide-gray-200">
-          {users.map((user) => (
+          {users.map(user => (
             <div key={user.id} className="p-6 hover:bg-gray-50">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
@@ -232,17 +229,17 @@ export function UserManagement() {
                       <UsersIcon className="h-5 w-5 text-blue-600" />
                     </div>
                   </div>
-                  
+
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center space-x-3">
-                      <p className="text-sm font-medium text-gray-900 truncate">
-                        {user.name}
-                      </p>
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getRoleColor(user.role)}`}>
+                      <p className="text-sm font-medium text-gray-900 truncate">{user.name}</p>
+                      <span
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getRoleColor(user.role)}`}
+                      >
                         {user.role}
                       </span>
                     </div>
-                    
+
                     <div className="flex items-center space-x-4 mt-1">
                       <p className="text-sm text-gray-500 flex items-center">
                         <EnvelopeIcon className="h-4 w-4 mr-1" />
@@ -253,7 +250,7 @@ export function UserManagement() {
                         Joined {formatDate(user.createdAt)}
                       </p>
                     </div>
-                    
+
                     {user.projects.length > 0 && (
                       <div className="mt-2">
                         <p className="text-xs text-gray-500 mb-1">
@@ -261,7 +258,7 @@ export function UserManagement() {
                           Projects ({user.projects.length}):
                         </p>
                         <div className="flex flex-wrap gap-1">
-                          {user.projects.slice(0, 3).map((project) => (
+                          {user.projects.slice(0, 3).map(project => (
                             <span
                               key={project.projectId}
                               className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${getRoleColor(project.role)}`}
@@ -307,7 +304,7 @@ export function UserManagement() {
             </div>
           ))}
         </div>
-        
+
         {users.length === 0 && (
           <div className="text-center py-12">
             <UsersIcon className="mx-auto h-12 w-12 text-gray-400" />
@@ -332,7 +329,8 @@ export function UserManagement() {
           <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
             <h3 className="text-lg font-medium text-gray-900 mb-4">Add New User</h3>
             <p className="text-sm text-gray-500 mb-4">
-              User management interface is coming soon. For now, users are created automatically when they sign up.
+              User management interface is coming soon. For now, users are created automatically
+              when they sign up.
             </p>
             <div className="flex justify-end">
               <button
@@ -358,7 +356,12 @@ export function UserManagement() {
               >
                 <span className="sr-only">Close</span>
                 <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
               </button>
             </div>
@@ -378,7 +381,9 @@ export function UserManagement() {
                   <div className="flex justify-between">
                     <dt className="text-gray-500">Role:</dt>
                     <dd>
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getRoleColor(selectedUser.role)}`}>
+                      <span
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getRoleColor(selectedUser.role)}`}
+                      >
                         {selectedUser.role}
                       </span>
                     </dd>
@@ -391,16 +396,25 @@ export function UserManagement() {
               </div>
 
               <div>
-                <h4 className="text-sm font-medium text-gray-900">Project Access ({selectedUser.projects.length})</h4>
+                <h4 className="text-sm font-medium text-gray-900">
+                  Project Access ({selectedUser.projects.length})
+                </h4>
                 {selectedUser.projects.length > 0 ? (
                   <div className="mt-2 space-y-2">
-                    {selectedUser.projects.map((project) => (
-                      <div key={project.projectId} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    {selectedUser.projects.map(project => (
+                      <div
+                        key={project.projectId}
+                        className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                      >
                         <div>
                           <p className="text-sm font-medium text-gray-900">{project.projectName}</p>
-                          <p className="text-xs text-gray-500">Added {formatDate(project.addedAt)}</p>
+                          <p className="text-xs text-gray-500">
+                            Added {formatDate(project.addedAt)}
+                          </p>
                         </div>
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getRoleColor(project.role)}`}>
+                        <span
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getRoleColor(project.role)}`}
+                        >
                           {project.role}
                         </span>
                       </div>
@@ -465,35 +479,33 @@ function EditUserModal({ user, isOpen, onClose, onSave }: EditUserModalProps) {
       <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-lg font-medium text-gray-900">Edit User</h3>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-500"
-          >
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-500">
             <span className="sr-only">Close</span>
             <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Name
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Name</label>
             <input
               type="text"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={e => setName(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               required
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Email
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
             <input
               type="email"
               value={user.email}
@@ -504,12 +516,10 @@ function EditUserModal({ user, isOpen, onClose, onSave }: EditUserModalProps) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Role
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Role</label>
             <select
               value={role}
-              onChange={(e) => setRole(e.target.value as 'ADMIN' | 'USER' | 'VIEWER')}
+              onChange={e => setRole(e.target.value as 'ADMIN' | 'USER' | 'VIEWER')}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="VIEWER">Viewer</option>

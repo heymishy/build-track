@@ -281,7 +281,10 @@ export function EditProjectModal({
               />
             </div>
             <div>
-              <label htmlFor="estimatedEndDate" className="block text-sm font-medium text-gray-700 mb-2">
+              <label
+                htmlFor="estimatedEndDate"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
                 Estimated End Date
               </label>
               <input

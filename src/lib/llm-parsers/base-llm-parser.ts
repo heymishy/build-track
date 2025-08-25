@@ -52,17 +52,21 @@ export interface LLMParserConfig {
 export abstract class BaseLLMParser {
   protected config: LLMParserConfig
   protected rateLimiter: Map<string, number[]> = new Map()
-  
+
   constructor(config: LLMParserConfig) {
     this.config = config
   }
-  
+
   abstract parseInvoice(request: LLMParseRequest): Promise<LLMParseResponse>
-  
+
   /**
    * Validate and normalize LLM response, ensuring pageNumber is preserved
    */
-  protected validateResponse(parsedData: any, originalText: string, pageNumber?: number): ParsedInvoice {
+  protected validateResponse(
+    parsedData: any,
+    originalText: string,
+    pageNumber?: number
+  ): ParsedInvoice {
     const parsed: ParsedInvoice = {
       invoiceNumber: parsedData.invoiceNumber || null,
       date: this.normalizeDate(parsedData.date),
@@ -74,19 +78,19 @@ export abstract class BaseLLMParser {
       lineItems: this.normalizeLineItems(parsedData.lineItems || []),
       pageNumber, // Preserve pageNumber from request
       confidence: Math.min(Math.max(parsedData.confidence || 0.8, 0), 1),
-      rawText: originalText
+      rawText: originalText,
     }
-    
+
     // Validate total calculation
     if (parsed.amount && parsed.tax && parsed.total) {
       const expectedTotal = parsed.amount + parsed.tax
       const difference = Math.abs(parsed.total - expectedTotal)
-      
-      if (difference > 0.50) {
+
+      if (difference > 0.5) {
         parsed.confidence = Math.max(parsed.confidence * 0.8, 0.3)
       }
     }
-    
+
     return parsed
   }
 
@@ -95,7 +99,7 @@ export abstract class BaseLLMParser {
    */
   protected generatePrompt(request: LLMParseRequest): string {
     const { text, context, pageNumber } = request
-    
+
     return `You are an expert invoice data extraction system for construction projects. Extract structured data from the following invoice text with high accuracy.
 
 INVOICE TEXT (Page ${pageNumber || 1}):
@@ -147,62 +151,62 @@ VALIDATION RULES:
 
 Extract the data now:`
   }
-  
-  
+
   private normalizeDate(dateStr: any): string | null {
     if (!dateStr) return null
-    
+
     try {
       // Try parsing various date formats
       const date = new Date(dateStr)
       if (isNaN(date.getTime())) return null
-      
+
       return date.toISOString().split('T')[0]
     } catch {
       return null
     }
   }
-  
+
   private normalizeAmount(amount: any): number | null {
     if (amount === null || amount === undefined) return null
-    
-    const num = typeof amount === 'string' 
-      ? parseFloat(amount.replace(/[^0-9.-]/g, ''))
-      : Number(amount)
-      
+
+    const num =
+      typeof amount === 'string' ? parseFloat(amount.replace(/[^0-9.-]/g, '')) : Number(amount)
+
     return isNaN(num) ? null : Math.round(num * 100) / 100
   }
-  
+
   private normalizeLineItems(items: any[]): any[] {
     if (!Array.isArray(items)) return []
-    
-    return items.map(item => ({
-      description: item.description || '',
-      quantity: this.normalizeAmount(item.quantity) || 1,
-      unitPrice: this.normalizeAmount(item.unitPrice) || 0,
-      total: this.normalizeAmount(item.total) || 0
-    })).filter(item => item.description && item.total > 0)
+
+    return items
+      .map(item => ({
+        description: item.description || '',
+        quantity: this.normalizeAmount(item.quantity) || 1,
+        unitPrice: this.normalizeAmount(item.unitPrice) || 0,
+        total: this.normalizeAmount(item.total) || 0,
+      }))
+      .filter(item => item.description && item.total > 0)
   }
-  
+
   /**
    * Rate limiting check
    */
   protected async checkRateLimit(identifier: string, maxPerMinute: number): Promise<boolean> {
     const now = Date.now()
     const windowStart = now - 60000 // 1 minute ago
-    
+
     const requests = this.rateLimiter.get(identifier) || []
     const recentRequests = requests.filter(time => time > windowStart)
-    
+
     if (recentRequests.length >= maxPerMinute) {
       return false
     }
-    
+
     recentRequests.push(now)
     this.rateLimiter.set(identifier, recentRequests)
     return true
   }
-  
+
   /**
    * Calculate estimated cost
    */

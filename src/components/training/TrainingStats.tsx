@@ -32,7 +32,7 @@ export function TrainingStats() {
       setLoading(true)
       const response = await fetch('/api/invoices/training/stats')
       const data = await response.json()
-      
+
       if (data.success) {
         setStats(data.stats)
       } else {
@@ -42,7 +42,7 @@ export function TrainingStats() {
           fieldCounts: {},
           learnedPatterns: 0,
           templates: 0,
-          invoiceTypes: []
+          invoiceTypes: [],
         })
       }
     } catch (error) {
@@ -52,7 +52,7 @@ export function TrainingStats() {
         fieldCounts: {},
         learnedPatterns: 0,
         templates: 0,
-        invoiceTypes: []
+        invoiceTypes: [],
       })
     } finally {
       setLoading(false)

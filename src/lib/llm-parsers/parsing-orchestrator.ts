@@ -43,29 +43,38 @@ export class ParsingOrchestrator {
 
   private async initialize() {
     this.config = await getParsingConfig(this.userId)
-    
+
     console.log('Orchestrator initialized with strategy:', this.config.defaultStrategy)
-    console.log('Available providers:', Object.keys(this.config.llmProviders).filter(key => this.config.llmProviders[key].enabled))
-    
+    console.log(
+      'Available providers:',
+      Object.keys(this.config.llmProviders).filter(key => this.config.llmProviders[key].enabled)
+    )
+
     // Initialize available LLM parsers based on configuration
     if (this.config.llmProviders.anthropic.enabled && this.config.llmProviders.anthropic.apiKey) {
       console.log('Initializing Anthropic parser')
-      this.parsers.set('anthropic', new AnthropicParser({
-        apiKey: this.config.llmProviders.anthropic.apiKey!,
-        model: this.config.llmProviders.anthropic.model,
-        timeout: this.config.timeout,
-        maxRetries: this.config.retryAttempts
-      }))
+      this.parsers.set(
+        'anthropic',
+        new AnthropicParser({
+          apiKey: this.config.llmProviders.anthropic.apiKey!,
+          model: this.config.llmProviders.anthropic.model,
+          timeout: this.config.timeout,
+          maxRetries: this.config.retryAttempts,
+        })
+      )
     }
 
     if (this.config.llmProviders.gemini.enabled && this.config.llmProviders.gemini.apiKey) {
       console.log('Initializing Gemini parser')
-      this.parsers.set('gemini', new GeminiParser({
-        apiKey: this.config.llmProviders.gemini.apiKey!,
-        model: this.config.llmProviders.gemini.model,
-        timeout: this.config.timeout,
-        maxRetries: this.config.retryAttempts
-      }))
+      this.parsers.set(
+        'gemini',
+        new GeminiParser({
+          apiKey: this.config.llmProviders.gemini.apiKey!,
+          model: this.config.llmProviders.gemini.model,
+          timeout: this.config.timeout,
+          maxRetries: this.config.retryAttempts,
+        })
+      )
     }
 
     if (this.config.llmProviders.openai.enabled && this.config.llmProviders.openai.apiKey) {
@@ -75,8 +84,8 @@ export class ParsingOrchestrator {
   }
 
   async parseInvoice(
-    text: string, 
-    pageNumber?: number, 
+    text: string,
+    pageNumber?: number,
     context?: LLMParseRequest['context']
   ): Promise<ParsingResult> {
     const startTime = Date.now()
@@ -85,8 +94,8 @@ export class ParsingOrchestrator {
     const strategy = this.config.strategies[this.config.defaultStrategy]
     const attempts: ParsingResult['attempts'] = []
     let totalCost = 0
-    let bestResult: { invoice: ParsedInvoice, confidence: number } | null = null
-    let metadata = { llmUsed: false, fallbackTriggered: false, traditionalUsed: false }
+    let bestResult: { invoice: ParsedInvoice; confidence: number } | null = null
+    const metadata = { llmUsed: false, fallbackTriggered: false, traditionalUsed: false }
 
     console.log(`Starting parsing with strategy: ${strategy.name}`)
     console.log(`Available parsers: ${Array.from(this.parsers.keys()).join(', ')}`)
@@ -94,11 +103,19 @@ export class ParsingOrchestrator {
 
     for (const method of strategy.fallbackChain) {
       if (totalCost >= strategy.maxCostPerInvoice) {
-        console.log(`Cost limit reached: $${totalCost.toFixed(4)} >= $${strategy.maxCostPerInvoice}`)
+        console.log(
+          `Cost limit reached: $${totalCost.toFixed(4)} >= $${strategy.maxCostPerInvoice}`
+        )
         break
       }
 
-      let result: { success: boolean, invoice?: ParsedInvoice, confidence: number, cost: number, error?: string }
+      let result: {
+        success: boolean
+        invoice?: ParsedInvoice
+        confidence: number
+        cost: number
+        error?: string
+      }
 
       if (method === 'traditional') {
         result = await this.tryTraditionalParsing(text, pageNumber)
@@ -116,7 +133,7 @@ export class ParsingOrchestrator {
         success: result.success,
         confidence: result.confidence,
         cost: result.cost,
-        error: result.error
+        error: result.error,
       })
 
       totalCost += result.cost
@@ -133,7 +150,7 @@ export class ParsingOrchestrator {
             processingTime: Date.now() - startTime,
             strategy: strategy.name,
             attempts,
-            metadata
+            metadata,
           }
         } else {
           // Keep track of best result so far
@@ -156,7 +173,7 @@ export class ParsingOrchestrator {
         processingTime: Date.now() - startTime,
         strategy: strategy.name,
         attempts,
-        metadata
+        metadata,
       }
     }
 
@@ -168,23 +185,29 @@ export class ParsingOrchestrator {
       processingTime: Date.now() - startTime,
       strategy: strategy.name,
       attempts,
-      metadata
+      metadata,
     }
   }
 
   private async tryLLMParsing(
-    providerName: string, 
-    text: string, 
-    pageNumber?: number, 
+    providerName: string,
+    text: string,
+    pageNumber?: number,
     context?: LLMParseRequest['context']
-  ): Promise<{ success: boolean, invoice?: ParsedInvoice, confidence: number, cost: number, error?: string }> {
+  ): Promise<{
+    success: boolean
+    invoice?: ParsedInvoice
+    confidence: number
+    cost: number
+    error?: string
+  }> {
     const parser = this.parsers.get(providerName)
     if (!parser) {
       return {
         success: false,
         confidence: 0,
         cost: 0,
-        error: `Parser not available: ${providerName}`
+        error: `Parser not available: ${providerName}`,
       }
     }
 
@@ -197,8 +220,8 @@ export class ParsingOrchestrator {
           temperature: 0.1,
           maxTokens: 4000,
           includeConfidence: true,
-          structured: true
-        }
+          structured: true,
+        },
       }
 
       const result = await parser.parseInvoice(request)
@@ -208,51 +231,57 @@ export class ParsingOrchestrator {
         invoice: result.invoice,
         confidence: result.confidence,
         cost: result.costEstimate,
-        error: result.error
+        error: result.error,
       }
     } catch (error) {
       return {
         success: false,
         confidence: 0,
         cost: 0,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       }
     }
   }
 
   private async tryTraditionalParsing(
-    text: string, 
+    text: string,
     pageNumber?: number
-  ): Promise<{ success: boolean, invoice?: ParsedInvoice, confidence: number, cost: number, error?: string }> {
+  ): Promise<{
+    success: boolean
+    invoice?: ParsedInvoice
+    confidence: number
+    cost: number
+    error?: string
+  }> {
     try {
       // Apply learned patterns from training first
       const enhancedInvoice = await applyLearnedPatterns(text, pageNumber || 1)
-      
+
       if (enhancedInvoice) {
         return {
           success: true,
           invoice: enhancedInvoice,
           confidence: enhancedInvoice.confidence || 0.7, // Default confidence for traditional parsing
-          cost: 0 // No cost for traditional parsing
+          cost: 0, // No cost for traditional parsing
         }
       }
 
       // Fallback to basic traditional parsing - call the traditional function directly
       const { parseInvoiceFromTextTraditional } = await import('@/lib/pdf-parser')
       const basicResult = await parseInvoiceFromTextTraditional(text, pageNumber)
-      
+
       return {
         success: !!basicResult,
         invoice: basicResult || undefined,
         confidence: basicResult?.confidence || 0.5,
-        cost: 0
+        cost: 0,
       }
     } catch (error) {
       return {
         success: false,
         confidence: 0,
         cost: 0,
-        error: error instanceof Error ? error.message : 'Traditional parsing failed'
+        error: error instanceof Error ? error.message : 'Traditional parsing failed',
       }
     }
   }
@@ -266,7 +295,7 @@ export class ParsingOrchestrator {
   ): Promise<ParsingResult> {
     const originalStrategy = this.config.defaultStrategy
     this.config.defaultStrategy = strategyName as ParsingStrategy['name']
-    
+
     try {
       const result = await this.parseInvoice(text, pageNumber, context)
       return result
@@ -287,7 +316,7 @@ export class ParsingOrchestrator {
 
   // Cost and usage tracking
   async estimateCost(text: string, strategyName?: string): Promise<number> {
-    const strategy = strategyName 
+    const strategy = strategyName
       ? this.config.strategies[strategyName]
       : this.config.strategies[this.config.defaultStrategy]
 
@@ -305,7 +334,7 @@ export class ParsingOrchestrator {
       if (provider?.enabled) {
         const methodCost = (estimatedTokens / 1000) * provider.costPer1k
         estimatedCost += methodCost
-        
+
         // If this would meet confidence threshold, we probably wouldn't use other methods
         if (method === 'anthropic') {
           break // Anthropic usually has high confidence

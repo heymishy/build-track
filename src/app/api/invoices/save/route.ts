@@ -16,11 +16,15 @@ async function POST(request: NextRequest, user: AuthUser) {
     console.log('Invoice Save API - Request received:', {
       projectId,
       invoiceCount: invoices?.length,
-      user: { id: user.id, email: user.email, role: user.role }
+      user: { id: user.id, email: user.email, role: user.role },
     })
 
     if (!projectId || !invoices || !Array.isArray(invoices)) {
-      console.log('Invoice Save API - Invalid request data:', { projectId, invoicesType: typeof invoices, isArray: Array.isArray(invoices) })
+      console.log('Invoice Save API - Invalid request data:', {
+        projectId,
+        invoicesType: typeof invoices,
+        isArray: Array.isArray(invoices),
+      })
       return Response.json(
         { success: false, error: 'Project ID and invoices array are required' },
         { status: 400 }
@@ -55,7 +59,7 @@ async function POST(request: NextRequest, user: AuthUser) {
         invoiceNumber: invoice.invoiceNumber,
         vendorName: invoice.vendorName,
         total: invoice.total,
-        lineItemsCount: invoice.lineItems?.length
+        lineItemsCount: invoice.lineItems?.length,
       })
 
       try {
@@ -125,7 +129,7 @@ async function POST(request: NextRequest, user: AuthUser) {
         console.error(`Error saving invoice ${i + 1}:`, {
           invoiceNumber: invoice.invoiceNumber || `Invoice ${i + 1}`,
           error: error.message,
-          stack: error.stack
+          stack: error.stack,
         })
         errors.push({
           index: i,
@@ -149,7 +153,7 @@ async function POST(request: NextRequest, user: AuthUser) {
     console.log('Invoice Save API - Final result:', {
       summary: result.summary,
       hasErrors: errors.length > 0,
-      errorMessages: errors.map(e => e.error)
+      errorMessages: errors.map(e => e.error),
     })
 
     return Response.json(result)

@@ -15,28 +15,33 @@ A comprehensive web-based construction project management system designed to tra
 ## 🚀 Features
 
 ### 📊 Project Management
+
 - **Real-time Dashboard** - Live budget tracking, health scoring, and progress monitoring
 - **Milestone Management** - Payment schedules, progress tracking, and completion status
 - **Multi-User Support** - Role-based access (Owner/Contractor/Viewer) with permissions
 - **Project Health Scoring** - Automated health assessment based on budget, timeline, and milestones
 
 ### 🤖 AI-Powered Invoice Processing
+
 - **LLM-Based Matching** - Gemini AI integration for intelligent invoice-to-estimate matching
 - **Three-Tier Fallback System** - LLM → Logic-based → Manual override matching
 - **Batch Processing** - Process multiple invoices against estimates in one request
 - **PDF Parsing** - Automated extraction with visual verification and confidence scoring
 
 ### 📄 Document Management
+
 - **PDF Upload & Viewer** - Drag-and-drop interface with side-by-side verification
 - **Training Data Collection** - User corrections improve AI accuracy over time
 - **Visual Approval Workflow** - Touch-friendly approval process with manual overrides
 
 ### 📈 Analytics & Reporting
+
 - **Cost Analysis** - Budget variance, spending trends, and vendor insights
 - **Performance Metrics** - Project completion rates, timeline adherence
 - **Real-time Statistics** - Live budget utilization and milestone progress
 
 ### 📱 Mobile-First Design
+
 - **Responsive Interface** - Optimized for construction site use with touch navigation
 - **Progressive Web App** - Offline-ready capabilities and camera integration
 - **Touch-Optimized** - Large buttons, swipe gestures, and finger-friendly controls
@@ -45,7 +50,7 @@ A comprehensive web-based construction project management system designed to tra
 
 - **Frontend**: Next.js 15.4.7, React 19.1.0, TypeScript, Tailwind CSS 4.0
 - **Backend**: Next.js API Routes, Prisma ORM 6.14.0, JWT Authentication
-- **Database**: SQLite (dev) / PostgreSQL (prod)
+- **Database**: SQLite (dev) / PostgreSQL (prod via Supabase)
 - **AI/ML**: Google Gemini 1.5 Flash, Custom LLM parsing orchestration
 - **Testing**: Jest 30.0, React Testing Library 16.3, Playwright 1.54
 - **Deployment**: Vercel with GitHub Actions CI/CD
@@ -80,7 +85,7 @@ A comprehensive web-based construction project management system designed to tra
    npm run dev
    ```
 
-Open [http://localhost:3000](http://localhost:3000) to see the application.
+Open [http://localhost:3006](http://localhost:3006) to see the application (port configured in package.json).
 
 ## Environment Variables
 
@@ -89,36 +94,83 @@ Create a `.env.local` file with:
 ```bash
 DATABASE_URL="file:./dev.db"                    # SQLite for development
 NEXTAUTH_SECRET="your-secret-key"               # JWT secret (generate with openssl rand -base64 32)
-NEXTAUTH_URL="http://localhost:3000"            # Auth callback URL
+NEXTAUTH_URL="http://localhost:3006"            # Auth callback URL
 ```
 
 ## Available Scripts
 
 ```bash
 # Development
-npm run dev              # Start dev server (stable)
+npm run dev              # Start dev server (port 3006, stable webpack)
 npm run dev:turbo        # Start dev server with Turbopack (experimental)
-npm run build           # Production build
-npm run start           # Start production server
+npm run build           # Production build test
+npm run start           # Start production server locally
 
-# Code Quality
-npm run lint            # ESLint checking
-npm run typecheck       # TypeScript validation
-npm run format          # Prettier formatting
-npm run format:check    # Check formatting
+# Code Quality (REQUIRED before commits)
+npm run lint            # ESLint checking - must pass
+npm run typecheck       # TypeScript validation - must pass  
+npm run format          # Prettier formatting - auto-fix
+npm run format:check    # Check formatting compliance
 
-# Testing
-npm run test            # Jest unit tests
-npm run test:watch      # Jest in watch mode
-npm run test:coverage   # Test coverage report
-npm run test:e2e        # Playwright E2E tests
-npm run test:e2e:ui     # Playwright with UI
-npm run test:all        # Run all tests
+# Testing (REQUIRED before production deployment)
+npm run test            # Jest unit tests - must pass
+npm run test:watch      # Jest in watch mode for development
+npm run test:coverage   # Test coverage report (target: 90%+)
+npm run test:e2e        # Playwright E2E tests - critical paths
+npm run test:e2e:ui     # Playwright with UI for debugging
+npm run test:e2e:prod   # E2E tests against production build
+npm run test:all        # Complete test suite - required for deployment
 
-# Database
-npx prisma generate     # Generate Prisma client
-npx prisma db push      # Push schema changes to DB
-npx prisma studio       # Open database browser
+# Database Management
+npx prisma generate     # Generate Prisma client (after schema changes)
+npx prisma db push      # Push schema changes to database
+npx prisma studio       # Open database browser interface
+npx prisma migrate deploy  # Production database migrations
+
+# Deployment Validation
+npm run deploy:build    # Full pre-deployment validation
+npm run deploy:test     # Test deployment readiness
+npm run deploy:vercel   # Deploy to Vercel production
+```
+
+## 🏗️ Development Workflow
+
+### Multi-Tier Architecture
+This application operates across multiple deployment tiers with different characteristics:
+
+| Aspect | Development (`localhost:3006`) | Production (Vercel) |
+|--------|-------------------------------|-------------------|
+| **Database** | SQLite (`prisma/dev.db`) | PostgreSQL (Supabase) |
+| **File Storage** | Local filesystem | Vercel Blob storage |
+| **Security** | Relaxed CORS policies | Strict CSP headers |
+| **Performance** | Fast iteration, debug logging | Optimized builds, error tracking |
+| **Environment** | `.env.local` configuration | Vercel environment variables |
+
+### Change Management Process
+Every code change must follow this workflow:
+
+1. **🔍 Analysis**: Understand impact across development and production tiers
+2. **📝 Planning**: Update relevant specifications and documentation  
+3. **⚡ Implementation**: Code with tier-specific considerations
+4. **🧪 Testing**: Validate functionality across both SQLite and PostgreSQL
+5. **📚 Documentation**: Update CLAUDE.md, prod-spec.md, and README.md
+6. **🚀 Deployment**: Staged rollout with monitoring and validation
+
+### Pre-Commit Requirements
+```bash
+# These commands MUST pass before any commit:
+npm run typecheck    # TypeScript compilation - zero errors
+npm run lint        # ESLint validation - zero warnings  
+npm run test        # Unit tests - 100% pass rate
+npm run format:check # Code formatting - compliance required
+```
+
+### Pre-Deployment Requirements
+```bash
+# These commands MUST pass before production deployment:
+npm run test:all     # Complete test suite - all tests passing
+npm run deploy:build # Production build validation - no errors
+npm run test:e2e:prod # E2E tests against production build - critical paths passing
 ```
 
 ## Deployment
@@ -194,16 +246,40 @@ src/
 
 ### 🎯 Latest Features (v0.1.0)
 
-#### LLM-Powered Invoice Matching
+#### 🆕 Complete Feature Implementation (August 2025)
+
+**NEW PAGES IMPLEMENTED:**
+- **🆕 Projects Management** (`/projects`): Complete project interface with statistics, CRUD operations, and budget tracking
+- **🆕 Estimates Manager** (`/estimates`): Comprehensive cost management with accuracy analysis and variance tracking  
+- **🆕 Analytics Dashboard** (`/analytics`): Financial insights, project health scoring, and performance reporting
+- **🔧 Security Hardening**: Fixed critical API security vulnerabilities and enhanced middleware protection
+
+#### LLM-Powered Invoice Matching with Intelligent Caching
+
 - **Gemini AI Integration**: Real-time invoice-to-estimate matching with 90%+ accuracy
-- **Intelligent Batch Processing**: Process multiple invoices against project estimates in a single request
-- **Three-Tier Fallback System**: 
+- **Smart Caching System**: Only processes unmatched items, avoiding unnecessary LLM calls
+- **Instant Tab Loading**: No more 2-3 minute delays when reopening matching interface
+- **Intelligent Batch Processing**: Process multiple invoices against project estimates efficiently
+- **Three-Tier Fallback System**:
   1. **Primary**: LLM-based matching with confidence scoring
   2. **Fallback**: Logic-based string similarity and semantic analysis  
   3. **Manual**: User-controlled override with dropdown selection
-- **Cost Optimization**: Approximate $0.001 per request using Gemini 1.5 Flash
+- **Cost Optimization**: ~$0.001 per request, with cache hits costing nothing
+- **Performance Improvements**:
+  - ✅ **Fixed**: Eliminated unnecessary LLM calls on tab changes
+  - ✅ **Fixed**: "Apply Matches" button now saves instantly without re-running AI
+  - ✅ **Added**: Cache status indicators showing when AI processing was skipped
+
+#### 🚧 Upcoming Feature: Supplier/Subcontractor Portal
+
+**NEW REQUIREMENT**: Direct invoice upload portal for external suppliers
+- **📧 Email-Based Access**: Simple authentication using approved supplier email lists
+- **🏗️ Project Association**: Automatic invoice linking to correct projects
+- **📱 Mobile-Optimized**: Field-ready interface for suppliers and subcontractors
+- **🔒 Secure Portal**: Access without full system accounts, admin-managed supplier lists
 
 #### Advanced Milestone Management
+
 - **CRUD Operations**: Full create, read, update, delete functionality for project milestones
 - **Payment Tracking**: Link payment amounts to milestone completion
 - **Progress Visualization**: Real-time completion percentages and status tracking
@@ -211,16 +287,48 @@ src/
 - **Summary Statistics**: Automatic calculation of milestone completion rates
 
 #### Enhanced User Experience
+
 - **Fixed Manual Overrides**: Dropdown selections now persist properly without reverting
 - **Real-time Updates**: Live synchronization of project data and milestone progress
 - **Mobile-Optimized**: Touch-friendly controls for construction site use
 - **Role-Based Permissions**: Granular access control for project management
 
 #### Technical Improvements
+
 - **API Robustness**: Comprehensive error handling and validation across all endpoints
 - **TypeScript Coverage**: Full type safety with proper interfaces and validation
 - **Authentication Security**: JWT-based auth with role-based route protection
 - **Database Optimization**: Efficient queries with proper indexing and relationships
+
+## 📊 Complete Feature Status
+
+### ✅ **Fully Implemented Features**
+
+| Feature | UI Page | API Endpoints | Status |
+|---------|---------|---------------|--------|
+| **Authentication** | `/login`, `/register` | `/api/auth/*` | ✅ Complete |
+| **Projects** | `/projects` 🆕 | `/api/projects/*` | ✅ Complete |
+| **Estimates** | `/estimates` 🆕 | `/api/estimates/*` | ✅ Complete |
+| **Invoices** | `/invoices` | `/api/invoices/*` | ✅ Complete |
+| **Analytics** | `/analytics` 🆕 | `/api/analytics/*` | ✅ Complete |
+| **Documents** | `/documents` | `/api/documents/*` | ✅ Complete |
+| **Settings** | `/settings` | `/api/settings/*` | ✅ Complete |
+| **Dashboard** | `/dashboard` | Multiple APIs | ✅ Complete |
+
+### 🚧 **Planned Features**
+
+| Feature | Status | Priority |
+|---------|--------|----------|
+| **Supplier Portal** | 📋 Specified | High |
+| **Supplier Management** | 📋 Specified | High |
+
+### 🔧 **Security Status**
+
+- **✅ Authentication**: JWT-based with HTTP-only cookies
+- **✅ Authorization**: Role-based access control (ADMIN/USER/VIEWER)
+- **✅ API Protection**: All endpoints use `withAuth` middleware
+- **✅ Vulnerability Fixes**: Critical unprotected endpoints secured
+- **✅ Password Security**: bcrypt with 12 salt rounds
 
 ## Testing
 
@@ -240,6 +348,12 @@ Test files include:
 - **Unit Tests**: `__tests__/` - API routes, components, utilities
 - **E2E Tests**: `tests/e2e/` - Full user workflows with Playwright
 - **PDF Testing**: Automated PDF generation and parsing validation
+
+### Test Coverage Requirements
+- **Unit Tests**: 90%+ coverage for business logic
+- **Integration Tests**: All API endpoints tested
+- **E2E Tests**: Critical user journeys covered
+- **Security Tests**: Authentication and authorization flows validated
 
 ## Contributing
 

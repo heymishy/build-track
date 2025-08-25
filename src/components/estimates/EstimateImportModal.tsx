@@ -16,7 +16,7 @@ import {
   TableCellsIcon,
   DocumentIcon,
   CurrencyDollarIcon,
-  BuildingOffice2Icon
+  BuildingOffice2Icon,
 } from '@heroicons/react/24/outline'
 import { ParsedEstimate } from '@/lib/estimate-parser'
 
@@ -33,7 +33,7 @@ export function EstimateImportModal({
   onClose,
   onImportComplete,
   projectId,
-  allowCreateProject = true
+  allowCreateProject = true,
 }: EstimateImportModalProps) {
   const [file, setFile] = useState<File | null>(null)
   const [dragActive, setDragActive] = useState(false)
@@ -42,11 +42,11 @@ export function EstimateImportModal({
   const [importResult, setImportResult] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
   const [step, setStep] = useState<'upload' | 'preview' | 'configure' | 'result'>('upload')
-  
+
   // Project configuration
   const [createNewProject, setCreateNewProject] = useState(!projectId)
   const [projectName, setProjectName] = useState('')
-  
+
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleFileSelect = (selectedFile: File) => {
@@ -54,7 +54,7 @@ export function EstimateImportModal({
     setError(null)
     setParseResult(null)
     setImportResult(null)
-    
+
     // Auto-set project name from filename if creating new project
     if (createNewProject && !projectName) {
       const name = selectedFile.name.replace(/\.(csv|xlsx|xls|pdf)$/i, '')
@@ -65,7 +65,7 @@ export function EstimateImportModal({
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault()
     setDragActive(false)
-    
+
     const droppedFile = e.dataTransfer.files[0]
     if (droppedFile) {
       handleFileSelect(droppedFile)
@@ -126,7 +126,7 @@ export function EstimateImportModal({
         parsedEstimate: parseResult,
         createNewProject,
         projectName,
-        projectId: !createNewProject ? projectId : undefined
+        projectId: !createNewProject ? projectId : undefined,
       }
 
       const response = await fetch('/api/estimates/import-parsed', {
@@ -160,18 +160,22 @@ export function EstimateImportModal({
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-NZ', {
       style: 'currency',
-      currency: 'NZD'
+      currency: 'NZD',
     }).format(amount)
   }
 
   const getFileIcon = (fileName: string) => {
     const ext = fileName.split('.').pop()?.toLowerCase()
     switch (ext) {
-      case 'csv': return <DocumentTextIcon className="h-8 w-8 text-green-500" />
+      case 'csv':
+        return <DocumentTextIcon className="h-8 w-8 text-green-500" />
       case 'xlsx':
-      case 'xls': return <TableCellsIcon className="h-8 w-8 text-blue-500" />
-      case 'pdf': return <DocumentIcon className="h-8 w-8 text-red-500" />
-      default: return <DocumentArrowUpIcon className="h-8 w-8 text-gray-500" />
+      case 'xls':
+        return <TableCellsIcon className="h-8 w-8 text-blue-500" />
+      case 'pdf':
+        return <DocumentIcon className="h-8 w-8 text-red-500" />
+      default:
+        return <DocumentArrowUpIcon className="h-8 w-8 text-gray-500" />
     }
   }
 
@@ -180,11 +184,10 @@ export function EstimateImportModal({
   return (
     <Dialog open={isOpen} onClose={onClose} className="relative z-50">
       <div className="fixed inset-0 bg-black bg-opacity-25" />
-      
+
       <div className="fixed inset-0 overflow-y-auto">
         <div className="flex min-h-full items-center justify-center p-4">
           <Dialog.Panel className="mx-auto max-w-4xl w-full bg-white rounded-lg shadow-xl">
-            
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-gray-200">
               <div>
@@ -202,11 +205,9 @@ export function EstimateImportModal({
 
             {/* Content */}
             <div className="p-6">
-              
               {/* Step 1: File Upload */}
               {step === 'upload' && (
                 <div className="space-y-6">
-                  
                   {/* File Drop Zone */}
                   <div
                     className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
@@ -223,10 +224,10 @@ export function EstimateImportModal({
                       ref={fileInputRef}
                       type="file"
                       accept=".csv,.xlsx,.xls,.pdf"
-                      onChange={(e) => e.target.files?.[0] && handleFileSelect(e.target.files[0])}
+                      onChange={e => e.target.files?.[0] && handleFileSelect(e.target.files[0])}
                       className="hidden"
                     />
-                    
+
                     {file ? (
                       <div className="space-y-4">
                         <div className="flex items-center justify-center">
@@ -239,7 +240,7 @@ export function EstimateImportModal({
                           </p>
                         </div>
                         <button
-                          onClick={(e) => {
+                          onClick={e => {
                             e.stopPropagation()
                             setFile(null)
                           }}
@@ -259,9 +260,7 @@ export function EstimateImportModal({
                             or click to browse for CSV, Excel, or PDF files
                           </p>
                         </div>
-                        <div className="text-xs text-gray-400">
-                          Maximum file size: 10MB
-                        </div>
+                        <div className="text-xs text-gray-400">Maximum file size: 10MB</div>
                       </div>
                     )}
                   </div>
@@ -270,11 +269,22 @@ export function EstimateImportModal({
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                     <h4 className="font-medium text-blue-900 mb-2">Expected File Format:</h4>
                     <div className="text-sm text-blue-800 space-y-1">
-                      <p>• <strong>Trade/Category:</strong> Work category (e.g., Electrical, Plumbing)</p>
-                      <p>• <strong>Description:</strong> Work item description</p>
-                      <p>• <strong>Quantity & Unit:</strong> Amount and unit of measure</p>
-                      <p>• <strong>Costs:</strong> Material, Labor, Equipment costs</p>
-                      <p>• <strong>Total:</strong> Line item total cost</p>
+                      <p>
+                        • <strong>Trade/Category:</strong> Work category (e.g., Electrical,
+                        Plumbing)
+                      </p>
+                      <p>
+                        • <strong>Description:</strong> Work item description
+                      </p>
+                      <p>
+                        • <strong>Quantity & Unit:</strong> Amount and unit of measure
+                      </p>
+                      <p>
+                        • <strong>Costs:</strong> Material, Labor, Equipment costs
+                      </p>
+                      <p>
+                        • <strong>Total:</strong> Line item total cost
+                      </p>
                     </div>
                   </div>
 
@@ -295,7 +305,6 @@ export function EstimateImportModal({
               {/* Step 2: Preview Parsed Data */}
               {step === 'preview' && parseResult && (
                 <div className="space-y-6">
-                  
                   {/* Summary */}
                   <div className="bg-gray-50 rounded-lg p-4">
                     <h3 className="font-medium text-gray-900 mb-3">Estimate Summary</h3>
@@ -354,7 +363,10 @@ export function EstimateImportModal({
                     <h3 className="font-medium text-gray-900 mb-3">Trades Breakdown</h3>
                     <div className="space-y-2 max-h-48 overflow-y-auto">
                       {parseResult.trades.map((trade, index) => (
-                        <div key={index} className="flex justify-between items-center p-3 bg-white border rounded-lg">
+                        <div
+                          key={index}
+                          className="flex justify-between items-center p-3 bg-white border rounded-lg"
+                        >
                           <div>
                             <p className="font-medium text-gray-900">{trade.name}</p>
                             <p className="text-sm text-gray-500">{trade.lineItems.length} items</p>
@@ -371,7 +383,7 @@ export function EstimateImportModal({
                   {allowCreateProject && (
                     <div className="border-t pt-6">
                       <h3 className="font-medium text-gray-900 mb-4">Project Configuration</h3>
-                      
+
                       {!projectId && (
                         <div className="space-y-4">
                           <div className="flex items-center space-x-4">
@@ -403,7 +415,7 @@ export function EstimateImportModal({
                               <input
                                 type="text"
                                 value={projectName}
-                                onChange={(e) => setProjectName(e.target.value)}
+                                onChange={e => setProjectName(e.target.value)}
                                 placeholder="Enter project name"
                                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                               />
@@ -422,15 +434,15 @@ export function EstimateImportModal({
                   <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100">
                     <CheckCircleIcon className="h-8 w-8 text-green-600" />
                   </div>
-                  
+
                   <div>
                     <h3 className="text-lg font-medium text-gray-900">Import Complete!</h3>
                     <p className="mt-2 text-sm text-gray-600">
-                      Successfully imported estimate with {importResult.summary.tradesCreated} trades 
-                      and {importResult.summary.totalLineItems} line items.
+                      Successfully imported estimate with {importResult.summary.tradesCreated}{' '}
+                      trades and {importResult.summary.totalLineItems} line items.
                     </p>
                   </div>
-                  
+
                   <div className="bg-green-50 rounded-lg p-4">
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       <div>
@@ -445,7 +457,7 @@ export function EstimateImportModal({
                       </div>
                     </div>
                   </div>
-                  
+
                   {importResult.errors.length > 0 && (
                     <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                       <p className="text-sm text-yellow-800">
@@ -464,7 +476,7 @@ export function EstimateImportModal({
                 {step === 'preview' && 'Step 2 of 2: Review & Import'}
                 {step === 'result' && 'Import Complete'}
               </div>
-              
+
               <div className="flex space-x-3">
                 <button
                   onClick={onClose}
@@ -472,7 +484,7 @@ export function EstimateImportModal({
                 >
                   {step === 'result' ? 'Close' : 'Cancel'}
                 </button>
-                
+
                 {step === 'upload' && (
                   <button
                     onClick={parseEstimate}
@@ -482,7 +494,7 @@ export function EstimateImportModal({
                     {uploading ? 'Parsing...' : 'Parse Estimate'}
                   </button>
                 )}
-                
+
                 {step === 'preview' && (
                   <button
                     onClick={importEstimate}

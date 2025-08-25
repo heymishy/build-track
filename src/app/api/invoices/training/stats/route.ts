@@ -19,8 +19,8 @@ export async function GET(request: NextRequest) {
         createdAt: true,
       },
       orderBy: {
-        createdAt: 'desc'
-      }
+        createdAt: 'desc',
+      },
     })
 
     // Parse and count training data
@@ -30,13 +30,13 @@ export async function GET(request: NextRequest) {
 
     for (const record of trainingRecords) {
       if (!record.notes) continue
-      
+
       try {
         const trainingData = JSON.parse(record.notes)
         if (trainingData.type !== 'training_data') continue
 
         totalExamples++
-        
+
         const { originalExtraction, correctedData } = trainingData
 
         // Count corrections by field
@@ -62,8 +62,8 @@ export async function GET(request: NextRequest) {
         fieldCounts,
         learnedPatterns: Object.values(fieldCounts).reduce((sum, count) => sum + count, 0),
         templates: 0, // Not implemented yet
-        invoiceTypes
-      }
+        invoiceTypes,
+      },
     })
   } catch (error) {
     console.error('Error retrieving training stats:', error)

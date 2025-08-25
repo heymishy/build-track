@@ -25,23 +25,23 @@ export class SettingsService {
 
   async getSettings(): Promise<StoredSettings> {
     const settings = await prisma.userSettings.findMany({
-      where: { userId: this.userId }
+      where: { userId: this.userId },
     })
 
     const result: StoredSettings = {
       apiKeys: {},
       defaultStrategy: 'hybrid',
       providerOrder: ['anthropic', 'gemini', 'openai'],
-      maxCostPerDocument: 0.10,
-      dailyCostLimit: 10.00,
+      maxCostPerDocument: 0.1,
+      dailyCostLimit: 10.0,
       enableFallback: true,
-      collectTrainingData: true
+      collectTrainingData: true,
     }
 
     for (const setting of settings) {
       try {
         const value = JSON.parse(setting.value)
-        
+
         switch (setting.key) {
           case 'api_keys':
             result.apiKeys = value
@@ -78,18 +78,18 @@ export class SettingsService {
       where: {
         userId_key: {
           userId: this.userId,
-          key
-        }
+          key,
+        },
       },
       update: {
         value: JSON.stringify(value),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       },
       create: {
         userId: this.userId,
         key,
-        value: JSON.stringify(value)
-      }
+        value: JSON.stringify(value),
+      },
     })
   }
 
@@ -97,7 +97,7 @@ export class SettingsService {
     const currentSettings = await this.getSettings()
     const updatedApiKeys = {
       ...currentSettings.apiKeys,
-      [provider]: apiKey
+      [provider]: apiKey,
     }
     await this.updateSetting('api_keys', updatedApiKeys)
   }
@@ -119,7 +119,7 @@ export class SettingsService {
 
   async clearAllSettings(): Promise<void> {
     await prisma.userSettings.deleteMany({
-      where: { userId: this.userId }
+      where: { userId: this.userId },
     })
   }
 }

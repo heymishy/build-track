@@ -19,22 +19,25 @@ export async function GET(request: NextRequest) {
         createdAt: true,
       },
       orderBy: {
-        createdAt: 'desc'
+        createdAt: 'desc',
       },
-      take: 100 // Limit to recent training data
+      take: 100, // Limit to recent training data
     })
 
     // Parse and aggregate training patterns
-    const patterns = new Map<string, {
-      field: string
-      pattern: RegExp
-      confidence: number
-      examples: string[]
-    }>()
+    const patterns = new Map<
+      string,
+      {
+        field: string
+        pattern: RegExp
+        confidence: number
+        examples: string[]
+      }
+    >()
 
     for (const record of trainingRecords) {
       if (!record.notes) continue
-      
+
       try {
         const trainingData = JSON.parse(record.notes)
         if (trainingData.type !== 'training_data') continue
@@ -46,7 +49,7 @@ export async function GET(request: NextRequest) {
           if (correctedValue && originalExtraction[field] !== correctedValue) {
             // This is a field that was corrected - learn from it
             const patternKey = `${field}_${String(correctedValue).toLowerCase()}`
-            
+
             if (patterns.has(patternKey)) {
               const existing = patterns.get(patternKey)!
               existing.confidence = Math.min(1.0, existing.confidence + 0.1)
@@ -54,23 +57,29 @@ export async function GET(request: NextRequest) {
             } else {
               // Create simple patterns based on field type
               let pattern: RegExp
-              
+
               if (field.includes('amount') || field.includes('total') || field.includes('tax')) {
                 // Numeric fields - look for currency patterns
                 pattern = new RegExp(`\\$?\\s*${String(correctedValue).replace('.', '\\.')}`, 'i')
               } else if (field.includes('date')) {
                 // Date fields
-                pattern = new RegExp(String(correctedValue).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i')
+                pattern = new RegExp(
+                  String(correctedValue).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
+                  'i'
+                )
               } else {
                 // Text fields
-                pattern = new RegExp(String(correctedValue).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i')
+                pattern = new RegExp(
+                  String(correctedValue).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
+                  'i'
+                )
               }
 
               patterns.set(patternKey, {
                 field,
                 pattern,
                 confidence: 0.7,
-                examples: [String(correctedValue)]
+                examples: [String(correctedValue)],
               })
             }
           }
@@ -86,14 +95,14 @@ export async function GET(request: NextRequest) {
       pattern: pattern.pattern.source,
       flags: pattern.pattern.flags,
       confidence: pattern.confidence,
-      examples: [...new Set(pattern.examples)] // Remove duplicates
+      examples: [...new Set(pattern.examples)], // Remove duplicates
     }))
 
     return NextResponse.json({
       success: true,
       patterns: serializedPatterns,
       totalTrainingRecords: trainingRecords.length,
-      learnedPatterns: serializedPatterns.length
+      learnedPatterns: serializedPatterns.length,
     })
   } catch (error) {
     console.error('Error retrieving training patterns:', error)

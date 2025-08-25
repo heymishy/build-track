@@ -15,7 +15,7 @@ import {
   TagIcon,
   ArrowsUpDownIcon,
   CheckIcon,
-  XMarkIcon
+  XMarkIcon,
 } from '@heroicons/react/24/outline'
 
 // Types
@@ -31,26 +31,26 @@ interface LineItem {
   id: string
   description: string
   category: 'Material' | 'Labor' | 'Equipment' | 'Subcontractor'
-  
+
   // Flexible input types
   inputType: 'fixed' | 'hourly' | 'quantity'
-  
+
   // Fixed cost
   fixedCost?: number
-  
+
   // Hourly labor
   tradeRateId?: string
   hours?: number
-  
+
   // Quantity-based
   quantity?: number
   unit?: string
   unitCost?: number
-  
+
   // Additional costs
   markupPercent: number
   overheadPercent: number
-  
+
   // Calculated fields
   subtotal: number
   total: number
@@ -73,18 +73,54 @@ interface ManualEstimateCreatorProps {
 
 // Default trade rates
 const DEFAULT_TRADE_RATES: TradeRate[] = [
-  { id: 'concrete-apprentice', tradeName: 'Concrete', skillLevel: 'Apprentice', hourlyRate: 28, markupPercent: 15 },
-  { id: 'concrete-journeyman', tradeName: 'Concrete', skillLevel: 'Journeyman', hourlyRate: 45, markupPercent: 15 },
-  { id: 'plumbing-journeyman', tradeName: 'Plumbing', skillLevel: 'Journeyman', hourlyRate: 55, markupPercent: 20 },
-  { id: 'electrical-journeyman', tradeName: 'Electrical', skillLevel: 'Journeyman', hourlyRate: 58, markupPercent: 20 },
-  { id: 'carpentry-journeyman', tradeName: 'Carpentry', skillLevel: 'Journeyman', hourlyRate: 48, markupPercent: 18 },
-  { id: 'painting-journeyman', tradeName: 'Painting', skillLevel: 'Journeyman', hourlyRate: 42, markupPercent: 15 },
+  {
+    id: 'concrete-apprentice',
+    tradeName: 'Concrete',
+    skillLevel: 'Apprentice',
+    hourlyRate: 28,
+    markupPercent: 15,
+  },
+  {
+    id: 'concrete-journeyman',
+    tradeName: 'Concrete',
+    skillLevel: 'Journeyman',
+    hourlyRate: 45,
+    markupPercent: 15,
+  },
+  {
+    id: 'plumbing-journeyman',
+    tradeName: 'Plumbing',
+    skillLevel: 'Journeyman',
+    hourlyRate: 55,
+    markupPercent: 20,
+  },
+  {
+    id: 'electrical-journeyman',
+    tradeName: 'Electrical',
+    skillLevel: 'Journeyman',
+    hourlyRate: 58,
+    markupPercent: 20,
+  },
+  {
+    id: 'carpentry-journeyman',
+    tradeName: 'Carpentry',
+    skillLevel: 'Journeyman',
+    hourlyRate: 48,
+    markupPercent: 18,
+  },
+  {
+    id: 'painting-journeyman',
+    tradeName: 'Painting',
+    skillLevel: 'Journeyman',
+    hourlyRate: 42,
+    markupPercent: 15,
+  },
 ]
 
 // Color schemes for trades
 const TRADE_COLORS = [
   'bg-blue-100 text-blue-800 border-blue-200',
-  'bg-green-100 text-green-800 border-green-200', 
+  'bg-green-100 text-green-800 border-green-200',
   'bg-orange-100 text-orange-800 border-orange-200',
   'bg-purple-100 text-purple-800 border-purple-200',
   'bg-pink-100 text-pink-800 border-pink-200',
@@ -100,7 +136,7 @@ export function ManualEstimateCreator({ projectId, onSave, onCancel }: ManualEst
   const [showAddTrade, setShowAddTrade] = useState(false)
   const [newTradeName, setNewTradeName] = useState('')
   const [selectedTradeId, setSelectedTradeId] = useState<string | null>(null)
-  
+
   // Add initial trade if none exist
   useEffect(() => {
     if (trades.length === 0) {
@@ -111,7 +147,7 @@ export function ManualEstimateCreator({ projectId, onSave, onCancel }: ManualEst
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-NZ', {
       style: 'currency',
-      currency: 'NZD'
+      currency: 'NZD',
     }).format(amount)
   }
 
@@ -121,7 +157,7 @@ export function ManualEstimateCreator({ projectId, onSave, onCancel }: ManualEst
       name,
       color: TRADE_COLORS[trades.length % TRADE_COLORS.length],
       lineItems: [],
-      total: 0
+      total: 0,
     }
     setTrades([...trades, newTrade])
     setNewTradeName('')
@@ -143,35 +179,39 @@ export function ManualEstimateCreator({ projectId, onSave, onCancel }: ManualEst
       overheadPercent: 0,
       subtotal: 0,
       total: 0,
-      tradeName: trades.find(t => t.id === tradeId)?.name || 'General'
+      tradeName: trades.find(t => t.id === tradeId)?.name || 'General',
     }
 
-    setTrades(trades.map(trade => 
-      trade.id === tradeId 
-        ? { ...trade, lineItems: [...trade.lineItems, newLineItem] }
-        : trade
-    ))
+    setTrades(
+      trades.map(trade =>
+        trade.id === tradeId ? { ...trade, lineItems: [...trade.lineItems, newLineItem] } : trade
+      )
+    )
   }
 
   const updateLineItem = (tradeId: string, itemId: string, updates: Partial<LineItem>) => {
-    setTrades(trades.map(trade => 
-      trade.id === tradeId 
-        ? {
-            ...trade,
-            lineItems: trade.lineItems.map(item =>
-              item.id === itemId ? { ...item, ...updates } : item
-            )
-          }
-        : trade
-    ))
+    setTrades(
+      trades.map(trade =>
+        trade.id === tradeId
+          ? {
+              ...trade,
+              lineItems: trade.lineItems.map(item =>
+                item.id === itemId ? { ...item, ...updates } : item
+              ),
+            }
+          : trade
+      )
+    )
   }
 
   const deleteLineItem = (tradeId: string, itemId: string) => {
-    setTrades(trades.map(trade => 
-      trade.id === tradeId 
-        ? { ...trade, lineItems: trade.lineItems.filter(item => item.id !== itemId) }
-        : trade
-    ))
+    setTrades(
+      trades.map(trade =>
+        trade.id === tradeId
+          ? { ...trade, lineItems: trade.lineItems.filter(item => item.id !== itemId) }
+          : trade
+      )
+    )
   }
 
   const calculateLineItemTotal = (item: LineItem): number => {
@@ -196,32 +236,38 @@ export function ManualEstimateCreator({ projectId, onSave, onCancel }: ManualEst
 
     const markup = subtotal * (item.markupPercent / 100)
     const overhead = subtotal * (item.overheadPercent / 100)
-    
+
     return subtotal + markup + overhead
   }
 
   // Recalculate totals when trades change
   useEffect(() => {
-    setTrades(trades.map(trade => ({
-      ...trade,
-      lineItems: trade.lineItems.map(item => ({
-        ...item,
-        subtotal: item.inputType === 'hourly' && item.tradeRateId && item.hours
-          ? (tradeRates.find(r => r.id === item.tradeRateId)?.hourlyRate || 0) * item.hours
-          : item.inputType === 'quantity' && item.quantity && item.unitCost
-          ? item.quantity * item.unitCost
-          : item.fixedCost || 0,
-        total: calculateLineItemTotal(item)
-      })),
-      total: trade.lineItems.reduce((sum, item) => sum + calculateLineItemTotal(item), 0)
-    })))
+    setTrades(
+      trades.map(trade => ({
+        ...trade,
+        lineItems: trade.lineItems.map(item => ({
+          ...item,
+          subtotal:
+            item.inputType === 'hourly' && item.tradeRateId && item.hours
+              ? (tradeRates.find(r => r.id === item.tradeRateId)?.hourlyRate || 0) * item.hours
+              : item.inputType === 'quantity' && item.quantity && item.unitCost
+                ? item.quantity * item.unitCost
+                : item.fixedCost || 0,
+          total: calculateLineItemTotal(item),
+        })),
+        total: trade.lineItems.reduce((sum, item) => sum + calculateLineItemTotal(item), 0),
+      }))
+    )
   }, [tradeRates])
 
   const getTotalByCategory = (category: string) => {
-    return trades.reduce((total, trade) => 
-      total + trade.lineItems
-        .filter(item => item.category === category)
-        .reduce((sum, item) => sum + item.total, 0), 0
+    return trades.reduce(
+      (total, trade) =>
+        total +
+        trade.lineItems
+          .filter(item => item.category === category)
+          .reduce((sum, item) => sum + item.total, 0),
+      0
     )
   }
 
@@ -250,13 +296,19 @@ export function ManualEstimateCreator({ projectId, onSave, onCancel }: ManualEst
           overheadPercent: item.overheadPercent,
           totalCost: item.total,
           tradeName: trade.name,
-          category: item.category
+          category: item.category,
         })),
-        totalMaterialCost: trade.lineItems.filter(i => i.category === 'Material').reduce((sum, i) => sum + i.total, 0),
-        totalLaborCost: trade.lineItems.filter(i => i.category === 'Labor').reduce((sum, i) => sum + i.total, 0),
-        totalEquipmentCost: trade.lineItems.filter(i => i.category === 'Equipment').reduce((sum, i) => sum + i.total, 0),
+        totalMaterialCost: trade.lineItems
+          .filter(i => i.category === 'Material')
+          .reduce((sum, i) => sum + i.total, 0),
+        totalLaborCost: trade.lineItems
+          .filter(i => i.category === 'Labor')
+          .reduce((sum, i) => sum + i.total, 0),
+        totalEquipmentCost: trade.lineItems
+          .filter(i => i.category === 'Equipment')
+          .reduce((sum, i) => sum + i.total, 0),
         totalCost: trade.total,
-        sortOrder: index
+        sortOrder: index,
       })),
       summary: {
         totalTrades: trades.length,
@@ -264,14 +316,14 @@ export function ManualEstimateCreator({ projectId, onSave, onCancel }: ManualEst
         totalMaterialCost: getTotalByCategory('Material'),
         totalLaborCost: getTotalByCategory('Labor'),
         totalEquipmentCost: getTotalByCategory('Equipment'),
-        grandTotal: getGrandTotal()
+        grandTotal: getGrandTotal(),
       },
       metadata: {
         source: 'manual' as const,
         filename: `${projectName || 'Manual Estimate'}.manual`,
         parseDate: new Date().toISOString(),
-        rowCount: trades.reduce((sum, trade) => sum + trade.lineItems.length, 0)
-      }
+        rowCount: trades.reduce((sum, trade) => sum + trade.lineItems.length, 0),
+      },
     }
 
     onSave(estimate)
@@ -301,13 +353,11 @@ export function ManualEstimateCreator({ projectId, onSave, onCancel }: ManualEst
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Project Name
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Project Name</label>
             <input
               type="text"
               value={projectName}
-              onChange={(e) => setProjectName(e.target.value)}
+              onChange={e => setProjectName(e.target.value)}
               placeholder="Enter project name"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
@@ -326,14 +376,12 @@ export function ManualEstimateCreator({ projectId, onSave, onCancel }: ManualEst
       <div className="bg-white rounded-lg shadow p-6">
         <h2 className="text-lg font-medium text-gray-900 mb-4">Cost Breakdown</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {['Material', 'Labor', 'Equipment', 'Subcontractor'].map((category) => {
+          {['Material', 'Labor', 'Equipment', 'Subcontractor'].map(category => {
             const total = getTotalByCategory(category)
             return (
               <div key={category} className="text-center p-4 bg-gray-50 rounded-lg">
                 <div className="text-sm text-gray-500">{category}</div>
-                <div className="text-lg font-semibold text-gray-900">
-                  {formatCurrency(total)}
-                </div>
+                <div className="text-lg font-semibold text-gray-900">{formatCurrency(total)}</div>
               </div>
             )
           })}
@@ -342,8 +390,11 @@ export function ManualEstimateCreator({ projectId, onSave, onCancel }: ManualEst
 
       {/* Trades */}
       <div className="space-y-4">
-        {trades.map((trade) => (
-          <div key={trade.id} className={`bg-white rounded-lg shadow border-l-4 ${trade.color.replace('bg-', 'border-').replace('-100', '-500')}`}>
+        {trades.map(trade => (
+          <div
+            key={trade.id}
+            className={`bg-white rounded-lg shadow border-l-4 ${trade.color.replace('bg-', 'border-').replace('-100', '-500')}`}
+          >
             {/* Trade Header */}
             <div className="p-4 border-b border-gray-200">
               <div className="flex items-center justify-between">
@@ -379,12 +430,12 @@ export function ManualEstimateCreator({ projectId, onSave, onCancel }: ManualEst
 
             {/* Line Items */}
             <div className="p-4 space-y-3">
-              {trade.lineItems.map((item) => (
+              {trade.lineItems.map(item => (
                 <LineItemEditor
                   key={item.id}
                   item={item}
                   tradeRates={tradeRates}
-                  onUpdate={(updates) => updateLineItem(trade.id, item.id, updates)}
+                  onUpdate={updates => updateLineItem(trade.id, item.id, updates)}
                   onDelete={() => deleteLineItem(trade.id, item.id)}
                 />
               ))}
@@ -420,10 +471,10 @@ export function ManualEstimateCreator({ projectId, onSave, onCancel }: ManualEst
               <input
                 type="text"
                 value={newTradeName}
-                onChange={(e) => setNewTradeName(e.target.value)}
+                onChange={e => setNewTradeName(e.target.value)}
                 placeholder="Trade name (e.g., Plumbing, Electrical)"
                 className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                onKeyDown={(e) => {
+                onKeyDown={e => {
                   if (e.key === 'Enter' && newTradeName.trim()) {
                     addTrade(newTradeName.trim())
                   } else if (e.key === 'Escape') {
@@ -469,7 +520,7 @@ function LineItemEditor({ item, tradeRates, onUpdate, onDelete }: LineItemEditor
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-NZ', {
       style: 'currency',
-      currency: 'NZD'
+      currency: 'NZD',
     }).format(amount)
   }
 
@@ -495,7 +546,7 @@ function LineItemEditor({ item, tradeRates, onUpdate, onDelete }: LineItemEditor
 
     const markup = subtotal * (item.markupPercent / 100)
     const overhead = subtotal * (item.overheadPercent / 100)
-    
+
     return subtotal + markup + overhead
   }
 
@@ -507,7 +558,7 @@ function LineItemEditor({ item, tradeRates, onUpdate, onDelete }: LineItemEditor
           <input
             type="text"
             value={item.description}
-            onChange={(e) => onUpdate({ description: e.target.value })}
+            onChange={e => onUpdate({ description: e.target.value })}
             placeholder="Line item description"
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
@@ -515,7 +566,7 @@ function LineItemEditor({ item, tradeRates, onUpdate, onDelete }: LineItemEditor
         <div>
           <select
             value={item.category}
-            onChange={(e) => onUpdate({ category: e.target.value as any })}
+            onChange={e => onUpdate({ category: e.target.value as any })}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="Material">Material</option>
@@ -533,7 +584,7 @@ function LineItemEditor({ item, tradeRates, onUpdate, onDelete }: LineItemEditor
           <label className="block text-xs font-medium text-gray-700 mb-1">Input Type</label>
           <select
             value={item.inputType}
-            onChange={(e) => onUpdate({ inputType: e.target.value as any })}
+            onChange={e => onUpdate({ inputType: e.target.value as any })}
             className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="fixed">Fixed $</option>
@@ -549,7 +600,7 @@ function LineItemEditor({ item, tradeRates, onUpdate, onDelete }: LineItemEditor
             <input
               type="number"
               value={item.fixedCost || ''}
-              onChange={(e) => onUpdate({ fixedCost: parseFloat(e.target.value) || 0 })}
+              onChange={e => onUpdate({ fixedCost: parseFloat(e.target.value) || 0 })}
               placeholder="0.00"
               className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
@@ -562,7 +613,7 @@ function LineItemEditor({ item, tradeRates, onUpdate, onDelete }: LineItemEditor
               <label className="block text-xs font-medium text-gray-700 mb-1">Trade Rate</label>
               <select
                 value={item.tradeRateId || ''}
-                onChange={(e) => onUpdate({ tradeRateId: e.target.value })}
+                onChange={e => onUpdate({ tradeRateId: e.target.value })}
                 className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">Select rate</option>
@@ -578,7 +629,7 @@ function LineItemEditor({ item, tradeRates, onUpdate, onDelete }: LineItemEditor
               <input
                 type="number"
                 value={item.hours || ''}
-                onChange={(e) => onUpdate({ hours: parseFloat(e.target.value) || 0 })}
+                onChange={e => onUpdate({ hours: parseFloat(e.target.value) || 0 })}
                 placeholder="0"
                 step="0.5"
                 className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -594,7 +645,7 @@ function LineItemEditor({ item, tradeRates, onUpdate, onDelete }: LineItemEditor
               <input
                 type="number"
                 value={item.quantity || ''}
-                onChange={(e) => onUpdate({ quantity: parseFloat(e.target.value) || 0 })}
+                onChange={e => onUpdate({ quantity: parseFloat(e.target.value) || 0 })}
                 placeholder="0"
                 className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
@@ -604,7 +655,7 @@ function LineItemEditor({ item, tradeRates, onUpdate, onDelete }: LineItemEditor
               <input
                 type="text"
                 value={item.unit || ''}
-                onChange={(e) => onUpdate({ unit: e.target.value })}
+                onChange={e => onUpdate({ unit: e.target.value })}
                 placeholder="each"
                 className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
@@ -614,7 +665,7 @@ function LineItemEditor({ item, tradeRates, onUpdate, onDelete }: LineItemEditor
               <input
                 type="number"
                 value={item.unitCost || ''}
-                onChange={(e) => onUpdate({ unitCost: parseFloat(e.target.value) || 0 })}
+                onChange={e => onUpdate({ unitCost: parseFloat(e.target.value) || 0 })}
                 placeholder="0.00"
                 className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
@@ -647,7 +698,7 @@ function LineItemEditor({ item, tradeRates, onUpdate, onDelete }: LineItemEditor
             <input
               type="number"
               value={item.markupPercent || ''}
-              onChange={(e) => onUpdate({ markupPercent: parseFloat(e.target.value) || 0 })}
+              onChange={e => onUpdate({ markupPercent: parseFloat(e.target.value) || 0 })}
               placeholder="0"
               className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
@@ -657,7 +708,7 @@ function LineItemEditor({ item, tradeRates, onUpdate, onDelete }: LineItemEditor
             <input
               type="number"
               value={item.overheadPercent || ''}
-              onChange={(e) => onUpdate({ overheadPercent: parseFloat(e.target.value) || 0 })}
+              onChange={e => onUpdate({ overheadPercent: parseFloat(e.target.value) || 0 })}
               placeholder="0"
               className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
             />

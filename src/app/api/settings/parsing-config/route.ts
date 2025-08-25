@@ -11,7 +11,7 @@ async function GET(request: NextRequest, user: AuthUser) {
   try {
     const config = await getParsingConfig(user.id)
     const storedSettings = await getUserSettings(user.id)
-    
+
     // Don't send API keys to client, but show connection status based on stored keys
     const clientConfig = {
       ...config,
@@ -24,8 +24,8 @@ async function GET(request: NextRequest, user: AuthUser) {
             apiKey: undefined, // Remove API key from response
             displayName: getProviderDisplayName(key),
             status: storedSettings.apiKeys[key] ? 'connected' : 'disconnected',
-            enabled: !!storedSettings.apiKeys[key]
-          }
+            enabled: !!storedSettings.apiKeys[key],
+          },
         ])
       ),
       strategies: Object.fromEntries(
@@ -34,49 +34,42 @@ async function GET(request: NextRequest, user: AuthUser) {
           {
             ...strategy,
             displayName: getStrategyDisplayName(key),
-            recommended: key === 'hybrid'
-          }
+            recommended: key === 'hybrid',
+          },
         ])
-      )
+      ),
     }
 
     return NextResponse.json(clientConfig)
   } catch (error) {
     console.error('Failed to get parsing config:', error)
-    return NextResponse.json(
-      { error: 'Failed to load configuration' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Failed to load configuration' }, { status: 500 })
   }
 }
 
 async function POST(request: NextRequest, user: AuthUser) {
   try {
     const updates = await request.json()
-    
+
     // Import the settings service here to avoid circular dependencies
     const { SettingsService } = await import('@/lib/settings-service')
     const settingsService = new SettingsService(user.id)
-    
+
     if (!updates.llmProviders || !updates.defaultStrategy) {
-      return NextResponse.json(
-        { error: 'Invalid configuration format' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Invalid configuration format' }, { status: 400 })
     }
 
     // Validate strategy exists
     if (!DEFAULT_PARSING_CONFIG.strategies[updates.defaultStrategy]) {
-      return NextResponse.json(
-        { error: 'Invalid parsing strategy' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Invalid parsing strategy' }, { status: 400 })
     }
 
     // Validate provider order
     if (updates.providerOrder && Array.isArray(updates.providerOrder)) {
       const validProviders = ['anthropic', 'gemini', 'openai']
-      const invalidProviders = updates.providerOrder.filter((p: string) => !validProviders.includes(p))
+      const invalidProviders = updates.providerOrder.filter(
+        (p: string) => !validProviders.includes(p)
+      )
       if (invalidProviders.length > 0) {
         return NextResponse.json(
           { error: `Invalid providers in order: ${invalidProviders.join(', ')}` },
@@ -111,8 +104,11 @@ async function POST(request: NextRequest, user: AuthUser) {
     // Update settings in database
     await settingsService.updateSetting('api_keys', apiKeys)
     await settingsService.updateSetting('default_strategy', updates.defaultStrategy)
-    await settingsService.updateSetting('provider_order', updates.providerOrder || ['anthropic', 'gemini', 'openai'])
-    
+    await settingsService.updateSetting(
+      'provider_order',
+      updates.providerOrder || ['anthropic', 'gemini', 'openai']
+    )
+
     // Update additional settings if provided
     if (updates.maxCostPerDocument !== undefined) {
       await settingsService.updateSetting('max_cost_per_document', updates.maxCostPerDocument)
@@ -130,10 +126,7 @@ async function POST(request: NextRequest, user: AuthUser) {
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Failed to update parsing config:', error)
-    return NextResponse.json(
-      { error: 'Failed to save configuration' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Failed to save configuration' }, { status: 500 })
   }
 }
 
@@ -141,7 +134,7 @@ function getProviderDisplayName(key: string): string {
   const names: Record<string, string> = {
     anthropic: 'Anthropic Claude',
     gemini: 'Google Gemini',
-    openai: 'OpenAI GPT'
+    openai: 'OpenAI GPT',
   }
   return names[key] || key
 }
@@ -150,9 +143,9 @@ function getStrategyDisplayName(key: string): string {
   const names: Record<string, string> = {
     'llm-primary': 'LLM First',
     'traditional-primary': 'Traditional First',
-    'hybrid': 'Hybrid (Recommended)',
+    hybrid: 'Hybrid (Recommended)',
     'cost-optimized': 'Cost Optimized',
-    'accuracy-optimized': 'Accuracy Optimized'
+    'accuracy-optimized': 'Accuracy Optimized',
   }
   return names[key] || key
 }

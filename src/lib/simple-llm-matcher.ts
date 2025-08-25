@@ -48,6 +48,11 @@ export interface BatchMatchingResult {
 }
 
 export class SimpleLLMMatchingService {
+  private userId?: string
+
+  constructor(userId?: string) {
+    this.userId = userId
+  }
   /**
    * Try LLM matching with fallback to logic-based matching
    */
@@ -61,29 +66,28 @@ export class SimpleLLMMatchingService {
     try {
       // Try LLM first
       const llmResult = await this.tryLLMMatching(invoices, estimates)
-      
+
       if (llmResult.success) {
         return {
           ...llmResult,
           fallbackUsed: false,
-          processingTime: Date.now() - startTime
+          processingTime: Date.now() - startTime,
         }
       }
 
       console.log('LLM matching failed, falling back to logic-based matching')
-      
+
       // Fallback to logic-based matching
       const logicResult = await this.logicBasedMatching(invoices, estimates)
-      
+
       return {
         ...logicResult,
         fallbackUsed: true,
-        processingTime: Date.now() - startTime
+        processingTime: Date.now() - startTime,
       }
-
     } catch (error) {
       console.error('All matching methods failed:', error)
-      
+
       // Return empty matches for manual processing
       const allLineItems = invoices.flatMap(inv => inv.lineItems)
       const emptyMatches: LLMMatchResult[] = allLineItems.map(item => ({
@@ -91,7 +95,7 @@ export class SimpleLLMMatchingService {
         estimateLineItemId: null,
         confidence: 0,
         reasoning: 'Automatic matching failed - manual review required',
-        matchType: 'none' as const
+        matchType: 'none' as const,
       }))
 
       return {
@@ -99,7 +103,7 @@ export class SimpleLLMMatchingService {
         matches: emptyMatches,
         fallbackUsed: true,
         processingTime: Date.now() - startTime,
-        error: 'All automatic matching failed, manual review required'
+        error: 'All automatic matching failed, manual review required',
       }
     }
   }
@@ -113,30 +117,30 @@ export class SimpleLLMMatchingService {
   ): Promise<BatchMatchingResult> {
     try {
       console.log('Attempting LLM matching with Gemini...')
-      
+
       const prompt = this.buildMatchingPrompt(invoices, estimates)
-      
+
       // Make direct API call to Gemini
       const result = await this.callGeminiAPI(prompt)
-      
+
       if (result.success && result.data) {
         const matches = this.parseLLMResponse(result.data, invoices, estimates)
-        
+
         return {
           success: true,
           matches,
           fallbackUsed: false,
           processingTime: 0,
-          cost: result.cost
+          cost: result.cost,
         }
       }
-      
+
       return {
         success: false,
         matches: [],
         error: result.error || 'LLM parsing failed',
         fallbackUsed: false,
-        processingTime: 0
+        processingTime: 0,
       }
     } catch (error) {
       console.error('LLM matching error:', error)
@@ -145,7 +149,7 @@ export class SimpleLLMMatchingService {
         matches: [],
         error: error instanceof Error ? error.message : 'LLM matching failed',
         fallbackUsed: false,
-        processingTime: 0
+        processingTime: 0,
       }
     }
   }
@@ -164,8 +168,8 @@ export class SimpleLLMMatchingService {
         quantity: item.quantity,
         unitPrice: item.unitPrice,
         totalPrice: item.totalPrice,
-        category: item.category
-      }))
+        category: item.category,
+      })),
     }))
 
     const estimateData = estimates.map(est => ({
@@ -177,7 +181,7 @@ export class SimpleLLMMatchingService {
       materialCost: est.materialCostEst,
       laborCost: est.laborCostEst,
       equipmentCost: est.equipmentCostEst,
-      totalCost: est.materialCostEst + est.laborCostEst + est.equipmentCostEst
+      totalCost: est.materialCostEst + est.laborCostEst + est.equipmentCostEst,
     }))
 
     return `You are an expert construction project analyst. Your task is to match invoice line items to project estimate line items based on their descriptions, quantities, costs, and context.
@@ -219,33 +223,33 @@ Respond with ONLY the JSON output, no additional text.`
   /**
    * Call Gemini API directly
    */
-  private async callGeminiAPI(prompt: string): Promise<{success: boolean, data?: any, error?: string, cost?: number}> {
+  private async callGeminiAPI(
+    prompt: string
+  ): Promise<{ success: boolean; data?: any; error?: string; cost?: number }> {
     try {
       // Get API key from environment or user settings
       const apiKey = process.env.GEMINI_API_KEY
-      
+
       if (!apiKey) {
         // Try to get from user settings
         const { getParsingConfig } = await import('./pdf-parsing-config')
-        const config = await getParsingConfig()
-        
+        const config = await getParsingConfig(this.userId)
+
         if (!config.llmProviders.gemini?.enabled || !config.llmProviders.gemini?.apiKey) {
           return {
             success: false,
-            error: 'Gemini API key not configured'
+            error: 'Gemini API key not configured in settings',
           }
         }
-        
+
         return await this.makeGeminiRequest(config.llmProviders.gemini.apiKey, prompt)
       }
-      
+
       return await this.makeGeminiRequest(apiKey, prompt)
-      
     } catch (error) {
-      console.error('Gemini API call failed:', error)
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Gemini API call failed'
+        error: error instanceof Error ? error.message : 'Gemini API call failed',
       }
     }
   }
@@ -253,55 +257,64 @@ Respond with ONLY the JSON output, no additional text.`
   /**
    * Make the actual Gemini API request
    */
-  private async makeGeminiRequest(apiKey: string, prompt: string): Promise<{success: boolean, data?: any, error?: string, cost?: number}> {
+  private async makeGeminiRequest(
+    apiKey: string,
+    prompt: string
+  ): Promise<{ success: boolean; data?: any; error?: string; cost?: number }> {
     try {
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contents: [{
-            parts: [{
-              text: prompt
-            }]
-          }],
-          generationConfig: {
-            temperature: 0.1,
-            maxOutputTokens: 4096,
-          }
-        })
-      })
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [
+                  {
+                    text: prompt,
+                  },
+                ],
+              },
+            ],
+            generationConfig: {
+              temperature: 0.1,
+              maxOutputTokens: 4096,
+            },
+          }),
+        }
+      )
 
       if (!response.ok) {
         const errorText = await response.text()
         return {
           success: false,
-          error: `Gemini API error: ${response.status} ${errorText}`
+          error: `Gemini API error: ${response.status} ${errorText}`,
         }
       }
 
       const result = await response.json()
-      
+
       if (!result.candidates || !result.candidates[0] || !result.candidates[0].content) {
         return {
           success: false,
-          error: 'Invalid Gemini API response format'
+          error: 'Invalid Gemini API response format',
         }
       }
 
       const content = result.candidates[0].content.parts[0].text
-      
+
       return {
         success: true,
         data: content,
-        cost: 0.001 // Approximate cost for Gemini Flash
+        cost: 0.001, // Approximate cost for Gemini Flash
       }
-      
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Gemini request failed'
+        error: error instanceof Error ? error.message : 'Gemini request failed',
       }
     }
   }
@@ -357,7 +370,7 @@ Respond with ONLY the JSON output, no additional text.`
           estimateLineItemId: match.estimateLineItemId || null,
           confidence,
           reasoning: match.reasoning || 'LLM match without specific reasoning',
-          matchType: match.matchType || 'partial'
+          matchType: match.matchType || 'partial',
         })
       }
 
@@ -370,16 +383,15 @@ Respond with ONLY the JSON output, no additional text.`
             estimateLineItemId: null,
             confidence: 0,
             reasoning: 'No match found by LLM',
-            matchType: 'none'
+            matchType: 'none',
           })
         }
       }
 
       return validMatches
-
     } catch (error) {
       console.error('Error parsing LLM response:', error)
-      
+
       // Return no-match results for all invoice items
       const allInvoiceItems = invoices.flatMap(inv => inv.lineItems)
       return allInvoiceItems.map(item => ({
@@ -387,7 +399,7 @@ Respond with ONLY the JSON output, no additional text.`
         estimateLineItemId: null,
         confidence: 0,
         reasoning: 'Failed to parse LLM response',
-        matchType: 'none' as const
+        matchType: 'none' as const,
       }))
     }
   }
@@ -400,7 +412,7 @@ Respond with ONLY the JSON output, no additional text.`
     estimates: EstimateLineItem[]
   ): Promise<BatchMatchingResult> {
     const matches: LLMMatchResult[] = []
-    
+
     for (const invoice of invoices) {
       for (const invoiceItem of invoice.lineItems) {
         let bestMatch: LLMMatchResult = {
@@ -408,7 +420,7 @@ Respond with ONLY the JSON output, no additional text.`
           estimateLineItemId: null,
           confidence: 0,
           reasoning: 'No matching estimate found',
-          matchType: 'none'
+          matchType: 'none',
         }
 
         for (const estimateItem of estimates) {
@@ -417,32 +429,34 @@ Respond with ONLY the JSON output, no additional text.`
             invoiceItem.description,
             estimateItem.description
           )
-          
+
           const semanticSimilarity = this.calculateSemanticSimilarity(
             invoiceItem.description,
             estimateItem.description
           )
-          
+
           // Price similarity
           const invoicePrice = invoiceItem.totalPrice
-          const estimatePrice = estimateItem.materialCostEst + 
-                               estimateItem.laborCostEst + 
-                               estimateItem.equipmentCostEst
-          
+          const estimatePrice =
+            estimateItem.materialCostEst + estimateItem.laborCostEst + estimateItem.equipmentCostEst
+
           let priceSimilarity = 0
           if (estimatePrice > 0) {
-            const priceDiff = Math.abs(invoicePrice - estimatePrice) / Math.max(invoicePrice, estimatePrice)
+            const priceDiff =
+              Math.abs(invoicePrice - estimatePrice) / Math.max(invoicePrice, estimatePrice)
             priceSimilarity = Math.max(0, 1 - priceDiff)
           }
-          
+
           // Combined confidence score
-          const confidence = Math.round((
-            stringSimilarity * 0.4 +
-            semanticSimilarity * 0.3 +
-            priceSimilarity * 0.2 +
-            (invoiceItem.category === 'MATERIAL' ? 0.1 : 0)
-          ) * 100) / 100
-          
+          const confidence =
+            Math.round(
+              (stringSimilarity * 0.4 +
+                semanticSimilarity * 0.3 +
+                priceSimilarity * 0.2 +
+                (invoiceItem.category === 'MATERIAL' ? 0.1 : 0)) *
+                100
+            ) / 100
+
           if (confidence > bestMatch.confidence && confidence > 0.3) {
             let reasoning = 'Logic-based match: '
             const reasons = []
@@ -450,17 +464,17 @@ Respond with ONLY the JSON output, no additional text.`
             if (semanticSimilarity > 0.4) reasons.push('semantic match')
             if (priceSimilarity > 0.6) reasons.push('price alignment')
             reasoning += reasons.join(', ')
-            
+
             bestMatch = {
               invoiceLineItemId: invoiceItem.id,
               estimateLineItemId: estimateItem.id,
               confidence,
               reasoning,
-              matchType: confidence > 0.7 ? 'partial' : 'conceptual'
+              matchType: confidence > 0.7 ? 'partial' : 'conceptual',
             }
           }
         }
-        
+
         matches.push(bestMatch)
       }
     }
@@ -469,7 +483,7 @@ Respond with ONLY the JSON output, no additional text.`
       success: true,
       matches,
       fallbackUsed: false,
-      processingTime: 0
+      processingTime: 0,
     }
   }
 
@@ -477,24 +491,24 @@ Respond with ONLY the JSON output, no additional text.`
   private calculateStringSimilarity(str1: string, str2: string): number {
     const s1 = str1.toLowerCase().trim()
     const s2 = str2.toLowerCase().trim()
-    
+
     if (s1 === s2) return 1.0
-    
+
     const matrix: number[][] = []
     const n = s1.length
     const m = s2.length
-    
+
     if (n === 0) return m === 0 ? 1 : 0
     if (m === 0) return 0
-    
+
     for (let i = 0; i <= n; i++) {
       matrix[i] = [i]
     }
-    
+
     for (let j = 0; j <= m; j++) {
       matrix[0][j] = j
     }
-    
+
     for (let i = 1; i <= n; i++) {
       for (let j = 1; j <= m; j++) {
         const cost = s1[i - 1] === s2[j - 1] ? 0 : 1
@@ -505,7 +519,7 @@ Respond with ONLY the JSON output, no additional text.`
         )
       }
     }
-    
+
     const maxLength = Math.max(n, m)
     return (maxLength - matrix[n][m]) / maxLength
   }
@@ -513,13 +527,13 @@ Respond with ONLY the JSON output, no additional text.`
   private calculateSemanticSimilarity(desc1: string, desc2: string): number {
     const keywords1 = new Set(this.extractKeywords(desc1))
     const keywords2 = new Set(this.extractKeywords(desc2))
-    
+
     if (keywords1.size === 0 && keywords2.size === 0) return 1.0
     if (keywords1.size === 0 || keywords2.size === 0) return 0.0
-    
+
     const intersection = new Set([...keywords1].filter(x => keywords2.has(x)))
     const union = new Set([...keywords1, ...keywords2])
-    
+
     return intersection.size / union.size
   }
 

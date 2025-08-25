@@ -5,11 +5,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import {
-  ArrowLeftIcon,
-  HomeIcon,
-  ChevronRightIcon
-} from '@heroicons/react/24/outline'
+import { ArrowLeftIcon, HomeIcon, ChevronRightIcon } from '@heroicons/react/24/outline'
 
 interface BreadcrumbItem {
   label: string
@@ -33,7 +29,7 @@ export function PageHeader({
   showBackButton = true,
   backTo = '/dashboard',
   icon: Icon,
-  children
+  children,
 }: PageHeaderProps) {
   const router = useRouter()
 
@@ -48,7 +44,6 @@ export function PageHeader({
   return (
     <div className="bg-white border-b border-gray-200 px-4 py-6 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
-        
         {/* Breadcrumbs */}
         {breadcrumbs.length > 0 && (
           <nav className="flex mb-4" aria-label="Breadcrumb">
@@ -64,7 +59,10 @@ export function PageHeader({
               {breadcrumbs.map((item, index) => (
                 <li key={index}>
                   <div className="flex items-center">
-                    <ChevronRightIcon className="flex-shrink-0 h-4 w-4 text-gray-400" aria-hidden="true" />
+                    <ChevronRightIcon
+                      className="flex-shrink-0 h-4 w-4 text-gray-400"
+                      aria-hidden="true"
+                    />
                     {item.href ? (
                       <a
                         href={item.href}
@@ -73,9 +71,7 @@ export function PageHeader({
                         {item.label}
                       </a>
                     ) : (
-                      <span className="ml-2 text-sm font-medium text-gray-900">
-                        {item.label}
-                      </span>
+                      <span className="ml-2 text-sm font-medium text-gray-900">{item.label}</span>
                     )}
                   </div>
                 </li>
@@ -102,24 +98,14 @@ export function PageHeader({
             <div>
               <div className="flex items-center space-x-3">
                 {Icon && <Icon className="h-8 w-8 text-gray-600" />}
-                <h1 className="text-3xl font-bold text-gray-900">
-                  {title}
-                </h1>
+                <h1 className="text-3xl font-bold text-gray-900">{title}</h1>
               </div>
-              {description && (
-                <p className="mt-2 text-gray-600">
-                  {description}
-                </p>
-              )}
+              {description && <p className="mt-2 text-gray-600">{description}</p>}
             </div>
           </div>
 
           {/* Actions */}
-          {children && (
-            <div className="flex items-center space-x-3">
-              {children}
-            </div>
-          )}
+          {children && <div className="flex items-center space-x-3">{children}</div>}
         </div>
       </div>
     </div>
