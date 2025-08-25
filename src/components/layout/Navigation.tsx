@@ -3,15 +3,15 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
-import { 
-  HomeIcon, 
-  BuildingStorefrontIcon, 
-  DocumentTextIcon, 
-  ChartBarIcon, 
+import {
+  HomeIcon,
+  BuildingStorefrontIcon,
+  DocumentTextIcon,
+  ChartBarIcon,
   Cog6ToothIcon,
   UserCircleIcon,
   Bars3Icon,
-  XMarkIcon
+  XMarkIcon,
 } from '@heroicons/react/24/outline'
 import { tokens } from '@/lib/design-system'
 import { Button } from '@/components/ui/Button'
@@ -32,29 +32,29 @@ const navigationItems: NavigationItem[] = [
     name: 'Dashboard',
     href: '/dashboard',
     icon: HomeIcon,
-    description: 'Project overview and analytics'
+    description: 'Project overview and analytics',
   },
   {
     id: 'projects',
     name: 'Projects',
     href: '/dashboard?tab=projects',
     icon: BuildingStorefrontIcon,
-    description: 'Manage construction projects'
+    description: 'Manage construction projects',
   },
   {
     id: 'invoices',
     name: 'Invoices',
     href: '/dashboard?tab=invoices',
     icon: DocumentTextIcon,
-    description: 'Process and track invoices'
+    description: 'Process and track invoices',
   },
   {
     id: 'analytics',
     name: 'Analytics',
     href: '/dashboard?tab=analytics',
     icon: ChartBarIcon,
-    description: 'Reports and insights'
-  }
+    description: 'Reports and insights',
+  },
 ]
 
 const secondaryItems: NavigationItem[] = [
@@ -63,8 +63,8 @@ const secondaryItems: NavigationItem[] = [
     name: 'Settings',
     href: '/settings',
     icon: Cog6ToothIcon,
-    description: 'Application preferences'
-  }
+    description: 'Application preferences',
+  },
 ]
 
 interface NavigationProps {
@@ -85,7 +85,7 @@ export function Navigation({ className = '' }: NavigationProps) {
 
   const NavigationList = ({ items }: { items: NavigationItem[] }) => (
     <ul className="space-y-1">
-      {items.map((item) => {
+      {items.map(item => {
         const active = isActive(item.href)
         return (
           <li key={item.id}>
@@ -93,20 +93,18 @@ export function Navigation({ className = '' }: NavigationProps) {
               href={item.href}
               className={`
                 group flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors
-                ${active 
-                  ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-500'
-                  : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                ${
+                  active
+                    ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-500'
+                    : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
                 }
               `}
               data-testid={`nav-${item.id}`}
             >
-              <item.icon 
+              <item.icon
                 className={`
                   mr-3 h-5 w-5 flex-shrink-0 transition-colors
-                  ${active 
-                    ? 'text-blue-500'
-                    : 'text-gray-400 group-hover:text-gray-500'
-                  }
+                  ${active ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500'}
                 `}
                 aria-hidden="true"
               />
@@ -135,7 +133,7 @@ export function Navigation({ className = '' }: NavigationProps) {
   return (
     <>
       {/* Desktop Navigation */}
-      <nav 
+      <nav
         className={`hidden lg:flex lg:flex-col lg:fixed lg:inset-y-0 lg:w-64 lg:bg-white lg:border-r lg:border-gray-200 ${className}`}
         aria-label="Desktop navigation"
         data-testid="desktop-navigation"
@@ -143,9 +141,7 @@ export function Navigation({ className = '' }: NavigationProps) {
         <div className="flex-1 flex flex-col min-h-0">
           {/* Logo */}
           <div className="flex items-center h-16 px-6 border-b border-gray-200">
-            <h1 className="text-xl font-bold text-blue-700">
-              BuildTrack
-            </h1>
+            <h1 className="text-xl font-bold text-blue-700">BuildTrack</h1>
           </div>
 
           {/* Primary Navigation */}
@@ -172,12 +168,8 @@ export function Navigation({ className = '' }: NavigationProps) {
                 <UserCircleIcon className="h-8 w-8 text-gray-400" />
               </div>
               <div className="ml-3 flex-1">
-                <p className="text-sm font-medium text-gray-900">
-                  {user?.name || user?.email}
-                </p>
-                <p className="text-xs text-gray-500">
-                  {user?.role || 'User'}
-                </p>
+                <p className="text-sm font-medium text-gray-900">{user?.name || user?.email}</p>
+                <p className="text-xs text-gray-500">{user?.role || 'User'}</p>
               </div>
               <Button
                 variant="ghost"
@@ -197,9 +189,7 @@ export function Navigation({ className = '' }: NavigationProps) {
       <div className="lg:hidden">
         {/* Mobile Header */}
         <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200 bg-white">
-          <h1 className="text-xl font-bold text-blue-700">
-            BuildTrack
-          </h1>
+          <h1 className="text-xl font-bold text-blue-700">BuildTrack</h1>
           <Button
             variant="ghost"
             size="sm"
@@ -213,7 +203,10 @@ export function Navigation({ className = '' }: NavigationProps) {
         {/* Mobile Menu Overlay */}
         {mobileMenuOpen && (
           <div className="fixed inset-0 z-50 lg:hidden">
-            <div className="fixed inset-0 bg-gray-600 bg-opacity-75" onClick={() => setMobileMenuOpen(false)} />
+            <div
+              className="fixed inset-0 bg-gray-600 bg-opacity-75"
+              onClick={() => setMobileMenuOpen(false)}
+            />
             <div className="relative flex-1 flex flex-col max-w-xs w-full bg-white">
               <div className="absolute top-0 right-0 -mr-12 pt-2">
                 <Button
@@ -248,12 +241,8 @@ export function Navigation({ className = '' }: NavigationProps) {
                     <UserCircleIcon className="h-8 w-8 text-gray-400" />
                   </div>
                   <div className="ml-3 flex-1">
-                    <p className="text-sm font-medium text-gray-900">
-                      {user?.name || user?.email}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      {user?.role || 'User'}
-                    </p>
+                    <p className="text-sm font-medium text-gray-900">{user?.name || user?.email}</p>
+                    <p className="text-xs text-gray-500">{user?.role || 'User'}</p>
                   </div>
                   <Button
                     variant="ghost"

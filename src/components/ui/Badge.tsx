@@ -9,7 +9,10 @@ import { componentVariants, utilities, statusConfig } from '@/lib/design-system'
 interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
   variant?: keyof typeof componentVariants.badge
   size?: 'sm' | 'md' | 'lg'
-  status?: keyof typeof statusConfig.project | keyof typeof statusConfig.invoice | keyof typeof statusConfig.milestone
+  status?:
+    | keyof typeof statusConfig.project
+    | keyof typeof statusConfig.invoice
+    | keyof typeof statusConfig.milestone
   statusType?: 'project' | 'invoice' | 'milestone'
   icon?: React.ReactNode
   removable?: boolean
@@ -19,7 +22,7 @@ interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
 const sizeClasses = {
   sm: 'px-2 py-0.5 text-xs',
   md: 'px-2.5 py-0.5 text-sm',
-  lg: 'px-3 py-1 text-base'
+  lg: 'px-3 py-1 text-base',
 }
 
 export function Badge({
@@ -37,36 +40,34 @@ export function Badge({
   let displayText = children
   let displayIcon = icon
   let statusClasses = ''
-  
+
   // Use status configuration if provided
   if (status && statusType) {
     const config = statusConfig[statusType as keyof typeof statusConfig] as any
     const statusData = config[status]
-    
+
     if (statusData) {
       displayText = displayText || statusData.label
       displayIcon = displayIcon || statusData.icon
       statusClasses = statusData.color
     }
   }
-  
+
   const classes = utilities.cn(
     'inline-flex items-center font-medium rounded-full',
     statusClasses || componentVariants.badge[variant],
     sizeClasses[size],
     className
   )
-  
+
   return (
     <span className={classes} {...props}>
       {displayIcon && (
-        <span className={utilities.cn('mr-1', size === 'sm' && 'mr-0.5')}>
-          {displayIcon}
-        </span>
+        <span className={utilities.cn('mr-1', size === 'sm' && 'mr-0.5')}>{displayIcon}</span>
       )}
-      
+
       {displayText}
-      
+
       {removable && onRemove && (
         <button
           onClick={onRemove}

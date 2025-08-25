@@ -41,7 +41,11 @@ interface BulkEstimateOperation {
   }
 }
 
-async function POST(request: NextRequest, user: AuthUser, { params }: { params: Promise<{ id: string }> }) {
+async function POST(
+  request: NextRequest,
+  user: AuthUser,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
     const { id: projectId } = await params
     const body = await request.json()
@@ -101,7 +105,7 @@ async function POST(request: NextRequest, user: AuthUser, { params }: { params: 
           switch (operation.action) {
             case 'create':
               if (!operation.data) throw new Error('Data required for create operation')
-              
+
               const created = await tx.lineItem.create({
                 data: {
                   tradeId: operation.data.tradeId,
@@ -126,7 +130,7 @@ async function POST(request: NextRequest, user: AuthUser, { params }: { params: 
 
             case 'update':
               if (!operation.data?.id) throw new Error('ID required for update operation')
-              
+
               const updated = await tx.lineItem.update({
                 where: { id: operation.data.id },
                 data: {
@@ -153,7 +157,7 @@ async function POST(request: NextRequest, user: AuthUser, { params }: { params: 
 
             case 'delete':
               if (!operation.data?.id) throw new Error('ID required for delete operation')
-              
+
               const deleted = await tx.lineItem.delete({
                 where: { id: operation.data.id },
               })
@@ -162,12 +166,12 @@ async function POST(request: NextRequest, user: AuthUser, { params }: { params: 
 
             case 'split':
               if (!operation.splitData) throw new Error('Split data required for split operation')
-              
+
               // Delete original item
               await tx.lineItem.delete({
                 where: { id: operation.splitData.originalId },
               })
-              
+
               // Create new items
               const splitResults = []
               for (const newItem of operation.splitData.newItems) {
@@ -199,7 +203,9 @@ async function POST(request: NextRequest, user: AuthUser, { params }: { params: 
               throw new Error(`Unknown operation: ${operation.action}`)
           }
         } catch (error) {
-          throw new Error(`Operation ${operation.action} failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+          throw new Error(
+            `Operation ${operation.action} failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+          )
         }
       }
 
@@ -223,10 +229,7 @@ async function POST(request: NextRequest, user: AuthUser, { params }: { params: 
           },
         },
       },
-      orderBy: [
-        { trade: { sortOrder: 'asc' } },
-        { sortOrder: 'asc' },
-      ],
+      orderBy: [{ trade: { sortOrder: 'asc' } }, { sortOrder: 'asc' }],
     })
 
     // Calculate project totals

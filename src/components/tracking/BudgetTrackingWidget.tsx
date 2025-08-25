@@ -3,13 +3,13 @@
 import React from 'react'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
-import { 
+import {
   ChartBarIcon,
   CurrencyDollarIcon,
   ArrowUpIcon,
   ArrowDownIcon,
   CheckCircleIcon,
-  ExclamationTriangleIcon
+  ExclamationTriangleIcon,
 } from '@heroicons/react/24/outline'
 
 interface BudgetTrackingWidgetProps {
@@ -48,15 +48,15 @@ export function BudgetTrackingWidget({ projectId, compact = false }: BudgetTrack
         spent: 8500,
         committed: 25000,
         variance: -116500,
-        status: 'on-track'
+        status: 'on-track',
       },
       {
-        name: 'Labor', 
+        name: 'Labor',
         budget: 180000,
         spent: 3802,
         committed: 15000,
         variance: -161198,
-        status: 'on-track'
+        status: 'on-track',
       },
       {
         name: 'Equipment',
@@ -64,7 +64,7 @@ export function BudgetTrackingWidget({ projectId, compact = false }: BudgetTrack
         spent: 0,
         committed: 5000,
         variance: -45000,
-        status: 'on-track'
+        status: 'on-track',
       },
       {
         name: 'Permits & Fees',
@@ -72,26 +72,34 @@ export function BudgetTrackingWidget({ projectId, compact = false }: BudgetTrack
         spent: 0,
         committed: 0,
         variance: -15000,
-        status: 'on-track'
-      }
-    ]
+        status: 'on-track',
+      },
+    ],
   }
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'on-track': return 'bg-green-100 text-green-800'
-      case 'at-risk': return 'bg-yellow-100 text-yellow-800' 
-      case 'over-budget': return 'bg-red-100 text-red-800'
-      default: return 'bg-gray-100 text-gray-800'
+      case 'on-track':
+        return 'bg-green-100 text-green-800'
+      case 'at-risk':
+        return 'bg-yellow-100 text-yellow-800'
+      case 'over-budget':
+        return 'bg-red-100 text-red-800'
+      default:
+        return 'bg-gray-100 text-gray-800'
     }
   }
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'on-track': return CheckCircleIcon
-      case 'at-risk': return ExclamationTriangleIcon
-      case 'over-budget': return ExclamationTriangleIcon
-      default: return ChartBarIcon
+      case 'on-track':
+        return CheckCircleIcon
+      case 'at-risk':
+        return ExclamationTriangleIcon
+      case 'over-budget':
+        return ExclamationTriangleIcon
+      default:
+        return ChartBarIcon
     }
   }
 
@@ -119,16 +127,16 @@ export function BudgetTrackingWidget({ projectId, compact = false }: BudgetTrack
               <div className="text-sm text-gray-600">Remaining</div>
             </div>
           </div>
-          
+
           <div className="mt-4">
             <div className="flex items-center justify-between text-sm mb-1">
               <span>Budget Used</span>
               <span>{trackingData.budgetUsedPercent}%</span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2">
-              <div 
-                className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
-                style={{width: `${trackingData.budgetUsedPercent}%`}}
+              <div
+                className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                style={{ width: `${trackingData.budgetUsedPercent}%` }}
               ></div>
             </div>
           </div>
@@ -211,14 +219,18 @@ export function BudgetTrackingWidget({ projectId, compact = false }: BudgetTrack
             </div>
             <div className="w-full bg-gray-200 rounded-full h-3">
               <div className="flex h-3 rounded-full overflow-hidden">
-                <div 
-                  className="bg-red-600 transition-all duration-300" 
-                  style={{width: `${(trackingData.spentAmount / trackingData.totalBudget) * 100}%`}}
+                <div
+                  className="bg-red-600 transition-all duration-300"
+                  style={{
+                    width: `${(trackingData.spentAmount / trackingData.totalBudget) * 100}%`,
+                  }}
                   title="Spent"
                 ></div>
-                <div 
-                  className="bg-yellow-600 transition-all duration-300" 
-                  style={{width: `${(trackingData.commitedAmount / trackingData.totalBudget) * 100}%`}}
+                <div
+                  className="bg-yellow-600 transition-all duration-300"
+                  style={{
+                    width: `${(trackingData.commitedAmount / trackingData.totalBudget) * 100}%`,
+                  }}
                   title="Committed"
                 ></div>
               </div>
@@ -274,15 +286,14 @@ export function BudgetTrackingWidget({ projectId, compact = false }: BudgetTrack
               <tbody className="bg-white divide-y divide-gray-200">
                 {trackingData.categories.map((category, index) => {
                   const available = category.budget - category.spent - category.committed
-                  const usedPercent = ((category.spent + category.committed) / category.budget) * 100
+                  const usedPercent =
+                    ((category.spent + category.committed) / category.budget) * 100
                   const StatusIcon = getStatusIcon(category.status)
-                  
+
                   return (
                     <tr key={index} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">
-                          {category.name}
-                        </div>
+                        <div className="text-sm font-medium text-gray-900">{category.name}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">
@@ -300,16 +311,17 @@ export function BudgetTrackingWidget({ projectId, compact = false }: BudgetTrack
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
-                          ${available.toLocaleString()}
-                        </div>
+                        <div className="text-sm text-gray-900">${available.toLocaleString()}</div>
                         <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1">
-                          <div 
+                          <div
                             className={`h-1.5 rounded-full ${
-                              usedPercent > 90 ? 'bg-red-600' : 
-                              usedPercent > 75 ? 'bg-yellow-600' : 'bg-green-600'
+                              usedPercent > 90
+                                ? 'bg-red-600'
+                                : usedPercent > 75
+                                  ? 'bg-yellow-600'
+                                  : 'bg-green-600'
                             }`}
-                            style={{width: `${Math.min(usedPercent, 100)}%`}}
+                            style={{ width: `${Math.min(usedPercent, 100)}%` }}
                           ></div>
                         </div>
                       </td>

@@ -18,7 +18,7 @@ interface AppState {
   version: string
   environment: 'development' | 'production' | 'test'
   maintenanceMode: boolean
-  
+
   // Feature flags
   features: {
     invoiceProcessing: boolean
@@ -27,7 +27,7 @@ interface AppState {
     reporting: boolean
     advancedSettings: boolean
   }
-  
+
   // UI state
   ui: {
     sidebarOpen: boolean
@@ -47,14 +47,14 @@ interface AppState {
       }>
     }>
   }
-  
+
   // Network state
   network: {
     online: boolean
     slowConnection: boolean
     lastOnline?: Date
   }
-  
+
   // Error boundaries
   errors: Array<{
     id: string
@@ -73,25 +73,27 @@ interface AppActions {
   toggleSidebar: () => void
   setSidebarOpen: (open: boolean) => void
   setTheme: (theme: AppState['ui']['theme']) => void
-  
+
   // Loading state
   setGlobalLoading: (loading: boolean, message?: string) => void
-  
+
   // Notifications
-  addNotification: (notification: Omit<AppState['ui']['notifications'][0], 'id' | 'timestamp' | 'read'>) => void
+  addNotification: (
+    notification: Omit<AppState['ui']['notifications'][0], 'id' | 'timestamp' | 'read'>
+  ) => void
   removeNotification: (id: string) => void
   markNotificationRead: (id: string) => void
   clearAllNotifications: () => void
-  
+
   // Error handling
   reportError: (error: Error, component: string) => void
   resolveError: (id: string) => void
   clearErrors: () => void
-  
+
   // System
   refreshSystemInfo: () => Promise<void>
   toggleMaintenanceMode: (enabled: boolean) => void
-  
+
   // Feature flags
   updateFeatureFlags: (features: Partial<AppState['features']>) => void
   isFeatureEnabled: (feature: keyof AppState['features']) => boolean
@@ -112,31 +114,31 @@ const createInitialAppState = (): AppState => ({
   version: '0.1.0',
   environment: process.env.NODE_ENV as 'development' | 'production' | 'test',
   maintenanceMode: false,
-  
+
   features: {
     invoiceProcessing: true,
     milestoneTracking: true,
     costAnalytics: true,
     reporting: false, // Coming soon
-    advancedSettings: process.env.NODE_ENV === 'development'
+    advancedSettings: process.env.NODE_ENV === 'development',
   },
-  
+
   ui: {
     sidebarOpen: true,
     theme: 'system',
     loading: {
       isLoading: false,
-      error: null
+      error: null,
     },
-    notifications: []
+    notifications: [],
   },
-  
+
   network: {
     online: typeof navigator !== 'undefined' ? navigator.onLine : true,
-    slowConnection: false
+    slowConnection: false,
   },
-  
-  errors: []
+
+  errors: [],
 })
 
 // ==================== Provider Component ====================
@@ -156,33 +158,33 @@ export function AppProvider({ children }: { children: ReactNode }) {
         network: {
           ...prev.network,
           online: navigator.onLine,
-          lastOnline: navigator.onLine ? new Date() : prev.network.lastOnline
-        }
+          lastOnline: navigator.onLine ? new Date() : prev.network.lastOnline,
+        },
       }))
     }
 
     const detectSlowConnection = () => {
       const connection = (navigator as any).connection
       if (connection) {
-        const isSlowConnection = connection.effectiveType === 'slow-2g' || 
-                                connection.effectiveType === '2g'
-        
+        const isSlowConnection =
+          connection.effectiveType === 'slow-2g' || connection.effectiveType === '2g'
+
         setState(prev => ({
           ...prev,
           network: {
             ...prev.network,
-            slowConnection: isSlowConnection
-          }
+            slowConnection: isSlowConnection,
+          },
         }))
       }
     }
 
     window.addEventListener('online', updateOnlineStatus)
     window.addEventListener('offline', updateOnlineStatus)
-    
+
     // Check connection speed if available
     if ('connection' in navigator) {
-      (navigator as any).connection?.addEventListener('change', detectSlowConnection)
+      ;(navigator as any).connection?.addEventListener('change', detectSlowConnection)
       detectSlowConnection()
     }
 
@@ -190,7 +192,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       window.removeEventListener('online', updateOnlineStatus)
       window.removeEventListener('offline', updateOnlineStatus)
       if ('connection' in navigator) {
-        (navigator as any).connection?.removeEventListener('change', detectSlowConnection)
+        ;(navigator as any).connection?.removeEventListener('change', detectSlowConnection)
       }
     }
   }, [])
@@ -201,7 +203,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (settings.user.theme !== state.ui.theme) {
       setState(prev => ({
         ...prev,
-        ui: { ...prev.ui, theme: settings.user.theme }
+        ui: { ...prev.ui, theme: settings.user.theme },
       }))
     }
   }, [settings.user.theme])
@@ -213,25 +215,25 @@ export function AppProvider({ children }: { children: ReactNode }) {
     toggleSidebar: () => {
       setState(prev => ({
         ...prev,
-        ui: { ...prev.ui, sidebarOpen: !prev.ui.sidebarOpen }
+        ui: { ...prev.ui, sidebarOpen: !prev.ui.sidebarOpen },
       }))
     },
 
     setSidebarOpen: (open: boolean) => {
       setState(prev => ({
         ...prev,
-        ui: { ...prev.ui, sidebarOpen: open }
+        ui: { ...prev.ui, sidebarOpen: open },
       }))
     },
 
     setTheme: (theme: AppState['ui']['theme']) => {
       setState(prev => ({
         ...prev,
-        ui: { ...prev.ui, theme }
+        ui: { ...prev.ui, theme },
       }))
       // Update user settings
       updateSettings({
-        user: { ...settings.user, theme }
+        user: { ...settings.user, theme },
       })
     },
 
@@ -244,27 +246,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
           loading: {
             isLoading: loading,
             error: loading ? null : prev.ui.loading.error,
-            message
-          }
-        }
+            message,
+          },
+        },
       }))
     },
 
     // Notifications
-    addNotification: (notification) => {
+    addNotification: notification => {
       const newNotification = {
         ...notification,
         id: `notification_${Date.now()}_${Math.random().toString(36).substring(2)}`,
         timestamp: new Date(),
-        read: false
+        read: false,
       }
-      
+
       setState(prev => ({
         ...prev,
         ui: {
           ...prev.ui,
-          notifications: [newNotification, ...prev.ui.notifications].slice(0, 50) // Keep max 50
-        }
+          notifications: [newNotification, ...prev.ui.notifications].slice(0, 50), // Keep max 50
+        },
       }))
 
       // Auto-remove success and info notifications after 5 seconds
@@ -280,8 +282,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         ...prev,
         ui: {
           ...prev.ui,
-          notifications: prev.ui.notifications.filter(n => n.id !== id)
-        }
+          notifications: prev.ui.notifications.filter(n => n.id !== id),
+        },
       }))
     },
 
@@ -290,17 +292,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
         ...prev,
         ui: {
           ...prev.ui,
-          notifications: prev.ui.notifications.map(n =>
-            n.id === id ? { ...n, read: true } : n
-          )
-        }
+          notifications: prev.ui.notifications.map(n => (n.id === id ? { ...n, read: true } : n)),
+        },
       }))
     },
 
     clearAllNotifications: () => {
       setState(prev => ({
         ...prev,
-        ui: { ...prev.ui, notifications: [] }
+        ui: { ...prev.ui, notifications: [] },
       }))
     },
 
@@ -311,12 +311,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
         error,
         timestamp: new Date(),
         component,
-        resolved: false
+        resolved: false,
       }
-      
+
       setState(prev => ({
         ...prev,
-        errors: [errorReport, ...prev.errors].slice(0, 20) // Keep max 20 errors
+        errors: [errorReport, ...prev.errors].slice(0, 20), // Keep max 20 errors
       }))
 
       // Add error notification
@@ -330,9 +330,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
             action: () => {
               // TODO: Implement error reporting
               console.log('Reporting error:', errorReport)
-            }
-          }
-        ]
+            },
+          },
+        ],
       })
 
       // Log to console in development
@@ -344,16 +344,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     resolveError: (id: string) => {
       setState(prev => ({
         ...prev,
-        errors: prev.errors.map(e =>
-          e.id === id ? { ...e, resolved: true } : e
-        )
+        errors: prev.errors.map(e => (e.id === id ? { ...e, resolved: true } : e)),
       }))
     },
 
     clearErrors: () => {
       setState(prev => ({
         ...prev,
-        errors: []
+        errors: [],
       }))
     },
 
@@ -375,7 +373,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
               ...prev,
               version: systemInfo.version || prev.version,
               maintenanceMode: systemInfo.maintenanceMode || false,
-              features: { ...prev.features, ...systemInfo.features }
+              features: { ...prev.features, ...systemInfo.features },
             }))
           }
         }
@@ -387,15 +385,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     toggleMaintenanceMode: (enabled: boolean) => {
       setState(prev => ({
         ...prev,
-        maintenanceMode: enabled
+        maintenanceMode: enabled,
       }))
-      
+
       actions.addNotification({
         type: enabled ? 'warning' : 'info',
         title: 'Maintenance Mode',
-        message: enabled 
-          ? 'Application is now in maintenance mode' 
-          : 'Maintenance mode disabled'
+        message: enabled ? 'Application is now in maintenance mode' : 'Maintenance mode disabled',
       })
     },
 
@@ -403,13 +399,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     updateFeatureFlags: (features: Partial<AppState['features']>) => {
       setState(prev => ({
         ...prev,
-        features: { ...prev.features, ...features }
+        features: { ...prev.features, ...features },
       }))
     },
 
     isFeatureEnabled: (feature: keyof AppState['features']): boolean => {
       return state.features[feature] && !state.maintenanceMode
-    }
+    },
   }
 
   // ==================== Effect for System Info ====================
@@ -433,7 +429,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
               ...prev,
               version: systemInfo.version || prev.version,
               maintenanceMode: systemInfo.maintenanceMode || false,
-              features: { ...prev.features, ...systemInfo.features }
+              features: { ...prev.features, ...systemInfo.features },
             }))
           }
         }
@@ -459,9 +455,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">
-            System Maintenance
-          </h1>
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">System Maintenance</h1>
           <p className="text-gray-600 mb-8">
             BuildTrack is currently undergoing maintenance. Please check back soon.
           </p>
@@ -475,15 +469,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const contextValue: AppContextType = {
     state,
-    actions
+    actions,
   }
 
   return (
     <AppContext.Provider value={contextValue}>
       <AuthProvider>
-        <ProjectsProvider>
-          {children}
-        </ProjectsProvider>
+        <ProjectsProvider>{children}</ProjectsProvider>
       </AuthProvider>
     </AppContext.Provider>
   )
@@ -506,7 +498,7 @@ export function useNotifications() {
   return {
     notifications: state.ui.notifications,
     unreadCount: state.ui.notifications.filter(n => !n.read).length,
-    ...actions
+    ...actions,
   }
 }
 
@@ -515,7 +507,7 @@ export function useFeatureFlags() {
   return {
     features: state.features,
     isFeatureEnabled: actions.isFeatureEnabled,
-    updateFeatureFlags: actions.updateFeatureFlags
+    updateFeatureFlags: actions.updateFeatureFlags,
   }
 }
 
@@ -526,7 +518,7 @@ export function useAppErrors() {
     unresolvedCount: state.errors.filter(e => !e.resolved).length,
     reportError: actions.reportError,
     resolveError: actions.resolveError,
-    clearErrors: actions.clearErrors
+    clearErrors: actions.clearErrors,
   }
 }
 

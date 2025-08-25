@@ -62,24 +62,25 @@ async function calculateFinancialTrends(projectId: string, timeRange: TimeRangeQ
 
   // Group by month and calculate trends
   const monthlyData = new Map<string, { estimated: number; actual: number; invoiceCount: number }>()
-  
+
   invoices.forEach(invoice => {
     const monthKey = invoice.invoiceDate?.toISOString().slice(0, 7) || ''
     if (!monthKey) return
 
     const current = monthlyData.get(monthKey) || { estimated: 0, actual: 0, invoiceCount: 0 }
-    
+
     // Calculate actual spent
     const actualAmount = Number(invoice.totalAmount)
-    
+
     // Calculate estimated amount from line items
     const estimatedAmount = invoice.invoiceItems.reduce((sum, item) => {
       const lineItem = item.lineItem
       if (!lineItem) return sum
-      
-      const estimate = Number(lineItem.materialCostEst) + 
-                     Number(lineItem.laborCostEst) + 
-                     Number(lineItem.equipmentCostEst)
+
+      const estimate =
+        Number(lineItem.materialCostEst) +
+        Number(lineItem.laborCostEst) +
+        Number(lineItem.equipmentCostEst)
       return sum + estimate
     }, 0)
 
@@ -94,12 +95,13 @@ async function calculateFinancialTrends(projectId: string, timeRange: TimeRangeQ
   const trends = Array.from(monthlyData.entries())
     .sort(([a], [b]) => a.localeCompare(b))
     .reduce((acc, [date, data], index) => {
-      const prevCumulative = index > 0 ? acc[index - 1].cumulative : { estimated: 0, actual: 0, variance: 0 }
-      
+      const prevCumulative =
+        index > 0 ? acc[index - 1].cumulative : { estimated: 0, actual: 0, variance: 0 }
+
       const cumulative = {
         estimated: prevCumulative.estimated + data.estimated,
         actual: prevCumulative.actual + data.actual,
-        variance: (prevCumulative.actual + data.actual) - (prevCumulative.estimated + data.estimated),
+        variance: prevCumulative.actual + data.actual - (prevCumulative.estimated + data.estimated),
       }
 
       acc.push({
@@ -135,7 +137,7 @@ async function calculateCashFlowProjections(projectId: string) {
   // Create 6-month projection
   const projections = []
   const currentDate = new Date()
-  
+
   for (let i = 0; i < 6; i++) {
     const projectionDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + i, 1)
     const nextMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + i + 1, 0)
@@ -193,14 +195,22 @@ async function calculateTradePerformance(projectId: string) {
   return trades.map(trade => {
     // Calculate estimated total
     const estimatedTotal = trade.lineItems.reduce((sum, item) => {
-      return sum + Number(item.materialCostEst) + Number(item.laborCostEst) + Number(item.equipmentCostEst)
+      return (
+        sum +
+        Number(item.materialCostEst) +
+        Number(item.laborCostEst) +
+        Number(item.equipmentCostEst)
+      )
     }, 0)
 
     // Calculate actual spent
     const actualSpent = trade.lineItems.reduce((sum, lineItem) => {
-      return sum + lineItem.invoiceItems
-        .filter(item => item.invoice.status === 'APPROVED' || item.invoice.status === 'PAID')
-        .reduce((itemSum, item) => itemSum + Number(item.totalPrice), 0)
+      return (
+        sum +
+        lineItem.invoiceItems
+          .filter(item => item.invoice.status === 'APPROVED' || item.invoice.status === 'PAID')
+          .reduce((itemSum, item) => itemSum + Number(item.totalPrice), 0)
+      )
     }, 0)
 
     const variance = actualSpent - estimatedTotal
@@ -251,7 +261,7 @@ async function generateAlerts(projectId: string, tradePerformance: any[]) {
       alerts.push({
         id: `budget_overrun_${trade.id}`,
         type: 'budget_overrun' as const,
-        severity: trade.variancePercent > 50 ? 'critical' as const : 'high' as const,
+        severity: trade.variancePercent > 50 ? ('critical' as const) : ('high' as const),
         title: `Budget Overrun: ${trade.name}`,
         description: `Trade is ${Math.abs(trade.variancePercent).toFixed(1)}% over budget`,
         trade: trade.name,
@@ -272,12 +282,19 @@ async function generateAlerts(projectId: string, tradePerformance: any[]) {
   })
 
   overdueMilestones.forEach(milestone => {
-    const daysOverdue = Math.ceil((currentDate.getTime() - new Date(milestone.targetDate).getTime()) / (1000 * 60 * 60 * 24))
-    
+    const daysOverdue = Math.ceil(
+      (currentDate.getTime() - new Date(milestone.targetDate).getTime()) / (1000 * 60 * 60 * 24)
+    )
+
     alerts.push({
       id: `schedule_delay_${milestone.id}`,
       type: 'schedule_delay' as const,
-      severity: daysOverdue > 30 ? 'critical' as const : daysOverdue > 14 ? 'high' as const : 'medium' as const,
+      severity:
+        daysOverdue > 30
+          ? ('critical' as const)
+          : daysOverdue > 14
+            ? ('high' as const)
+            : ('medium' as const),
       title: `Overdue Milestone: ${milestone.name}`,
       description: `Milestone is ${daysOverdue} days overdue`,
       amount: Number(milestone.paymentAmount),
@@ -383,15 +400,21 @@ async function GET(
     const totalEstimated = tradePerformance.reduce((sum, trade) => sum + trade.estimatedTotal, 0)
     const totalActual = tradePerformance.reduce((sum, trade) => sum + trade.actualSpent, 0)
     const totalVariance = totalActual - totalEstimated
-    const averageVariance = tradePerformance.length > 0 
-      ? tradePerformance.reduce((sum, trade) => sum + Math.abs(trade.variancePercent), 0) / tradePerformance.length
-      : 0
+    const averageVariance =
+      tradePerformance.length > 0
+        ? tradePerformance.reduce((sum, trade) => sum + Math.abs(trade.variancePercent), 0) /
+          tradePerformance.length
+        : 0
 
     const kpis = {
-      profitMargin: totalEstimated > 0 ? ((totalEstimated - totalActual) / totalEstimated) * 100 : 0,
-      costEfficiency: tradePerformance.reduce((sum, trade) => sum + trade.efficiency, 0) / (tradePerformance.length || 1),
+      profitMargin:
+        totalEstimated > 0 ? ((totalEstimated - totalActual) / totalEstimated) * 100 : 0,
+      costEfficiency:
+        tradePerformance.reduce((sum, trade) => sum + trade.efficiency, 0) /
+        (tradePerformance.length || 1),
       scheduleVariance: 0, // Could be enhanced with milestone tracking
-      budgetUtilization: Number(project.totalBudget) > 0 ? (totalActual / Number(project.totalBudget)) * 100 : 0,
+      budgetUtilization:
+        Number(project.totalBudget) > 0 ? (totalActual / Number(project.totalBudget)) * 100 : 0,
       riskScore: averageVariance,
     }
 

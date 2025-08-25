@@ -74,11 +74,15 @@ export function InvoiceMatchingInterface({
   const [expandedInvoices, setExpandedInvoices] = useState<Set<string>>(new Set())
   const [selectedMatches, setSelectedMatches] = useState<Map<string, string | null>>(new Map())
   const [searchTerm, setSearchTerm] = useState('')
-  const [confidenceFilter, setConfidenceFilter] = useState<'all' | 'existing' | 'unmatched' | 'high' | 'medium' | 'low'>('all')
+  const [confidenceFilter, setConfidenceFilter] = useState<
+    'all' | 'existing' | 'unmatched' | 'high' | 'medium' | 'low'
+  >('all')
   const [autoSelectMode, setAutoSelectMode] = useState<'high' | 'medium' | 'all' | 'none'>('high')
   const [manualMatchingItem, setManualMatchingItem] = useState<string | null>(null)
   const [showLLMDetails, setShowLLMDetails] = useState(false)
-  const [selectedInvoicesForApproval, setSelectedInvoicesForApproval] = useState<Set<string>>(new Set())
+  const [selectedInvoicesForApproval, setSelectedInvoicesForApproval] = useState<Set<string>>(
+    new Set()
+  )
   const [approving, setApproving] = useState(false)
   const [justAppliedCount, setJustAppliedCount] = useState<number>(0)
 
@@ -190,33 +194,35 @@ export function InvoiceMatchingInterface({
           const updatedMatchingResults = data.matchingResults.map(result => ({
             ...result,
             matches: result.matches.map(match => {
-              const appliedMatch = matches.find(m => m.invoiceLineItemId === match.invoiceLineItemId)
+              const appliedMatch = matches.find(
+                m => m.invoiceLineItemId === match.invoiceLineItemId
+              )
               if (appliedMatch) {
                 return {
                   ...match,
                   estimateLineItemId: appliedMatch.estimateLineItemId,
                   matchType: 'existing' as const,
                   confidence: 1.0,
-                  reason: 'Applied match'
+                  reason: 'Applied match',
                 }
               }
               return match
-            })
+            }),
           }))
 
           setData({
             ...data,
-            matchingResults: updatedMatchingResults
+            matchingResults: updatedMatchingResults,
           })
         }
-        
+
         const appliedCount = selectedMatches.size
         setSelectedMatches(new Map()) // Clear selections
         setJustAppliedCount(appliedCount) // Track what was just applied
-        
+
         // Clear the success message after 3 seconds
         setTimeout(() => setJustAppliedCount(0), 3000)
-        
+
         onMatchingComplete?.()
       } else {
         setError(result.error || 'Failed to apply matches')
@@ -303,7 +309,7 @@ export function InvoiceMatchingInterface({
   }
 
   const handleCreateNewTrade = async (lineItem: any) => {
-    // TODO: Implement create new trade category functionality  
+    // TODO: Implement create new trade category functionality
     console.log('Create new trade category:', lineItem)
     // This could open a modal or navigate to trade creation
   }
@@ -314,7 +320,7 @@ export function InvoiceMatchingInterface({
     try {
       setApproving(true)
       const invoiceIds = Array.from(selectedInvoicesForApproval)
-      
+
       const response = await fetch('/api/invoices/approve', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -338,7 +344,7 @@ export function InvoiceMatchingInterface({
 
           setData({
             ...data,
-            invoices: updatedInvoices
+            invoices: updatedInvoices,
           })
         }
 
@@ -347,7 +353,9 @@ export function InvoiceMatchingInterface({
       } else {
         setError(result.error || 'Failed to approve invoices')
         if (result.unmatchedItems) {
-          setError(`Cannot approve invoices with unmatched items:\n${result.unmatchedItems.join('\n')}`)
+          setError(
+            `Cannot approve invoices with unmatched items:\n${result.unmatchedItems.join('\n')}`
+          )
         }
       }
     } catch (err) {
@@ -361,12 +369,12 @@ export function InvoiceMatchingInterface({
   const canInvoiceBeApproved = (invoice: any, matchResults: MatchingResult | undefined) => {
     // Only PENDING invoices can be approved
     if (invoice.status !== 'PENDING') return false
-    
+
     // All line items must be matched
     if (!matchResults) return false
-    
-    return matchResults.matches.every(match => 
-      match.estimateLineItemId !== null && match.matchType !== 'unmatched'
+
+    return matchResults.matches.every(
+      match => match.estimateLineItemId !== null && match.matchType !== 'unmatched'
     )
   }
 
@@ -407,9 +415,15 @@ export function InvoiceMatchingInterface({
             case 'high':
               return match.confidence >= 0.7 && match.matchType !== 'existing'
             case 'medium':
-              return match.confidence >= 0.5 && match.confidence < 0.7 && match.matchType !== 'existing'
+              return (
+                match.confidence >= 0.5 && match.confidence < 0.7 && match.matchType !== 'existing'
+              )
             case 'low':
-              return match.confidence < 0.5 && match.matchType !== 'existing' && match.matchType !== 'unmatched'
+              return (
+                match.confidence < 0.5 &&
+                match.matchType !== 'existing' &&
+                match.matchType !== 'unmatched'
+              )
             default:
               return true
           }
@@ -429,9 +443,7 @@ export function InvoiceMatchingInterface({
             <SparklesIcon className="mx-auto h-16 w-16 text-blue-500 animate-pulse" />
             <div className="absolute inset-0 mx-auto h-16 w-16 rounded-full border-4 border-blue-200 border-t-blue-500 animate-spin"></div>
           </div>
-          <h3 className="mt-4 text-lg font-medium text-gray-900">
-            Running Smart Invoice Matching
-          </h3>
+          <h3 className="mt-4 text-lg font-medium text-gray-900">Running Smart Invoice Matching</h3>
           <div className="mt-2 space-y-2">
             <p className="text-sm text-gray-600">
               🤖 Analyzing invoices with AI-powered matching...
@@ -440,7 +452,7 @@ export function InvoiceMatchingInterface({
               This may take a few seconds for complex invoices
             </p>
           </div>
-          
+
           <div className="mt-6 bg-gray-50 rounded-lg p-4">
             <div className="space-y-3">
               <div className="flex items-center space-x-3 text-sm text-gray-600">
@@ -448,11 +460,17 @@ export function InvoiceMatchingInterface({
                 <span>Processing invoices and estimates</span>
               </div>
               <div className="flex items-center space-x-3 text-sm text-gray-600">
-                <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" style={{animationDelay: '0.5s'}}></div>
+                <div
+                  className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"
+                  style={{ animationDelay: '0.5s' }}
+                ></div>
                 <span>Running AI analysis</span>
               </div>
               <div className="flex items-center space-x-3 text-sm text-gray-600">
-                <div className="w-2 h-2 bg-blue-300 rounded-full animate-pulse" style={{animationDelay: '1s'}}></div>
+                <div
+                  className="w-2 h-2 bg-blue-300 rounded-full animate-pulse"
+                  style={{ animationDelay: '1s' }}
+                ></div>
                 <span>Calculating confidence scores</span>
               </div>
             </div>
@@ -513,9 +531,8 @@ export function InvoiceMatchingInterface({
             </h3>
             <div className="mt-1 space-y-1">
               <p className="text-sm text-gray-500">
-                {data.summary.totalInvoices} invoices •{' '}
-                {formatCurrency(data.summary.totalAmount)} total •{' '}
-                {data.summary.matchingRate}% auto-matchable
+                {data.summary.totalInvoices} invoices • {formatCurrency(data.summary.totalAmount)}{' '}
+                total • {data.summary.matchingRate}% auto-matchable
               </p>
               {data.llmMetadata && (
                 <div className="flex items-center space-x-4 text-xs">
@@ -527,7 +544,8 @@ export function InvoiceMatchingInterface({
                   ) : data.llmMetadata.usedLLM ? (
                     <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
                       <SparklesIcon className="h-3 w-3 mr-1" />
-                      AI-Powered Matching ({data.llmMetadata.unmatchedItemsCount || 0} items processed)
+                      AI-Powered Matching ({data.llmMetadata.unmatchedItemsCount || 0} items
+                      processed)
                     </span>
                   ) : data.llmMetadata.fallbackUsed ? (
                     <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
@@ -585,7 +603,7 @@ export function InvoiceMatchingInterface({
               {loading ? 'Running AI Analysis...' : 'Re-run AI Matching'}
             </button>
 
-{/* Apply Matches Button or Status */}
+            {/* Apply Matches Button or Status */}
             {justAppliedCount > 0 ? (
               // Just successfully applied matches
               <div className="inline-flex items-center px-4 py-2 border border-green-300 text-sm font-medium rounded-md text-green-700 bg-green-50 animate-pulse">
@@ -624,7 +642,8 @@ export function InvoiceMatchingInterface({
             {getFullyMatchedInvoices().length > 0 && (
               <div className="ml-4 pl-4 border-l border-gray-200">
                 <div className="text-sm text-gray-600 mb-2">
-                  Ready for Approval: {getFullyMatchedInvoices().length} invoice{getFullyMatchedInvoices().length !== 1 ? 's' : ''}
+                  Ready for Approval: {getFullyMatchedInvoices().length} invoice
+                  {getFullyMatchedInvoices().length !== 1 ? 's' : ''}
                 </div>
                 <div className="flex items-center space-x-2">
                   <button
@@ -640,7 +659,9 @@ export function InvoiceMatchingInterface({
                     }}
                     className="text-sm text-blue-600 hover:text-blue-800"
                   >
-                    {selectedInvoicesForApproval.size === getFullyMatchedInvoices().length ? 'Deselect All' : 'Select All'}
+                    {selectedInvoicesForApproval.size === getFullyMatchedInvoices().length
+                      ? 'Deselect All'
+                      : 'Select All'}
                   </button>
                   {selectedInvoicesForApproval.size > 0 && (
                     <button
@@ -653,7 +674,8 @@ export function InvoiceMatchingInterface({
                       ) : (
                         <CheckCircleIcon className="h-4 w-4 mr-1" />
                       )}
-                      Approve {selectedInvoicesForApproval.size} Invoice{selectedInvoicesForApproval.size !== 1 ? 's' : ''}
+                      Approve {selectedInvoicesForApproval.size} Invoice
+                      {selectedInvoicesForApproval.size !== 1 ? 's' : ''}
                     </button>
                   )}
                 </div>
@@ -704,42 +726,63 @@ export function InvoiceMatchingInterface({
           <div className="flex items-start space-x-3">
             <SparklesIcon className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
             <div className="flex-1">
-              <h4 className="text-sm font-medium text-green-800">
-                AI Matching Successful
-              </h4>
+              <h4 className="text-sm font-medium text-green-800">AI Matching Successful</h4>
               <p className="mt-1 text-sm text-green-700">
-                Smart matching found {data.summary.matchingRate}% auto-matchable items using AI analysis.
-                Review the suggestions below and apply matches as needed.
+                Smart matching found {data.summary.matchingRate}% auto-matchable items using AI
+                analysis. Review the suggestions below and apply matches as needed.
               </p>
-              
+
               {/* AI Suggestions Summary */}
               <div className="mt-3 bg-white rounded-lg p-3 border border-green-200">
-                <h5 className="text-xs font-semibold text-green-800 mb-2">📊 AI Analysis Summary:</h5>
+                <h5 className="text-xs font-semibold text-green-800 mb-2">
+                  📊 AI Analysis Summary:
+                </h5>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
                   <div>
                     <span className="text-green-600 font-medium">
-                      {data.matchingResults.flatMap(r => r.matches).filter(m => m.matchType === 'suggested' && m.confidence >= 0.7).length}
+                      {
+                        data.matchingResults
+                          .flatMap(r => r.matches)
+                          .filter(m => m.matchType === 'suggested' && m.confidence >= 0.7).length
+                      }
                     </span>
                     <br />
                     <span className="text-gray-600">High confidence AI matches</span>
                   </div>
                   <div>
                     <span className="text-yellow-600 font-medium">
-                      {data.matchingResults.flatMap(r => r.matches).filter(m => m.matchType === 'suggested' && m.confidence >= 0.5 && m.confidence < 0.7).length}
+                      {
+                        data.matchingResults
+                          .flatMap(r => r.matches)
+                          .filter(
+                            m =>
+                              m.matchType === 'suggested' &&
+                              m.confidence >= 0.5 &&
+                              m.confidence < 0.7
+                          ).length
+                      }
                     </span>
                     <br />
                     <span className="text-gray-600">Medium confidence matches</span>
                   </div>
                   <div>
                     <span className="text-blue-600 font-medium">
-                      {data.matchingResults.flatMap(r => r.matches).filter(m => m.matchType === 'existing').length}
+                      {
+                        data.matchingResults
+                          .flatMap(r => r.matches)
+                          .filter(m => m.matchType === 'existing').length
+                      }
                     </span>
                     <br />
                     <span className="text-gray-600">Already matched items</span>
                   </div>
                   <div>
                     <span className="text-red-600 font-medium">
-                      {data.matchingResults.flatMap(r => r.matches).filter(m => m.matchType === 'unmatched').length}
+                      {
+                        data.matchingResults
+                          .flatMap(r => r.matches)
+                          .filter(m => m.matchType === 'unmatched').length
+                      }
                     </span>
                     <br />
                     <span className="text-gray-600">Need manual review</span>
@@ -747,7 +790,8 @@ export function InvoiceMatchingInterface({
                 </div>
                 <div className="mt-2 pt-2 border-t border-green-100">
                   <p className="text-xs text-green-700">
-                    💡 <strong>Next steps:</strong> Review AI suggestions below, check confidence scores, and click "Apply" for matches you approve.
+                    💡 <strong>Next steps:</strong> Review AI suggestions below, check confidence
+                    scores, and click "Apply" for matches you approve.
                   </p>
                 </div>
               </div>
@@ -765,8 +809,8 @@ export function InvoiceMatchingInterface({
                 AI Matching Temporarily Unavailable
               </h4>
               <p className="mt-1 text-sm text-yellow-700">
-                We're using our backup logic-based matching system. Matches may be less accurate than usual.
-                You can still manually review and override any suggestions below.
+                We're using our backup logic-based matching system. Matches may be less accurate
+                than usual. You can still manually review and override any suggestions below.
               </p>
               {data.llmMetadata.error && (
                 <p className="mt-2 text-xs text-yellow-600">
@@ -786,7 +830,8 @@ export function InvoiceMatchingInterface({
           const existingMatches =
             matchResults?.matches.filter(m => m.matchType === 'existing').length || 0
           const highConfidenceMatches =
-            matchResults?.matches.filter(m => m.confidence >= 0.7 && m.matchType !== 'existing').length || 0
+            matchResults?.matches.filter(m => m.confidence >= 0.7 && m.matchType !== 'existing')
+              .length || 0
           const unmatchedItems =
             matchResults?.matches.filter(m => m.matchType === 'unmatched').length || 0
 
@@ -800,7 +845,7 @@ export function InvoiceMatchingInterface({
                     <input
                       type="checkbox"
                       checked={selectedInvoicesForApproval.has(invoice.id)}
-                      onChange={(e) => {
+                      onChange={e => {
                         e.stopPropagation()
                         handleInvoiceSelectionForApproval(invoice.id, e.target.checked)
                       }}
@@ -809,7 +854,7 @@ export function InvoiceMatchingInterface({
                     />
                   </div>
                 )}
-                
+
                 <div
                   className="flex items-center space-x-3 cursor-pointer flex-1"
                   onClick={() => toggleInvoiceExpansion(invoice.id)}
@@ -889,13 +934,13 @@ export function InvoiceMatchingInterface({
                         <div
                           key={lineItem.id}
                           className={`rounded-lg p-4 ${
-                            match.matchType === 'suggested' && match.confidence >= 0.7 
-                              ? 'border-2 border-green-300 bg-green-50' 
+                            match.matchType === 'suggested' && match.confidence >= 0.7
+                              ? 'border-2 border-green-300 bg-green-50'
                               : match.matchType === 'suggested' && match.confidence >= 0.5
-                              ? 'border-2 border-yellow-300 bg-yellow-50'
-                              : match.matchType === 'existing'
-                              ? 'border border-blue-200 bg-blue-50'
-                              : 'border border-gray-200 bg-gray-50'
+                                ? 'border-2 border-yellow-300 bg-yellow-50'
+                                : match.matchType === 'existing'
+                                  ? 'border border-blue-200 bg-blue-50'
+                                  : 'border border-gray-200 bg-gray-50'
                           }`}
                         >
                           {/* Invoice Line Item */}
@@ -938,7 +983,7 @@ export function InvoiceMatchingInterface({
                                     </p>
                                   </div>
                                 )}
-                                
+
                                 {/* Standard Confidence Badge for non-AI matches */}
                                 {match.matchType !== 'suggested' && (
                                   <div className="flex items-center justify-between">
@@ -946,18 +991,23 @@ export function InvoiceMatchingInterface({
                                       className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getConfidenceColor(match)}`}
                                     >
                                       {getMatchIcon(match)}
-                                      {getConfidenceLabel(match)}{match.matchType !== 'existing' && match.matchType !== 'unmatched' && ` (${Math.round(match.confidence * 100)}%)`}
+                                      {getConfidenceLabel(match)}
+                                      {match.matchType !== 'existing' &&
+                                        match.matchType !== 'unmatched' &&
+                                        ` (${Math.round(match.confidence * 100)}%)`}
                                     </div>
                                     <span className="text-xs text-gray-500">{match.reason}</span>
                                   </div>
                                 )}
 
                                 {/* Suggested Estimate Match */}
-                                <div className={`border rounded p-3 ${
-                                  match.matchType === 'suggested' 
-                                    ? 'bg-white border-green-300 shadow-md' 
-                                    : 'bg-white border-gray-200'
-                                }`}>
+                                <div
+                                  className={`border rounded p-3 ${
+                                    match.matchType === 'suggested'
+                                      ? 'bg-white border-green-300 shadow-md'
+                                      : 'bg-white border-gray-200'
+                                  }`}
+                                >
                                   <div className="flex items-center justify-between">
                                     <div className="flex-1">
                                       <p className="text-sm font-medium text-gray-900">
@@ -992,15 +1042,16 @@ export function InvoiceMatchingInterface({
                                         }}
                                         className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                                       />
-                                      <label className={`text-sm font-medium ${
-                                        match.matchType === 'suggested'
-                                          ? 'text-green-700'
-                                          : 'text-gray-700'
-                                      }`}>
-                                        {match.matchType === 'suggested' 
-                                          ? '✅ Accept AI Match' 
-                                          : 'Accept Match'
-                                        }
+                                      <label
+                                        className={`text-sm font-medium ${
+                                          match.matchType === 'suggested'
+                                            ? 'text-green-700'
+                                            : 'text-gray-700'
+                                        }`}
+                                      >
+                                        {match.matchType === 'suggested'
+                                          ? '✅ Accept AI Match'
+                                          : 'Accept Match'}
                                       </label>
                                     </div>
                                   </div>
@@ -1071,10 +1122,11 @@ export function InvoiceMatchingInterface({
                                           >
                                             ➕ <strong>Create New Estimate Item</strong>
                                             <div className="text-green-700 mt-1">
-                                              Add "{lineItem.description}" as a new line item to project estimates
+                                              Add "{lineItem.description}" as a new line item to
+                                              project estimates
                                             </div>
                                           </button>
-                                          
+
                                           <button
                                             onClick={() => handleCreateNewTrade(lineItem)}
                                             className="w-full text-left px-3 py-2 bg-blue-100 hover:bg-blue-200 border border-blue-300 rounded text-xs font-medium text-blue-800 transition-colors"

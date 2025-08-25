@@ -93,7 +93,11 @@ export function SupplierManagement() {
   }
 
   const handleDeleteSupplier = async (supplier: Supplier) => {
-    if (!confirm(`Are you sure you want to delete supplier "${supplier.name}"? This will also delete all associated invoice uploads.`)) {
+    if (
+      !confirm(
+        `Are you sure you want to delete supplier "${supplier.name}"? This will also delete all associated invoice uploads.`
+      )
+    ) {
       return
     }
 
@@ -191,8 +195,8 @@ export function SupplierManagement() {
         <div>
           <h2 className="text-lg font-semibold text-gray-900 mb-2">Supplier Portal Access</h2>
           <p className="text-sm text-gray-600">
-            Manage email addresses that can upload invoices via the supplier portal. 
-            Suppliers and subcontractors can access the portal using only their approved email address.
+            Manage email addresses that can upload invoices via the supplier portal. Suppliers and
+            subcontractors can access the portal using only their approved email address.
           </p>
         </div>
         <Button onClick={handleCreateSupplier} className="flex items-center gap-2">
@@ -208,12 +212,14 @@ export function SupplierManagement() {
           <div>
             <h3 className="text-sm font-medium text-blue-900 mb-1">Portal Access</h3>
             <p className="text-sm text-blue-700 mb-2">
-              Share this link with approved suppliers: <code className="bg-blue-100 px-2 py-1 rounded text-xs">
+              Share this link with approved suppliers:{' '}
+              <code className="bg-blue-100 px-2 py-1 rounded text-xs">
                 {typeof window !== 'undefined' ? `${window.location.origin}/portal` : '/portal'}
               </code>
             </p>
             <p className="text-xs text-blue-600">
-              Only suppliers with approved email addresses can access the portal and upload invoices.
+              Only suppliers with approved email addresses can access the portal and upload
+              invoices.
             </p>
           </div>
         </div>
@@ -274,18 +280,10 @@ export function SupplierManagement() {
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleToggleActive(supplier)}
-                  >
+                  <Button variant="outline" size="sm" onClick={() => handleToggleActive(supplier)}>
                     {supplier.isActive ? 'Deactivate' : 'Activate'}
                   </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleEditSupplier(supplier)}
-                  >
+                  <Button variant="outline" size="sm" onClick={() => handleEditSupplier(supplier)}>
                     <PencilIcon className="h-4 w-4" />
                   </Button>
                   <Button
@@ -312,9 +310,7 @@ export function SupplierManagement() {
       >
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Email Address
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
             <input
               type="email"
               required
@@ -343,12 +339,15 @@ export function SupplierManagement() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Type
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Type</label>
             <select
               value={formData.type}
-              onChange={e => setFormData(prev => ({ ...prev, type: e.target.value as 'SUPPLIER' | 'SUBCONTRACTOR' }))}
+              onChange={e =>
+                setFormData(prev => ({
+                  ...prev,
+                  type: e.target.value as 'SUPPLIER' | 'SUBCONTRACTOR',
+                }))
+              }
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="SUPPLIER">Supplier</option>

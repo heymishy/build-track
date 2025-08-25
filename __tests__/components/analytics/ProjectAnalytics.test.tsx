@@ -69,7 +69,7 @@ const mockAnalyticsData = {
   ],
   cashFlow: {
     projectedInflow: [
-      { month: '2024-07', amount: 15000 },
+      { month: '2024-07', amount: 17000 },
       { month: '2024-08', amount: 20000 },
       { month: '2024-09', amount: 12000 },
       { month: '2024-10', amount: 8000 },
@@ -92,7 +92,7 @@ const mockAnalyticsData = {
   trades: [
     { name: 'Foundation', budgeted: 25000, spent: 24000, variance: 1000 },
     { name: 'Framing', budgeted: 35000, spent: 21000, variance: 14000 },
-    { name: 'Electrical', budgeted: 15000, spent: 0, variance: 15000 },
+    { name: 'Electrical', budgeted: 16000, spent: 0, variance: 16000 },
     { name: 'Plumbing', budgeted: 12000, spent: 0, variance: 12000 },
   ],
 }
@@ -110,9 +110,8 @@ describe('ProjectAnalytics', () => {
     it('should render analytics dashboard', async () => {
       render(<ProjectAnalytics project={mockProject} />)
 
-      expect(screen.getByText('Project Analytics')).toBeInTheDocument()
-      
       await waitFor(() => {
+        expect(screen.getByText('Project Analytics')).toBeInTheDocument()
         expect(screen.getByText('Financial Overview')).toBeInTheDocument()
         expect(screen.getByText('Spending Trends')).toBeInTheDocument()
         expect(screen.getByText('Key Performance Indicators')).toBeInTheDocument()
@@ -175,7 +174,7 @@ describe('ProjectAnalytics', () => {
         expect(screen.getByText('Framing')).toBeInTheDocument()
         expect(screen.getByText('Electrical')).toBeInTheDocument()
         expect(screen.getByText('Plumbing')).toBeInTheDocument()
-        
+
         expect(screen.getByText('$25,000')).toBeInTheDocument() // Foundation budget
         expect(screen.getByText('$24,000')).toBeInTheDocument() // Foundation spent
         expect(screen.getByText('$35,000')).toBeInTheDocument() // Framing budget
@@ -200,8 +199,12 @@ describe('ProjectAnalytics', () => {
       render(<ProjectAnalytics project={mockProject} />)
 
       await waitFor(() => {
-        expect(screen.getByText(/budget utilization is approaching 50% threshold/i)).toBeInTheDocument()
-        expect(screen.getByText(/milestone.*foundation complete.*ahead of schedule/i)).toBeInTheDocument()
+        expect(
+          screen.getByText(/budget utilization is approaching 50% threshold/i)
+        ).toBeInTheDocument()
+        expect(
+          screen.getByText(/milestone.*foundation complete.*ahead of schedule/i)
+        ).toBeInTheDocument()
       })
     })
 
@@ -222,9 +225,9 @@ describe('ProjectAnalytics', () => {
 
       await waitFor(() => {
         expect(screen.getByText('Cash Flow Projection')).toBeInTheDocument()
-        
+
         // Should show projected inflow/outflow amounts
-        expect(screen.getByText('$15,000')).toBeInTheDocument() // July inflow
+        expect(screen.getByText('$17,000')).toBeInTheDocument() // July inflow
         expect(screen.getByText('$18,000')).toBeInTheDocument() // July outflow
       })
     })

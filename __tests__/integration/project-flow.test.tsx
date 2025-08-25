@@ -36,9 +36,9 @@ jest.mock('@/services/data-service', () => ({
       create: mockCreateProject,
       update: mockUpdateProject,
       delete: mockDeleteProject,
-      getById: jest.fn()
-    }
-  }
+      getById: jest.fn(),
+    },
+  },
 }))
 
 // Mock auth context
@@ -47,24 +47,22 @@ const mockAuthContext = {
     id: '1',
     email: 'test@example.com',
     name: 'Test User',
-    role: 'USER' as const
+    role: 'USER' as const,
   },
   isAuthenticated: true,
   login: jest.fn(),
   logout: jest.fn(),
   loading: false,
-  error: null
+  error: null,
 }
 
 jest.mock('@/hooks/useAuth', () => ({
-  useAuth: () => mockAuthContext
+  useAuth: () => mockAuthContext,
 }))
 
 const TestWrapper = ({ children }: { children: React.ReactNode }) => (
   <AuthProvider>
-    <ProjectsProvider>
-      {children}
-    </ProjectsProvider>
+    <ProjectsProvider>{children}</ProjectsProvider>
   </AuthProvider>
 )
 
@@ -79,7 +77,7 @@ describe('Project Management Integration Flow', () => {
       startDate: new Date('2024-01-01'),
       endDate: new Date('2024-12-31'),
       createdAt: new Date('2024-01-01'),
-      updatedAt: new Date('2024-01-01')
+      updatedAt: new Date('2024-01-01'),
     },
     {
       id: '2',
@@ -90,8 +88,8 @@ describe('Project Management Integration Flow', () => {
       startDate: new Date('2024-02-01'),
       endDate: new Date('2024-11-30'),
       createdAt: new Date('2024-01-15'),
-      updatedAt: new Date('2024-01-15')
-    }
+      updatedAt: new Date('2024-01-15'),
+    },
   ]
 
   beforeEach(() => {
@@ -103,8 +101,8 @@ describe('Project Management Integration Flow', () => {
         page: 1,
         limit: 20,
         total: 2,
-        hasMore: false
-      }
+        hasMore: false,
+      },
     })
   })
 
@@ -129,7 +127,7 @@ describe('Project Management Integration Flow', () => {
     it('handles API errors gracefully', async () => {
       mockFetchProjects.mockResolvedValue({
         success: false,
-        error: 'Failed to fetch projects'
+        error: 'Failed to fetch projects',
       })
 
       render(
@@ -167,12 +165,12 @@ describe('Project Management Integration Flow', () => {
         startDate: new Date('2024-03-01'),
         endDate: new Date('2024-12-31'),
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       }
 
       mockCreateProject.mockResolvedValue({
         success: true,
-        data: newProject
+        data: newProject,
       })
 
       render(
@@ -193,7 +191,7 @@ describe('Project Management Integration Flow', () => {
       // Fill form
       const nameInput = screen.getByLabelText(/project name/i)
       const budgetInput = screen.getByLabelText(/budget/i)
-      
+
       fireEvent.change(nameInput, { target: { value: 'New Test Project' } })
       fireEvent.change(budgetInput, { target: { value: '100000' } })
 
@@ -206,7 +204,7 @@ describe('Project Management Integration Flow', () => {
           name: 'New Test Project',
           totalBudget: 100000,
           currency: 'USD',
-          status: 'PLANNING'
+          status: 'PLANNING',
         })
       })
 
@@ -217,7 +215,7 @@ describe('Project Management Integration Flow', () => {
     it('handles creation errors with user feedback', async () => {
       mockCreateProject.mockResolvedValue({
         success: false,
-        error: 'Project name already exists'
+        error: 'Project name already exists',
       })
 
       render(
@@ -250,12 +248,12 @@ describe('Project Management Integration Flow', () => {
       const updatedProject = {
         ...mockProjects[0],
         name: 'Updated Project Name',
-        totalBudget: 60000
+        totalBudget: 60000,
       }
 
       mockUpdateProject.mockResolvedValue({
         success: true,
-        data: updatedProject
+        data: updatedProject,
       })
 
       render(
@@ -286,7 +284,7 @@ describe('Project Management Integration Flow', () => {
       await waitFor(() => {
         expect(mockUpdateProject).toHaveBeenCalledWith('1', {
           name: 'Updated Project Name',
-          totalBudget: 60000
+          totalBudget: 60000,
         })
       })
 
@@ -298,7 +296,7 @@ describe('Project Management Integration Flow', () => {
   describe('Project Deletion Flow', () => {
     it('deletes project with confirmation', async () => {
       mockDeleteProject.mockResolvedValue({
-        success: true
+        success: true,
       })
 
       render(
@@ -353,12 +351,12 @@ describe('Project Management Integration Flow', () => {
     it('updates project status and shows visual changes', async () => {
       const updatedProject = {
         ...mockProjects[0],
-        status: 'COMPLETED' as const
+        status: 'COMPLETED' as const,
       }
 
       mockUpdateProject.mockResolvedValue({
         success: true,
-        data: updatedProject
+        data: updatedProject,
       })
 
       render(
@@ -380,7 +378,7 @@ describe('Project Management Integration Flow', () => {
 
       await waitFor(() => {
         expect(mockUpdateProject).toHaveBeenCalledWith('1', {
-          status: 'COMPLETED'
+          status: 'COMPLETED',
         })
       })
 
@@ -407,7 +405,7 @@ describe('Project Management Integration Flow', () => {
       await waitFor(() => {
         expect(mockFetchProjects).toHaveBeenCalledWith(
           expect.objectContaining({
-            search: 'Project 1'
+            search: 'Project 1',
           })
         )
       })
@@ -430,7 +428,7 @@ describe('Project Management Integration Flow', () => {
       await waitFor(() => {
         expect(mockFetchProjects).toHaveBeenCalledWith(
           expect.objectContaining({
-            status: ['ACTIVE']
+            status: ['ACTIVE'],
           })
         )
       })

@@ -95,7 +95,7 @@ async function POST(
     if (body.type === 'trade') {
       // Create new trade
       const { name, description } = body
-      
+
       if (!name) {
         return NextResponse.json(
           { success: false, error: 'Trade name is required' },

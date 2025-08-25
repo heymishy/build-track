@@ -3,11 +3,12 @@
 import { useState, useRef, useEffect, Suspense } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { 
-  CameraIcon
-} from '@heroicons/react/24/outline'
+import { CameraIcon } from '@heroicons/react/24/outline'
 import { ParsedInvoice, MultiInvoiceResult } from '@/lib/pdf-parser'
-import { PhaseBasedNavigation, PhaseNavigationProvider } from '@/components/navigation/PhaseBasedNavigation'
+import {
+  PhaseBasedNavigation,
+  PhaseNavigationProvider,
+} from '@/components/navigation/PhaseBasedNavigation'
 import { PhaseBasedContent } from '@/components/dashboard/PhaseBasedContent'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
@@ -18,7 +19,7 @@ function DashboardContent() {
   const searchParams = useSearchParams()
   const [projects, setProjects] = useState([])
   const [loading, setLoading] = useState(true)
-  
+
   // Get active view from URL params or default to all
   const [activeView, setActiveView] = useState(() => {
     try {
@@ -39,17 +40,17 @@ function DashboardContent() {
       router.push('/login')
       return
     }
-    
+
     // Load projects
     loadProjects()
   }, [isAuthenticated, router])
-  
+
   const loadProjects = async () => {
     try {
       setLoading(true)
       const response = await fetch('/api/projects')
       const result = await response.json()
-      
+
       if (result.success) {
         setProjects(result.projects || [])
       }
@@ -103,7 +104,7 @@ function DashboardContent() {
             type: 'success',
             message: `Successfully processed ${result.data.processed} invoice${result.data.processed === 1 ? '' : 's'} from ${file.name}`,
           })
-          
+
           // Reload projects after successful upload
           await loadProjects()
         } else {
@@ -135,7 +136,7 @@ function DashboardContent() {
   const handleDrop = async (event: React.DragEvent) => {
     event.preventDefault()
     setIsDragging(false)
-    
+
     const files = event.dataTransfer.files
     await processFiles(files)
   }
@@ -152,7 +153,7 @@ function DashboardContent() {
   // Filter projects based on active view
   const getFilteredProjects = () => {
     if (activeView === 'all') return projects
-    
+
     switch (activeView) {
       case 'planning':
         return projects.filter(p => p.status === 'PLANNING')
@@ -172,7 +173,7 @@ function DashboardContent() {
       </div>
     )
   }
-  
+
   const filteredProjects = getFilteredProjects()
 
   return (
@@ -203,7 +204,7 @@ function DashboardContent() {
         )}
 
         {/* Phase-Based Navigation */}
-        <PhaseBasedNavigation 
+        <PhaseBasedNavigation
           projects={projects}
           activeView={activeView}
           onViewChange={handleViewChange}
@@ -214,25 +215,24 @@ function DashboardContent() {
         <div className="max-w-7xl mx-auto px-6 py-6">
           {/* Quick Upload Section */}
           <Card className="mb-6">
-            <Card.Body 
+            <Card.Body
               className={`p-8 text-center border-2 border-dashed rounded-lg transition-colors ${
-                isDragging 
-                  ? 'border-blue-400 bg-blue-50' 
-                  : 'border-gray-300 hover:border-gray-400'
+                isDragging ? 'border-blue-400 bg-blue-50' : 'border-gray-300 hover:border-gray-400'
               }`}
               onDrop={handleDrop}
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
             >
-              <CameraIcon className={`mx-auto h-12 w-12 mb-4 ${isDragging ? 'text-blue-500' : 'text-gray-400'}`} />
+              <CameraIcon
+                className={`mx-auto h-12 w-12 mb-4 ${isDragging ? 'text-blue-500' : 'text-gray-400'}`}
+              />
               <h3 className="text-lg font-medium text-gray-900 mb-2">
                 {isDragging ? 'Drop files here' : 'Quick Invoice Upload'}
               </h3>
               <p className="text-gray-500 mb-4">
-                {isDragging 
+                {isDragging
                   ? 'Release to upload PDF files'
-                  : 'Drag and drop PDF files here, or click to select files'
-                }
+                  : 'Drag and drop PDF files here, or click to select files'}
               </p>
               <input
                 ref={fileInputRef}
@@ -257,8 +257,8 @@ function DashboardContent() {
           </Card>
 
           {/* Phase-Based Content */}
-          <PhaseBasedContent 
-            activeView={activeView} 
+          <PhaseBasedContent
+            activeView={activeView}
             projects={filteredProjects}
             onProjectsChange={loadProjects}
           />
@@ -270,11 +270,13 @@ function DashboardContent() {
 
 export default function Dashboard() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+        </div>
+      }
+    >
       <DashboardContent />
     </Suspense>
   )

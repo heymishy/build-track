@@ -11,35 +11,28 @@ async function GET(request: NextRequest, user: AuthUser) {
   try {
     // Only admins can manage suppliers
     if (user.role !== 'ADMIN') {
-      return NextResponse.json(
-        { success: false, error: 'Admin access required' },
-        { status: 403 }
-      )
+      return NextResponse.json({ success: false, error: 'Admin access required' }, { status: 403 })
     }
 
     const suppliers = await prisma.supplierAccess.findMany({
       include: {
         creator: {
-          select: { id: true, name: true, email: true }
+          select: { id: true, name: true, email: true },
         },
         _count: {
-          select: { invoiceUploads: true }
-        }
+          select: { invoiceUploads: true },
+        },
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
     })
 
     return NextResponse.json({
       success: true,
-      suppliers
+      suppliers,
     })
-
   } catch (error) {
     console.error('Suppliers GET API error:', error)
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 })
   }
 }
 
@@ -47,10 +40,7 @@ async function POST(request: NextRequest, user: AuthUser) {
   try {
     // Only admins can manage suppliers
     if (user.role !== 'ADMIN') {
-      return NextResponse.json(
-        { success: false, error: 'Admin access required' },
-        { status: 403 }
-      )
+      return NextResponse.json({ success: false, error: 'Admin access required' }, { status: 403 })
     }
 
     const body = await request.json()
@@ -72,7 +62,7 @@ async function POST(request: NextRequest, user: AuthUser) {
 
     // Check if email already exists
     const existing = await prisma.supplierAccess.findUnique({
-      where: { email }
+      where: { email },
     })
 
     if (existing) {
@@ -91,25 +81,21 @@ async function POST(request: NextRequest, user: AuthUser) {
       },
       include: {
         creator: {
-          select: { id: true, name: true, email: true }
+          select: { id: true, name: true, email: true },
         },
         _count: {
-          select: { invoiceUploads: true }
-        }
-      }
+          select: { invoiceUploads: true },
+        },
+      },
     })
 
     return NextResponse.json({
       success: true,
-      supplier
+      supplier,
     })
-
   } catch (error) {
     console.error('Suppliers POST API error:', error)
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 })
   }
 }
 

@@ -17,40 +17,27 @@ const paddingClasses = {
   none: '',
   sm: 'p-4',
   md: 'p-6',
-  lg: 'p-8'
+  lg: 'p-8',
 }
 
 export const Card = forwardRef<HTMLDivElement, CardProps>(
-  ({
-    variant = 'base',
-    padding = 'md',
-    header,
-    footer,
-    children,
-    className = '',
-    ...props
-  }, ref) => {
+  (
+    { variant = 'base', padding = 'md', header, footer, children, className = '', ...props },
+    ref
+  ) => {
     const classes = utilities.cn(
       componentVariants.card[variant],
       paddingClasses[padding],
       className
     )
-    
+
     return (
       <div ref={ref} className={classes} data-testid="card" {...props}>
-        {header && (
-          <div className="border-b border-gray-200 pb-4 mb-4">
-            {header}
-          </div>
-        )}
-        
+        {header && <div className="border-b border-gray-200 pb-4 mb-4">{header}</div>}
+
         {children}
-        
-        {footer && (
-          <div className="border-t border-gray-200 pt-4 mt-4">
-            {footer}
-          </div>
-        )}
+
+        {footer && <div className="border-t border-gray-200 pt-4 mt-4">{footer}</div>}
       </div>
     )
   }
@@ -62,9 +49,9 @@ Card.displayName = 'Card'
 const CardHeader = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
   ({ className = '', children, ...props }, ref) => {
     return (
-      <div 
-        ref={ref} 
-        className={utilities.cn('border-b border-gray-200 pb-4 mb-4', className)} 
+      <div
+        ref={ref}
+        className={utilities.cn('border-b border-gray-200 pb-4 mb-4', className)}
         {...props}
       >
         {children}
@@ -77,11 +64,7 @@ CardHeader.displayName = 'Card.Header'
 const CardBody = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
   ({ className = '', children, ...props }, ref) => {
     return (
-      <div 
-        ref={ref} 
-        className={utilities.cn('', className)} 
-        {...props}
-      >
+      <div ref={ref} className={utilities.cn('', className)} {...props}>
         {children}
       </div>
     )
@@ -92,9 +75,9 @@ CardBody.displayName = 'Card.Body'
 const CardFooter = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
   ({ className = '', children, ...props }, ref) => {
     return (
-      <div 
-        ref={ref} 
-        className={utilities.cn('border-t border-gray-200 pt-4 mt-4', className)} 
+      <div
+        ref={ref}
+        className={utilities.cn('border-t border-gray-200 pt-4 mt-4', className)}
         {...props}
       >
         {children}

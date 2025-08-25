@@ -46,12 +46,16 @@ function generateCategorizationPrompt(
   tradeCategories: TradeCategory[]
 ): string {
   const tradeList = tradeCategories
-    .map(trade => `- ${trade.name} (ID: ${trade.id})${trade.description ? `: ${trade.description}` : ''}`)
+    .map(
+      trade =>
+        `- ${trade.name} (ID: ${trade.id})${trade.description ? `: ${trade.description}` : ''}`
+    )
     .join('\n')
 
   const itemsList = lineItems
-    .map((item, index) => 
-      `${index + 1}. "${item.description}" (Supplier: ${item.supplierName}, Amount: $${item.totalPrice})`
+    .map(
+      (item, index) =>
+        `${index + 1}. "${item.description}" (Supplier: ${item.supplierName}, Amount: $${item.totalPrice})`
     )
     .join('\n')
 
@@ -103,7 +107,7 @@ Rules:
 function parseCategorizationResponse(response: string): CategorizationResult[] {
   try {
     const parsed = JSON.parse(response)
-    
+
     if (!parsed.categorizations || !Array.isArray(parsed.categorizations)) {
       throw new Error('Invalid response format: missing categorizations array')
     }
@@ -113,9 +117,9 @@ function parseCategorizationResponse(response: string): CategorizationResult[] {
       tradeName: cat.tradeName || 'Unknown',
       confidence: Math.max(0, Math.min(1, cat.confidence || 0)),
       reasoning: cat.reasoning || 'No reasoning provided',
-      category: ['MATERIAL', 'LABOR', 'EQUIPMENT', 'OTHER'].includes(cat.category) 
-        ? cat.category 
-        : 'OTHER'
+      category: ['MATERIAL', 'LABOR', 'EQUIPMENT', 'OTHER'].includes(cat.category)
+        ? cat.category
+        : 'OTHER',
     }))
   } catch (error) {
     console.error('Failed to parse categorization response:', error)
@@ -136,7 +140,7 @@ export async function categorizeInvoiceItems(
       success: true,
       results: [],
       averageConfidence: 0,
-      cost: 0
+      cost: 0,
     }
   }
 
@@ -146,13 +150,13 @@ export async function categorizeInvoiceItems(
       results: [],
       averageConfidence: 0,
       cost: 0,
-      error: 'No trade categories available for matching'
+      error: 'No trade categories available for matching',
     }
   }
 
   try {
     const prompt = generateCategorizationPrompt(lineItems, tradeCategories)
-    
+
     let parseResult
     switch (provider) {
       case 'openai':
@@ -164,14 +168,14 @@ export async function categorizeInvoiceItems(
             apiKey: process.env.GEMINI_API_KEY || '',
             model: 'gemini-1.5-flash',
             timeout: 30000,
-            maxRetries: 2
+            maxRetries: 2,
           })
           // Use the parser for simple text generation rather than invoice parsing
           const response = await parser.parseInvoice({ text: prompt })
           parseResult = {
             success: response.success,
             data: response.metadata?.reasoning || '',
-            cost: response.costEstimate
+            cost: response.costEstimate,
           }
         } catch (error) {
           parseResult = { success: false, cost: 0, error: 'Gemini API not configured' }
@@ -183,14 +187,14 @@ export async function categorizeInvoiceItems(
             apiKey: process.env.ANTHROPIC_API_KEY || '',
             model: 'claude-3-sonnet-20240229',
             timeout: 30000,
-            maxRetries: 2
+            maxRetries: 2,
           })
           // Use the parser for simple text generation rather than invoice parsing
           const response = await parser.parseInvoice({ text: prompt })
           parseResult = {
             success: response.success,
             data: response.metadata?.reasoning || '',
-            cost: response.costEstimate
+            cost: response.costEstimate,
           }
         } catch (error) {
           parseResult = { success: false, cost: 0, error: 'Anthropic API not configured' }
@@ -203,28 +207,26 @@ export async function categorizeInvoiceItems(
         results: [],
         averageConfidence: 0,
         cost: parseResult.cost || 0,
-        error: parseResult.error || 'Failed to get LLM response'
+        error: parseResult.error || 'Failed to get LLM response',
       }
     }
 
     const results = parseCategorizationResponse(parseResult.data)
-    
+
     // Validate we have results for all items
     if (results.length !== lineItems.length) {
       console.warn(`Expected ${lineItems.length} results, got ${results.length}`)
     }
 
-    const averageConfidence = results.length > 0 
-      ? results.reduce((sum, r) => sum + r.confidence, 0) / results.length 
-      : 0
+    const averageConfidence =
+      results.length > 0 ? results.reduce((sum, r) => sum + r.confidence, 0) / results.length : 0
 
     return {
       success: true,
       results,
       averageConfidence,
-      cost: parseResult.cost || 0
+      cost: parseResult.cost || 0,
     }
-
   } catch (error) {
     console.error('Invoice categorization error:', error)
     return {
@@ -232,7 +234,7 @@ export async function categorizeInvoiceItems(
       results: [],
       averageConfidence: 0,
       cost: 0,
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: error instanceof Error ? error.message : 'Unknown error',
     }
   }
 }
@@ -244,21 +246,41 @@ export function generateFallbackCategorization(
   lineItems: InvoiceLineItemData[],
   tradeCategories: TradeCategory[]
 ): CategorizationResult[] {
-  const materialKeywords = ['material', 'supply', 'lumber', 'steel', 'concrete', 'brick', 'tile', 'paint', 'fixtures']
+  const materialKeywords = [
+    'material',
+    'supply',
+    'lumber',
+    'steel',
+    'concrete',
+    'brick',
+    'tile',
+    'paint',
+    'fixtures',
+  ]
   const laborKeywords = ['labor', 'work', 'service', 'installation', 'hours', 'hourly', 'wages']
   const equipmentKeywords = ['rental', 'equipment', 'tool', 'machinery', 'hire', 'lease']
 
   return lineItems.map(item => {
     const description = item.description.toLowerCase()
     const supplierName = item.supplierName.toLowerCase()
-    
+
     // Determine category based on keywords
     let category: 'MATERIAL' | 'LABOR' | 'EQUIPMENT' | 'OTHER' = 'OTHER'
-    if (materialKeywords.some(keyword => description.includes(keyword) || supplierName.includes(keyword))) {
+    if (
+      materialKeywords.some(
+        keyword => description.includes(keyword) || supplierName.includes(keyword)
+      )
+    ) {
       category = 'MATERIAL'
-    } else if (laborKeywords.some(keyword => description.includes(keyword) || supplierName.includes(keyword))) {
+    } else if (
+      laborKeywords.some(keyword => description.includes(keyword) || supplierName.includes(keyword))
+    ) {
       category = 'LABOR'
-    } else if (equipmentKeywords.some(keyword => description.includes(keyword) || supplierName.includes(keyword))) {
+    } else if (
+      equipmentKeywords.some(
+        keyword => description.includes(keyword) || supplierName.includes(keyword)
+      )
+    ) {
       category = 'EQUIPMENT'
     }
 
@@ -269,19 +291,21 @@ export function generateFallbackCategorization(
     for (const trade of tradeCategories) {
       const tradeName = trade.name.toLowerCase()
       let score = 0
-      
+
       // Check if trade name appears in description or supplier
       if (description.includes(tradeName) || supplierName.includes(tradeName)) {
         score += 5
       }
-      
+
       // Check keywords if available
       if (trade.keywords) {
-        score += trade.keywords.filter(keyword => 
-          description.includes(keyword.toLowerCase()) || supplierName.includes(keyword.toLowerCase())
+        score += trade.keywords.filter(
+          keyword =>
+            description.includes(keyword.toLowerCase()) ||
+            supplierName.includes(keyword.toLowerCase())
         ).length
       }
-      
+
       if (score > bestScore) {
         bestScore = score
         bestMatch = trade
@@ -293,7 +317,7 @@ export function generateFallbackCategorization(
       tradeName: bestMatch.name,
       confidence: Math.min(0.7, bestScore * 0.15), // Lower confidence for keyword matching
       reasoning: `Keyword-based matching (score: ${bestScore})`,
-      category
+      category,
     }
   })
 }

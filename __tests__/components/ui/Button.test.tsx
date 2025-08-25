@@ -45,16 +45,16 @@ describe('Button Component', () => {
 
   it('renders with icon in correct position', () => {
     const TestIcon = () => <span data-testid="test-icon">🔥</span>
-    
+
     const { rerender } = render(
       <Button icon={<TestIcon />} iconPosition="left">
         With Icon
       </Button>
     )
-    
+
     const icon = screen.getByTestId('test-icon')
     const button = screen.getByRole('button')
-    
+
     expect(icon).toBeInTheDocument()
     expect(icon.parentElement).toHaveClass('mr-2')
 
@@ -63,7 +63,7 @@ describe('Button Component', () => {
         With Icon
       </Button>
     )
-    
+
     expect(icon.parentElement).toHaveClass('ml-2')
   })
 
@@ -76,10 +76,10 @@ describe('Button Component', () => {
   it('forwards click events', () => {
     const handleClick = jest.fn()
     render(<Button onClick={handleClick}>Clickable</Button>)
-    
+
     const button = screen.getByRole('button')
     fireEvent.click(button)
-    
+
     expect(handleClick).toHaveBeenCalledTimes(1)
   })
 
@@ -103,7 +103,11 @@ describe('Button Component', () => {
   })
 
   it('forwards other HTML attributes', () => {
-    render(<Button data-testid="test-button" title="Test Title">Test</Button>)
+    render(
+      <Button data-testid="test-button" title="Test Title">
+        Test
+      </Button>
+    )
     const button = screen.getByTestId('test-button')
     expect(button).toHaveAttribute('title', 'Test Title')
   })

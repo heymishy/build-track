@@ -12,11 +12,11 @@ import { MilestoneTracker } from '@/components/milestones/MilestoneTracker'
 import { DocumentManager } from '@/components/documents/DocumentManager'
 import { ProjectAnalytics } from '@/components/analytics/ProjectAnalytics'
 import { DashboardOverview } from '@/components/dashboard/DashboardOverview'
-import { 
+import {
   DocumentCheckIcon,
   ClockIcon,
   CheckCircleIcon,
-  BuildingOffice2Icon 
+  BuildingOffice2Icon,
 } from '@heroicons/react/24/outline'
 
 interface Project {
@@ -33,11 +33,15 @@ interface PhaseBasedContentProps {
   onProjectsChange: () => void
 }
 
-export function PhaseBasedContent({ activeView, projects, onProjectsChange }: PhaseBasedContentProps) {
+export function PhaseBasedContent({
+  activeView,
+  projects,
+  onProjectsChange,
+}: PhaseBasedContentProps) {
   // Use the phase navigation context if available
   const phaseContext = React.useContext(React.createContext(null))
   const filteredProjects = phaseContext?.filteredProjects || projects
-  
+
   const renderPhaseContent = () => {
     switch (activeView) {
       case 'all':
@@ -62,8 +66,8 @@ export function PhaseBasedContent({ activeView, projects, onProjectsChange }: Ph
                 <h2 className="text-lg font-semibold text-gray-900">All Projects</h2>
               </Card.Header>
               <Card.Body>
-                <ProjectList 
-                  projects={filteredProjects} 
+                <ProjectList
+                  projects={filteredProjects}
                   emptyMessage="No projects found. Create your first project to get started."
                 />
               </Card.Body>
@@ -101,7 +105,10 @@ export function PhaseBasedContent({ activeView, projects, onProjectsChange }: Ph
                   </div>
                   <div className="bg-blue-50 p-4 rounded-lg">
                     <div className="text-2xl font-bold text-blue-600">
-                      {Math.round(projects.reduce((sum, p) => sum + (p.totalBudget || 0), 0) / (projects.length || 1))}
+                      {Math.round(
+                        projects.reduce((sum, p) => sum + (p.totalBudget || 0), 0) /
+                          (projects.length || 1)
+                      )}
                     </div>
                     <div className="text-sm text-blue-700">Avg Project Value</div>
                   </div>
@@ -115,19 +122,15 @@ export function PhaseBasedContent({ activeView, projects, onProjectsChange }: Ph
                 <h3 className="text-lg font-semibold text-gray-900">Projects in Planning</h3>
               </Card.Header>
               <Card.Body>
-                <ProjectList 
-                  projects={filteredProjects} 
+                <ProjectList
+                  projects={filteredProjects}
                   emptyMessage="No projects in planning phase"
                 />
               </Card.Body>
             </Card>
 
             {/* Document Management for Planning Phase */}
-            <DocumentManager 
-              projectId={filteredProjects[0]?.id}
-              phase="PLANNING"
-              compact={true}
-            />
+            <DocumentManager projectId={filteredProjects[0]?.id} phase="PLANNING" compact={true} />
           </div>
         )
 
@@ -143,7 +146,9 @@ export function PhaseBasedContent({ activeView, projects, onProjectsChange }: Ph
                   </div>
                   <div>
                     <h2 className="text-xl font-semibold text-gray-900">Construction Phase</h2>
-                    <p className="text-gray-600">Active projects, progress tracking, and invoicing</p>
+                    <p className="text-gray-600">
+                      Active projects, progress tracking, and invoicing
+                    </p>
                   </div>
                 </div>
               </Card.Header>
@@ -170,35 +175,29 @@ export function PhaseBasedContent({ activeView, projects, onProjectsChange }: Ph
             {/* Construction Projects */}
             <Card>
               <Card.Header>
-                <h3 className="text-lg font-semibold text-gray-900">Active Construction Projects</h3>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Active Construction Projects
+                </h3>
               </Card.Header>
               <Card.Body>
-                <ProjectList 
-                  projects={filteredProjects} 
+                <ProjectList
+                  projects={filteredProjects}
                   emptyMessage="No projects in construction phase"
                 />
               </Card.Body>
             </Card>
 
             {/* Budget Tracking Summary */}
-            <BudgetTrackingWidget 
-              projectId={filteredProjects[0]?.id}
-              compact={true}
-            />
+            <BudgetTrackingWidget projectId={filteredProjects[0]?.id} compact={true} />
 
             {/* Milestone Progress */}
-            <MilestoneTracker 
-              projectId={filteredProjects[0]?.id}
-              compact={true}
-            />
+            <MilestoneTracker projectId={filteredProjects[0]?.id} compact={true} />
 
             {/* Enhanced Invoice Management for Construction Phase */}
-            <ConstructionInvoiceManager 
-              projectId={filteredProjects[0]?.id} 
-            />
+            <ConstructionInvoiceManager projectId={filteredProjects[0]?.id} />
 
             {/* Document Management for Construction Phase */}
-            <DocumentManager 
+            <DocumentManager
               projectId={filteredProjects[0]?.id}
               phase="CONSTRUCTION"
               compact={true}
@@ -218,7 +217,9 @@ export function PhaseBasedContent({ activeView, projects, onProjectsChange }: Ph
                   </div>
                   <div>
                     <h2 className="text-xl font-semibold text-gray-900">Completion Phase</h2>
-                    <p className="text-gray-600">Final documentation, reports, and reconciliation</p>
+                    <p className="text-gray-600">
+                      Final documentation, reports, and reconciliation
+                    </p>
                   </div>
                 </div>
               </Card.Header>
@@ -248,10 +249,7 @@ export function PhaseBasedContent({ activeView, projects, onProjectsChange }: Ph
                 <h3 className="text-lg font-semibold text-gray-900">Completed Projects</h3>
               </Card.Header>
               <Card.Body>
-                <ProjectList 
-                  projects={filteredProjects} 
-                  emptyMessage="No completed projects yet"
-                />
+                <ProjectList projects={filteredProjects} emptyMessage="No completed projects yet" />
               </Card.Body>
             </Card>
 
@@ -266,7 +264,7 @@ export function PhaseBasedContent({ activeView, projects, onProjectsChange }: Ph
             </Card>
 
             {/* Document Management for Completion Phase */}
-            <DocumentManager 
+            <DocumentManager
               projectId={filteredProjects[0]?.id}
               phase="COMPLETION"
               compact={true}
@@ -287,9 +285,5 @@ export function PhaseBasedContent({ activeView, projects, onProjectsChange }: Ph
     }
   }
 
-  return (
-    <div className="space-y-6">
-      {renderPhaseContent()}
-    </div>
-  )
+  return <div className="space-y-6">{renderPhaseContent()}</div>
 }

@@ -7,10 +7,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { withAuth, AuthUser } from '@/lib/middleware'
 import { prisma } from '@/lib/prisma'
 
-async function POST(
-  request: NextRequest,
-  user: AuthUser
-) {
+async function POST(request: NextRequest, user: AuthUser) {
   try {
     const body = await request.json()
     const { projectId, fromStatus, toStatus, reason } = body

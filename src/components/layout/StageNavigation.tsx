@@ -29,7 +29,7 @@ const stages: Stage[] = [
     icon: DocumentCheckIcon,
     description: 'Create estimates, manage documents, prepare contracts',
     color: 'text-blue-600',
-    bgColor: 'bg-blue-50'
+    bgColor: 'bg-blue-50',
   },
   {
     key: 'IN_PROGRESS',
@@ -37,7 +37,7 @@ const stages: Stage[] = [
     icon: ClockIcon,
     description: 'Track progress, manage invoices, log work hours',
     color: 'text-orange-600',
-    bgColor: 'bg-orange-50'
+    bgColor: 'bg-orange-50',
   },
   {
     key: 'COMPLETED',
@@ -45,15 +45,15 @@ const stages: Stage[] = [
     icon: CheckCircleIcon,
     description: 'Final reconciliation, reports, document archival',
     color: 'text-green-600',
-    bgColor: 'bg-green-50'
-  }
+    bgColor: 'bg-green-50',
+  },
 ]
 
-export function StageNavigation({ 
-  currentStage, 
-  onStageChange, 
+export function StageNavigation({
+  currentStage,
+  onStageChange,
   showTransitionControls = false,
-  userCanTransition = false 
+  userCanTransition = false,
 }: StageNavigationProps) {
   const currentStageIndex = stages.findIndex(stage => stage.key === currentStage)
 
@@ -70,21 +70,21 @@ export function StageNavigation({
           container: 'bg-green-50 border-green-200',
           icon: 'text-green-600 bg-green-100',
           text: 'text-green-900',
-          badge: 'bg-green-100 text-green-800'
+          badge: 'bg-green-100 text-green-800',
         }
       case 'current':
         return {
           container: `${stage.bgColor} border-l-4 border-l-blue-500`,
           icon: `${stage.color} bg-white shadow-sm`,
           text: 'text-gray-900 font-medium',
-          badge: 'bg-blue-100 text-blue-800'
+          badge: 'bg-blue-100 text-blue-800',
         }
       default:
         return {
           container: 'bg-gray-50 border-gray-200',
           icon: 'text-gray-400 bg-gray-100',
           text: 'text-gray-500',
-          badge: 'bg-gray-100 text-gray-600'
+          badge: 'bg-gray-100 text-gray-600',
         }
     }
   }
@@ -121,36 +121,50 @@ export function StageNavigation({
           {stages.map((stage, index) => {
             const status = getStageStatus(stage, index)
             const isLast = index === stages.length - 1
-            
+
             return (
               <React.Fragment key={stage.key}>
                 <div className="flex items-center">
-                  <div className={`
+                  <div
+                    className={`
                     w-10 h-10 rounded-full flex items-center justify-center border-2 
-                    ${status === 'completed' ? 'bg-green-100 border-green-500' : 
-                      status === 'current' ? 'bg-blue-100 border-blue-500' : 
-                      'bg-gray-100 border-gray-300'}
-                  `}>
-                    <stage.icon className={`w-5 h-5 ${
-                      status === 'completed' ? 'text-green-600' : 
-                      status === 'current' ? 'text-blue-600' : 
-                      'text-gray-400'
-                    }`} />
+                    ${
+                      status === 'completed'
+                        ? 'bg-green-100 border-green-500'
+                        : status === 'current'
+                          ? 'bg-blue-100 border-blue-500'
+                          : 'bg-gray-100 border-gray-300'
+                    }
+                  `}
+                  >
+                    <stage.icon
+                      className={`w-5 h-5 ${
+                        status === 'completed'
+                          ? 'text-green-600'
+                          : status === 'current'
+                            ? 'text-blue-600'
+                            : 'text-gray-400'
+                      }`}
+                    />
                   </div>
                   <div className="ml-3 min-w-0 flex-1">
-                    <p className={`text-sm font-medium ${
-                      status === 'current' ? 'text-gray-900' : 'text-gray-600'
-                    }`}>
+                    <p
+                      className={`text-sm font-medium ${
+                        status === 'current' ? 'text-gray-900' : 'text-gray-600'
+                      }`}
+                    >
                       {stage.label}
                     </p>
                     <p className="text-xs text-gray-500">{stage.description}</p>
                   </div>
                 </div>
                 {!isLast && (
-                  <div className={`
+                  <div
+                    className={`
                     flex-shrink-0 w-12 h-px mx-4
                     ${status === 'completed' ? 'bg-green-300' : 'bg-gray-300'}
-                  `} />
+                  `}
+                  />
                 )}
               </React.Fragment>
             )
@@ -174,16 +188,12 @@ export function StageNavigation({
                 </div>
                 <div className="ml-4 flex-1">
                   <div className="flex items-center justify-between">
-                    <h3 className={`text-lg font-medium ${styles.text}`}>
-                      {stage.label}
-                    </h3>
+                    <h3 className={`text-lg font-medium ${styles.text}`}>{stage.label}</h3>
                     <Badge variant="secondary" className={styles.badge}>
                       Current Stage
                     </Badge>
                   </div>
-                  <p className="mt-1 text-sm text-gray-600">
-                    {stage.description}
-                  </p>
+                  <p className="mt-1 text-sm text-gray-600">{stage.description}</p>
                 </div>
               </div>
             </div>

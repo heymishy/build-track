@@ -13,12 +13,12 @@ import { CreateProjectModal } from '@/components/projects/CreateProjectModal'
 import { EditProjectModal } from '@/components/projects/EditProjectModal'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
-import { 
+import {
   PlusIcon,
   FolderIcon,
   ChartBarIcon,
   DocumentTextIcon,
-  ExclamationTriangleIcon
+  ExclamationTriangleIcon,
 } from '@heroicons/react/24/outline'
 
 interface Project {
@@ -63,7 +63,7 @@ export default function ProjectsPage() {
       const response = await fetch(
         `/api/projects?page=${page}&limit=${itemsPerPage}&sortBy=updatedAt&sortOrder=desc`,
         {
-          credentials: 'include'
+          credentials: 'include',
         }
       )
 
@@ -74,18 +74,17 @@ export default function ProjectsPage() {
       const data = await response.json()
       setProjects(data.projects)
       setTotalPages(Math.ceil(data.total / itemsPerPage))
-      
+
       // Calculate summary statistics
-      const activeCount = data.projects.filter((p: Project) => 
+      const activeCount = data.projects.filter((p: Project) =>
         ['PLANNING', 'IN_PROGRESS'].includes(p.status)
       ).length
-      
-      const completedCount = data.projects.filter((p: Project) => 
-        p.status === 'COMPLETED'
-      ).length
-      
-      const totalBudget = data.projects.reduce((sum: number, p: Project) => 
-        sum + Number(p.totalBudget), 0
+
+      const completedCount = data.projects.filter((p: Project) => p.status === 'COMPLETED').length
+
+      const totalBudget = data.projects.reduce(
+        (sum: number, p: Project) => sum + Number(p.totalBudget),
+        0
       )
 
       setSummary({
@@ -93,9 +92,8 @@ export default function ProjectsPage() {
         activeProjects: activeCount,
         completedProjects: completedCount,
         totalBudget,
-        currency: data.projects[0]?.currency || 'NZD'
+        currency: data.projects[0]?.currency || 'NZD',
       })
-
     } catch (err) {
       console.error('Error fetching projects:', err)
       setError('Failed to load projects')
@@ -271,7 +269,7 @@ export default function ProjectsPage() {
 
           <div className="divide-y divide-gray-200">
             {projects.length > 0 ? (
-              projects.map((project) => (
+              projects.map(project => (
                 <div
                   key={project.id}
                   className="p-6 hover:bg-gray-50 cursor-pointer transition-colors"
@@ -281,35 +279,33 @@ export default function ProjectsPage() {
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
                       <div className="flex items-center justify-between">
-                        <h3 className="text-lg font-medium text-gray-900">
-                          {project.name}
-                        </h3>
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          project.status === 'COMPLETED' 
-                            ? 'bg-green-100 text-green-800'
-                            : project.status === 'IN_PROGRESS'
-                              ? 'bg-blue-100 text-blue-800'
-                              : project.status === 'PLANNING'
-                                ? 'bg-yellow-100 text-yellow-800'
-                                : 'bg-gray-100 text-gray-800'
-                        }`}>
+                        <h3 className="text-lg font-medium text-gray-900">{project.name}</h3>
+                        <span
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            project.status === 'COMPLETED'
+                              ? 'bg-green-100 text-green-800'
+                              : project.status === 'IN_PROGRESS'
+                                ? 'bg-blue-100 text-blue-800'
+                                : project.status === 'PLANNING'
+                                  ? 'bg-yellow-100 text-yellow-800'
+                                  : 'bg-gray-100 text-gray-800'
+                          }`}
+                        >
                           {project.status.replace('_', ' ')}
                         </span>
                       </div>
-                      
+
                       {project.description && (
                         <p className="text-sm text-gray-600 mt-1 line-clamp-2">
                           {project.description}
                         </p>
                       )}
-                      
+
                       <div className="flex items-center mt-2 space-x-4 text-sm text-gray-500">
                         <span>
                           Budget: {formatCurrency(Number(project.totalBudget), project.currency)}
                         </span>
-                        <span>
-                          Created: {new Date(project.createdAt).toLocaleDateString()}
-                        </span>
+                        <span>Created: {new Date(project.createdAt).toLocaleDateString()}</span>
                       </div>
                     </div>
                   </div>
@@ -319,9 +315,7 @@ export default function ProjectsPage() {
               <div className="p-12 text-center">
                 <FolderIcon className="mx-auto h-12 w-12 text-gray-400" />
                 <h3 className="mt-2 text-sm font-medium text-gray-900">No projects</h3>
-                <p className="mt-1 text-sm text-gray-500">
-                  Get started by creating a new project.
-                </p>
+                <p className="mt-1 text-sm text-gray-500">Get started by creating a new project.</p>
                 <div className="mt-6">
                   <Button onClick={handleCreateProject}>
                     <PlusIcon className="h-4 w-4 mr-2" />

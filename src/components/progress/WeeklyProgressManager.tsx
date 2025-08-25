@@ -1,14 +1,14 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { 
-  PlusIcon, 
-  PhotoIcon, 
+import {
+  PlusIcon,
+  PhotoIcon,
   DocumentTextIcon,
   ClockIcon,
   CheckCircleIcon,
   XCircleIcon,
-  EyeIcon
+  EyeIcon,
 } from '@heroicons/react/24/outline'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
@@ -75,13 +75,13 @@ export function WeeklyProgressManager({ projectId }: WeeklyProgressManagerProps)
     const dayOfWeek = today.getDay() // 0 = Sunday, 1 = Monday, etc.
     const startOfWeek = new Date(today)
     startOfWeek.setDate(today.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1)) // Start on Monday
-    
+
     const endOfWeek = new Date(startOfWeek)
     endOfWeek.setDate(startOfWeek.getDate() + 6)
 
     return {
       start: startOfWeek.toISOString().split('T')[0],
-      end: endOfWeek.toISOString().split('T')[0]
+      end: endOfWeek.toISOString().split('T')[0],
     }
   }
 
@@ -95,7 +95,7 @@ export function WeeklyProgressManager({ projectId }: WeeklyProgressManagerProps)
     const today = new Date()
     const weekEnd = new Date(log.weekEnding)
     const weekStart = new Date(log.weekStarting)
-    
+
     if (today < weekStart) return 'upcoming'
     if (today > weekEnd) return 'completed'
     return 'current'
@@ -193,11 +193,13 @@ export function WeeklyProgressManager({ projectId }: WeeklyProgressManagerProps)
             <div className="ml-3">
               <p className="text-sm text-gray-500">Recent Updates</p>
               <p className="font-semibold text-gray-900">
-                {progressLogs.filter(log => {
-                  const weekAgo = new Date()
-                  weekAgo.setDate(weekAgo.getDate() - 7)
-                  return new Date(log.updatedAt) > weekAgo
-                }).length}
+                {
+                  progressLogs.filter(log => {
+                    const weekAgo = new Date()
+                    weekAgo.setDate(weekAgo.getDate() - 7)
+                    return new Date(log.updatedAt) > weekAgo
+                  }).length
+                }
               </p>
             </div>
           </div>
@@ -223,7 +225,7 @@ export function WeeklyProgressManager({ projectId }: WeeklyProgressManagerProps)
         </Card>
       ) : (
         <div className="space-y-4">
-          {progressLogs.map((log) => (
+          {progressLogs.map(log => (
             <Card key={log.id} className="p-6">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
@@ -300,7 +302,7 @@ export function WeeklyProgressManager({ projectId }: WeeklyProgressManagerProps)
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
         projectId={projectId}
-        onLogCreated={(newLog) => {
+        onLogCreated={newLog => {
           setProgressLogs([newLog, ...progressLogs])
           setShowCreateModal(false)
         }}
@@ -326,7 +328,7 @@ function CreateProgressLogModal({
   isOpen,
   onClose,
   projectId,
-  onLogCreated
+  onLogCreated,
 }: {
   isOpen: boolean
   onClose: () => void
@@ -338,7 +340,7 @@ function CreateProgressLogModal({
     weekEnding: '',
     summary: '',
     issues: '',
-    nextWeekPlan: ''
+    nextWeekPlan: '',
   })
   const [photos, setPhotos] = useState<File[]>([])
   const [submitting, setSubmitting] = useState(false)
@@ -349,7 +351,7 @@ function CreateProgressLogModal({
       setFormData(prev => ({
         ...prev,
         weekStarting: start,
-        weekEnding: end
+        weekEnding: end,
       }))
     }
   }, [isOpen])
@@ -359,13 +361,13 @@ function CreateProgressLogModal({
     const dayOfWeek = today.getDay()
     const startOfWeek = new Date(today)
     startOfWeek.setDate(today.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1))
-    
+
     const endOfWeek = new Date(startOfWeek)
     endOfWeek.setDate(startOfWeek.getDate() + 6)
 
     return {
       start: startOfWeek.toISOString().split('T')[0],
-      end: endOfWeek.toISOString().split('T')[0]
+      end: endOfWeek.toISOString().split('T')[0],
     }
   }
 
@@ -378,7 +380,7 @@ function CreateProgressLogModal({
       const response = await fetch(`/api/projects/${projectId}/progress-logs`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(formData),
       })
 
       const data = await response.json()
@@ -391,7 +393,7 @@ function CreateProgressLogModal({
           weekEnding: '',
           summary: '',
           issues: '',
-          nextWeekPlan: ''
+          nextWeekPlan: '',
         })
         setPhotos([])
       }
@@ -409,9 +411,7 @@ function CreateProgressLogModal({
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Week Starting
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Week Starting</label>
             <input
               type="date"
               value={formData.weekStarting}
@@ -421,9 +421,7 @@ function CreateProgressLogModal({
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Week Ending
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Week Ending</label>
             <input
               type="date"
               value={formData.weekEnding}
@@ -435,9 +433,7 @@ function CreateProgressLogModal({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Progress Summary
-          </label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Progress Summary</label>
           <textarea
             value={formData.summary}
             onChange={e => setFormData(prev => ({ ...prev, summary: e.target.value }))}
@@ -487,11 +483,11 @@ function CreateProgressLogModal({
   )
 }
 
-// View Progress Log Modal Component  
+// View Progress Log Modal Component
 function ViewProgressLogModal({
   isOpen,
   onClose,
-  log
+  log,
 }: {
   isOpen: boolean
   onClose: () => void
@@ -506,7 +502,11 @@ function ViewProgressLogModal({
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={`Progress Log - ${formatWeekRange(log.weekStarting, log.weekEnding)}`}>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={`Progress Log - ${formatWeekRange(log.weekStarting, log.weekEnding)}`}
+    >
       <div className="space-y-6">
         <div>
           <h4 className="text-sm font-medium text-gray-900 mb-2">Progress Summary</h4>
@@ -529,11 +529,9 @@ function ViewProgressLogModal({
 
         {log.photos.length > 0 && (
           <div>
-            <h4 className="text-sm font-medium text-gray-900 mb-2">
-              Photos ({log.photos.length})
-            </h4>
+            <h4 className="text-sm font-medium text-gray-900 mb-2">Photos ({log.photos.length})</h4>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              {log.photos.map((photo) => (
+              {log.photos.map(photo => (
                 <div key={photo.id} className="group relative">
                   <img
                     src={photo.fileUrl}

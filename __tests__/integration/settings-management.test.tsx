@@ -36,14 +36,14 @@ jest.mock('@/lib/settings', () => {
       updateUserSettings: mockUpdateSettings,
       updateProjectSettings: mockUpdateSettings,
       updateSystemSettings: mockUpdateSettings,
-      resetToDefaults: jest.fn()
+      resetToDefaults: jest.fn(),
     })),
     useSettings: () => ({
       settings: mockDefaultSettings,
       updateSettings: mockUpdateSettings,
       isLoading: false,
-      error: null
-    })
+      error: null,
+    }),
   }
 })
 
@@ -59,14 +59,14 @@ const mockDefaultSettings: AppSettings = {
       browser: true,
       invoiceApproval: true,
       milestoneDeadlines: true,
-      budgetAlerts: true
+      budgetAlerts: true,
     },
     dashboard: {
       defaultView: 'projects',
       showRecentProjects: true,
       projectsPerPage: 10,
-      compactMode: false
-    }
+      compactMode: false,
+    },
   },
   project: {
     defaultMarkupPercent: 15,
@@ -75,7 +75,7 @@ const mockDefaultSettings: AppSettings = {
     requireApprovalForInvoices: true,
     autoMatchInvoices: true,
     enableBudgetAlerts: true,
-    budgetAlertThreshold: 90
+    budgetAlertThreshold: 90,
   },
   system: {
     apiBaseUrl: 'http://localhost:3000/api',
@@ -83,8 +83,8 @@ const mockDefaultSettings: AppSettings = {
     supportedFileTypes: ['.pdf', '.png', '.jpg'],
     sessionTimeout: 3600,
     enableAnalytics: false,
-    backupFrequency: 'daily'
-  }
+    backupFrequency: 'daily',
+  },
 }
 
 const mockAuthContext = {
@@ -92,23 +92,21 @@ const mockAuthContext = {
     id: '1',
     email: 'test@example.com',
     name: 'Test User',
-    role: 'USER' as const
+    role: 'USER' as const,
   },
   isAuthenticated: true,
   login: jest.fn(),
   logout: jest.fn(),
   loading: false,
-  error: null
+  error: null,
 }
 
 jest.mock('@/hooks/useAuth', () => ({
-  useAuth: () => mockAuthContext
+  useAuth: () => mockAuthContext,
 }))
 
 const TestWrapper = ({ children }: { children: React.ReactNode }) => (
-  <AuthProvider>
-    {children}
-  </AuthProvider>
+  <AuthProvider>{children}</AuthProvider>
 )
 
 describe('Settings Management Integration Flow', () => {
@@ -132,13 +130,13 @@ describe('Settings Management Integration Flow', () => {
 
       // Check theme setting
       expect(screen.getByDisplayValue('system')).toBeInTheDocument()
-      
+
       // Check language setting
       expect(screen.getByDisplayValue('en')).toBeInTheDocument()
-      
+
       // Check currency setting
       expect(screen.getByDisplayValue('USD')).toBeInTheDocument()
-      
+
       // Check notification settings
       expect(screen.getByLabelText(/email notifications/i)).toBeChecked()
       expect(screen.getByLabelText(/browser notifications/i)).toBeChecked()
@@ -167,7 +165,7 @@ describe('Settings Management Integration Flow', () => {
       // Mock admin user
       const adminAuthContext = {
         ...mockAuthContext,
-        user: { ...mockAuthContext.user, role: 'ADMIN' as const }
+        user: { ...mockAuthContext.user, role: 'ADMIN' as const },
       }
 
       jest.mocked(require('@/hooks/useAuth').useAuth).mockReturnValue(adminAuthContext)
@@ -213,8 +211,8 @@ describe('Settings Management Integration Flow', () => {
         expect(mockUpdateSettings).toHaveBeenCalledWith(
           expect.objectContaining({
             user: expect.objectContaining({
-              theme: 'dark'
-            })
+              theme: 'dark',
+            }),
           })
         )
       })
@@ -250,9 +248,9 @@ describe('Settings Management Integration Flow', () => {
             user: expect.objectContaining({
               notifications: expect.objectContaining({
                 email: false,
-                budgetAlerts: false
-              })
-            })
+                budgetAlerts: false,
+              }),
+            }),
           })
         )
       })
@@ -291,9 +289,9 @@ describe('Settings Management Integration Flow', () => {
               dashboard: expect.objectContaining({
                 defaultView: 'analytics',
                 projectsPerPage: 20,
-                compactMode: true
-              })
-            })
+                compactMode: true,
+              }),
+            }),
           })
         )
       })
@@ -331,8 +329,8 @@ describe('Settings Management Integration Flow', () => {
           expect.objectContaining({
             project: expect.objectContaining({
               defaultMarkupPercent: 18,
-              defaultOverheadPercent: 12
-            })
+              defaultOverheadPercent: 12,
+            }),
           })
         )
       })
@@ -373,8 +371,8 @@ describe('Settings Management Integration Flow', () => {
             project: expect.objectContaining({
               requireApprovalForInvoices: false,
               autoMatchInvoices: false,
-              budgetAlertThreshold: 85
-            })
+              budgetAlertThreshold: 85,
+            }),
           })
         )
       })
@@ -414,7 +412,7 @@ describe('Settings Management Integration Flow', () => {
       // Mock admin user for system settings access
       const adminAuthContext = {
         ...mockAuthContext,
-        user: { ...mockAuthContext.user, role: 'ADMIN' as const }
+        user: { ...mockAuthContext.user, role: 'ADMIN' as const },
       }
 
       jest.mocked(require('@/hooks/useAuth').useAuth).mockReturnValue(adminAuthContext)
@@ -440,7 +438,9 @@ describe('Settings Management Integration Flow', () => {
       fireEvent.click(saveButton)
 
       await waitFor(() => {
-        expect(screen.getByText(/session timeout must be at least 300 seconds/i)).toBeInTheDocument()
+        expect(
+          screen.getByText(/session timeout must be at least 300 seconds/i)
+        ).toBeInTheDocument()
       })
 
       expect(mockUpdateSettings).not.toHaveBeenCalled()
@@ -494,7 +494,7 @@ describe('Settings Management Integration Flow', () => {
     it('handles settings update errors gracefully', async () => {
       mockUpdateSettings.mockResolvedValue({
         success: false,
-        error: 'Network connection failed'
+        error: 'Network connection failed',
       })
 
       render(
@@ -553,7 +553,7 @@ describe('Settings Management Integration Flow', () => {
     it('shows all settings tabs for admin users', () => {
       const adminAuthContext = {
         ...mockAuthContext,
-        user: { ...mockAuthContext.user, role: 'ADMIN' as const }
+        user: { ...mockAuthContext.user, role: 'ADMIN' as const },
       }
 
       jest.mocked(require('@/hooks/useAuth').useAuth).mockReturnValue(adminAuthContext)
@@ -576,8 +576,8 @@ describe('Settings Management Integration Flow', () => {
         ...mockDefaultSettings,
         user: {
           ...mockDefaultSettings.user,
-          theme: 'dark' as const
-        }
+          theme: 'dark' as const,
+        },
       }
 
       mockGetSettings.mockResolvedValue(updatedSettings)
@@ -609,8 +609,8 @@ describe('Settings Management Integration Flow', () => {
         key: 'buildtrack_settings',
         newValue: JSON.stringify({
           ...mockDefaultSettings,
-          user: { ...mockDefaultSettings.user, theme: 'light' }
-        })
+          user: { ...mockDefaultSettings.user, theme: 'light' },
+        }),
       })
 
       window.dispatchEvent(storageEvent)

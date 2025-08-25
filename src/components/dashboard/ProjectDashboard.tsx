@@ -123,12 +123,18 @@ export function ProjectDashboard({ className = '' }: ProjectDashboardProps) {
 
   const getStatusVariant = (status: string): 'gray' | 'blue' | 'yellow' | 'green' | 'red' => {
     switch (status) {
-      case 'PLANNING': return 'gray'
-      case 'IN_PROGRESS': return 'blue'
-      case 'ON_HOLD': return 'yellow'
-      case 'COMPLETED': return 'green'
-      case 'CANCELLED': return 'red'
-      default: return 'gray'
+      case 'PLANNING':
+        return 'gray'
+      case 'IN_PROGRESS':
+        return 'blue'
+      case 'ON_HOLD':
+        return 'yellow'
+      case 'COMPLETED':
+        return 'green'
+      case 'CANCELLED':
+        return 'red'
+      default:
+        return 'gray'
     }
   }
 
@@ -148,7 +154,6 @@ export function ProjectDashboard({ className = '' }: ProjectDashboardProps) {
         return <BuildingOfficeIcon className="h-4 w-4" />
     }
   }
-
 
   const calculateProjectHealth = (project: Project) => {
     const { stats } = project
@@ -353,7 +358,7 @@ export function ProjectDashboard({ className = '' }: ProjectDashboardProps) {
                           <h4 className="text-sm font-medium text-gray-900 truncate">
                             {project.name}
                           </h4>
-                          <Badge 
+                          <Badge
                             variant={getStatusVariant(project.status)}
                             icon={getStatusIcon(project.status)}
                           >

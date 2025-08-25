@@ -50,7 +50,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
   const isDisabled = isLoading || isSubmitting
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6" noValidate>
       <div>
         <label htmlFor="email" className="block text-sm font-medium text-gray-700">
           Email address

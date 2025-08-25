@@ -9,8 +9,8 @@ jest.mock('@/hooks/useAuth', () => ({
   useAuth: () => ({
     user: { id: '1', name: 'Test User', email: 'test@example.com' },
     logout: jest.fn(),
-    isAuthenticated: true
-  })
+    isAuthenticated: true,
+  }),
 }))
 
 // Mock next/navigation
@@ -39,27 +39,27 @@ describe('Dashboard Integration', () => {
 
   it('renders dashboard without webpack errors', async () => {
     mockFetch.mockResolvedValue({
-      json: () => Promise.resolve({ success: true, projects: [] })
+      json: () => Promise.resolve({ success: true, projects: [] }),
     })
 
     render(<Dashboard />)
 
     // Check that dashboard header renders
     expect(screen.getByText('BuildTrack Dashboard')).toBeInTheDocument()
-    
+
     // Check that navigation tabs render
     expect(screen.getByText('Overview')).toBeInTheDocument()
     expect(screen.getByText('Projects')).toBeInTheDocument()
     expect(screen.getByText('Invoices')).toBeInTheDocument()
     expect(screen.getByText('Analytics')).toBeInTheDocument()
-    
+
     // Check that user info displays
     expect(screen.getByText('Welcome, Test User')).toBeInTheDocument()
   })
 
   it('switches between tabs correctly', async () => {
     mockFetch.mockResolvedValue({
-      json: () => Promise.resolve({ success: true, projects: [] })
+      json: () => Promise.resolve({ success: true, projects: [] }),
     })
 
     render(<Dashboard />)

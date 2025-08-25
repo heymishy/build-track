@@ -17,50 +17,40 @@ async function GET(request: NextRequest, user: AuthUser, { params }: RouteParams
   try {
     // Only admins can manage suppliers
     if (user.role !== 'ADMIN') {
-      return NextResponse.json(
-        { success: false, error: 'Admin access required' },
-        { status: 403 }
-      )
+      return NextResponse.json({ success: false, error: 'Admin access required' }, { status: 403 })
     }
 
     const supplier = await prisma.supplierAccess.findUnique({
       where: { id: params.id },
       include: {
         creator: {
-          select: { id: true, name: true, email: true }
+          select: { id: true, name: true, email: true },
         },
         invoiceUploads: {
           include: {
             project: {
-              select: { id: true, name: true }
-            }
+              select: { id: true, name: true },
+            },
           },
-          orderBy: { createdAt: 'desc' }
+          orderBy: { createdAt: 'desc' },
         },
         _count: {
-          select: { invoiceUploads: true }
-        }
-      }
+          select: { invoiceUploads: true },
+        },
+      },
     })
 
     if (!supplier) {
-      return NextResponse.json(
-        { success: false, error: 'Supplier not found' },
-        { status: 404 }
-      )
+      return NextResponse.json({ success: false, error: 'Supplier not found' }, { status: 404 })
     }
 
     return NextResponse.json({
       success: true,
-      supplier
+      supplier,
     })
-
   } catch (error) {
     console.error('Supplier GET API error:', error)
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 })
   }
 }
 
@@ -68,10 +58,7 @@ async function PATCH(request: NextRequest, user: AuthUser, { params }: RoutePara
   try {
     // Only admins can manage suppliers
     if (user.role !== 'ADMIN') {
-      return NextResponse.json(
-        { success: false, error: 'Admin access required' },
-        { status: 403 }
-      )
+      return NextResponse.json({ success: false, error: 'Admin access required' }, { status: 403 })
     }
 
     const body = await request.json()
@@ -90,8 +77,8 @@ async function PATCH(request: NextRequest, user: AuthUser, { params }: RoutePara
       const existing = await prisma.supplierAccess.findFirst({
         where: {
           email: email.toLowerCase().trim(),
-          id: { not: params.id }
-        }
+          id: { not: params.id },
+        },
       })
 
       if (existing) {
@@ -113,25 +100,21 @@ async function PATCH(request: NextRequest, user: AuthUser, { params }: RoutePara
       data: updateData,
       include: {
         creator: {
-          select: { id: true, name: true, email: true }
+          select: { id: true, name: true, email: true },
         },
         _count: {
-          select: { invoiceUploads: true }
-        }
-      }
+          select: { invoiceUploads: true },
+        },
+      },
     })
 
     return NextResponse.json({
       success: true,
-      supplier
+      supplier,
     })
-
   } catch (error) {
     console.error('Supplier PATCH API error:', error)
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 })
   }
 }
 
@@ -139,10 +122,7 @@ async function DELETE(request: NextRequest, user: AuthUser, { params }: RoutePar
   try {
     // Only admins can manage suppliers
     if (user.role !== 'ADMIN') {
-      return NextResponse.json(
-        { success: false, error: 'Admin access required' },
-        { status: 403 }
-      )
+      return NextResponse.json({ success: false, error: 'Admin access required' }, { status: 403 })
     }
 
     // Check if supplier exists and get upload count
@@ -150,34 +130,27 @@ async function DELETE(request: NextRequest, user: AuthUser, { params }: RoutePar
       where: { id: params.id },
       include: {
         _count: {
-          select: { invoiceUploads: true }
-        }
-      }
+          select: { invoiceUploads: true },
+        },
+      },
     })
 
     if (!supplier) {
-      return NextResponse.json(
-        { success: false, error: 'Supplier not found' },
-        { status: 404 }
-      )
+      return NextResponse.json({ success: false, error: 'Supplier not found' }, { status: 404 })
     }
 
     // Delete supplier and all associated uploads (cascade)
     await prisma.supplierAccess.delete({
-      where: { id: params.id }
+      where: { id: params.id },
     })
 
     return NextResponse.json({
       success: true,
-      message: `Supplier deleted successfully. ${supplier._count.invoiceUploads} associated uploads were also removed.`
+      message: `Supplier deleted successfully. ${supplier._count.invoiceUploads} associated uploads were also removed.`,
     })
-
   } catch (error) {
     console.error('Supplier DELETE API error:', error)
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 })
   }
 }
 

@@ -48,13 +48,13 @@ export interface PaginatedResponse<T> extends ApiResponse<T[]> {
 export enum UserRole {
   ADMIN = 'ADMIN',
   USER = 'USER',
-  VIEWER = 'VIEWER'
+  VIEWER = 'VIEWER',
 }
 
 export enum ProjectRole {
   OWNER = 'OWNER',
   CONTRACTOR = 'CONTRACTOR',
-  VIEWER = 'VIEWER'
+  VIEWER = 'VIEWER',
 }
 
 export enum ProjectStatus {
@@ -62,14 +62,14 @@ export enum ProjectStatus {
   IN_PROGRESS = 'IN_PROGRESS',
   ON_HOLD = 'ON_HOLD',
   COMPLETED = 'COMPLETED',
-  CANCELLED = 'CANCELLED'
+  CANCELLED = 'CANCELLED',
 }
 
 export enum MilestoneStatus {
   PENDING = 'PENDING',
   IN_PROGRESS = 'IN_PROGRESS',
   COMPLETED = 'COMPLETED',
-  OVERDUE = 'OVERDUE'
+  OVERDUE = 'OVERDUE',
 }
 
 export enum InvoiceStatus {
@@ -77,7 +77,7 @@ export enum InvoiceStatus {
   APPROVED = 'APPROVED',
   PAID = 'PAID',
   DISPUTED = 'DISPUTED',
-  REJECTED = 'REJECTED'
+  REJECTED = 'REJECTED',
 }
 
 export enum Currency {
@@ -85,7 +85,7 @@ export enum Currency {
   USD = 'USD',
   AUD = 'AUD',
   GBP = 'GBP',
-  EUR = 'EUR'
+  EUR = 'EUR',
 }
 
 // ==================== User Models ====================
@@ -207,21 +207,21 @@ export interface LineItem extends BaseEntity {
   description: string
   quantity: number
   unit: string
-  
+
   // Estimates
   materialCostEst: number
   laborCostEst: number
   equipmentCostEst: number
   markupPercent: number
   overheadPercent: number
-  
+
   sortOrder: number
-  
+
   // Calculated fields
   totalEstimate?: number
   totalActual?: number
   variance?: number
-  
+
   // Relations
   trade?: Trade
   invoiceItems?: InvoiceLineItem[]
@@ -239,7 +239,7 @@ export interface Milestone extends BaseEntity {
   percentComplete: number
   status: MilestoneStatus
   sortOrder: number
-  
+
   // Relations
   project?: Project
 }
@@ -259,7 +259,7 @@ export interface Invoice extends BaseEntity {
   status: InvoiceStatus
   pdfUrl?: string
   notes?: string
-  
+
   // Relations
   project?: Project
   user?: User
@@ -274,7 +274,7 @@ export interface InvoiceLineItem extends BaseEntity {
   unitPrice: number
   totalPrice: number
   category: 'MATERIAL' | 'LABOR' | 'EQUIPMENT' | 'OTHER'
-  
+
   // Relations
   invoice?: Invoice
   lineItem?: LineItem
@@ -397,7 +397,7 @@ export interface ProjectAnalytics {
     totalValue: number
     averageBudget: number
   }
-  
+
   budgetAnalysis: {
     totalBudget: number
     totalSpent: number
@@ -405,14 +405,14 @@ export interface ProjectAnalytics {
     overBudgetProjects: number
     avgBudgetUsage: number
   }
-  
+
   timelineAnalysis: {
     onTimeProjects: number
     delayedProjects: number
     avgProjectDuration: number
     upcomingDeadlines: number
   }
-  
+
   trends: {
     monthlySpending: Array<{ month: string; amount: number }>
     projectCompletions: Array<{ month: string; count: number }>
@@ -427,20 +427,20 @@ export interface InvoiceAnalytics {
     avgInvoiceValue: number
     pendingApprovals: number
   }
-  
+
   statusBreakdown: Array<{
     status: InvoiceStatus
     count: number
     value: number
   }>
-  
+
   supplierAnalysis: Array<{
     supplier: string
     invoiceCount: number
     totalValue: number
     avgValue: number
   }>
-  
+
   trends: {
     monthlyInvoices: Array<{ month: string; count: number; value: number }>
     paymentTimeline: Array<{ month: string; paid: number; pending: number }>
@@ -529,11 +529,11 @@ export interface ApiEndpoints {
 export type CoreEntity = User | Project | Trade | LineItem | Milestone | Invoice
 
 // Form data types
-export type FormData = 
-  | ProjectFormData 
-  | TradeFormData 
-  | LineItemFormData 
-  | MilestoneFormData 
+export type FormData =
+  | ProjectFormData
+  | TradeFormData
+  | LineItemFormData
+  | MilestoneFormData
   | InvoiceFormData
 
 // Filter types

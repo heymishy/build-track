@@ -83,12 +83,35 @@ export default function EstimateEditor({ projectId, className = '' }: EstimateEd
 
   // Common units for construction estimates
   const commonUnits = [
-    'each', 'item', 'pcs', 'qty', 
-    'm', 'm2', 'm3', 'mm', 'cm', 'km',
-    'ft', 'ft2', 'ft3', 'in', 'yd',
-    'kg', 'g', 't', 'lb', 'oz',
-    'hrs', 'days', 'weeks', 'months',
-    'lf', 'sf', 'cf', 'ls', 'lot'
+    'each',
+    'item',
+    'pcs',
+    'qty',
+    'm',
+    'm2',
+    'm3',
+    'mm',
+    'cm',
+    'km',
+    'ft',
+    'ft2',
+    'ft3',
+    'in',
+    'yd',
+    'kg',
+    'g',
+    't',
+    'lb',
+    'oz',
+    'hrs',
+    'days',
+    'weeks',
+    'months',
+    'lf',
+    'sf',
+    'cf',
+    'ls',
+    'lot',
   ]
 
   const fetchEstimates = useCallback(async () => {
@@ -105,15 +128,12 @@ export default function EstimateEditor({ projectId, className = '' }: EstimateEd
         throw new Error('Failed to fetch project data')
       }
 
-      const [estimatesData, tradesData] = await Promise.all([
-        estimatesRes.json(),
-        tradesRes.json(),
-      ])
+      const [estimatesData, tradesData] = await Promise.all([estimatesRes.json(), tradesRes.json()])
 
       if (estimatesData.success && tradesData.success) {
         // Flatten line items with trade information
         const lineItems: EstimateLineItem[] = []
-        
+
         for (const trade of estimatesData.data) {
           for (const item of trade.lineItems || []) {
             const lineItem: EstimateLineItem = {
@@ -131,14 +151,15 @@ export default function EstimateEditor({ projectId, className = '' }: EstimateEd
               overheadPercent: Number(item.overheadPercent),
               sortOrder: item.sortOrder,
             }
-            
+
             // Calculate totals
-            const subtotal = lineItem.materialCostEst + lineItem.laborCostEst + lineItem.equipmentCostEst
+            const subtotal =
+              lineItem.materialCostEst + lineItem.laborCostEst + lineItem.equipmentCostEst
             lineItem.subtotal = subtotal
             lineItem.markup = subtotal * (lineItem.markupPercent / 100)
             lineItem.overhead = subtotal * (lineItem.overheadPercent / 100)
             lineItem.total = subtotal + lineItem.markup + lineItem.overhead
-            
+
             lineItems.push(lineItem)
           }
         }
@@ -167,16 +188,17 @@ export default function EstimateEditor({ projectId, className = '' }: EstimateEd
         acc.materialCost += item.materialCostEst * item.quantity
         acc.laborCost += item.laborCostEst * item.quantity
         acc.equipmentCost += item.equipmentCostEst * item.quantity
-        
-        const subtotal = (item.materialCostEst + item.laborCostEst + item.equipmentCostEst) * item.quantity
+
+        const subtotal =
+          (item.materialCostEst + item.laborCostEst + item.equipmentCostEst) * item.quantity
         const markup = subtotal * (item.markupPercent / 100)
         const overhead = subtotal * (item.overheadPercent / 100)
-        
+
         acc.subtotal += subtotal
         acc.markup += markup
         acc.overhead += overhead
         acc.total += subtotal + markup + overhead
-        
+
         return acc
       },
       {
@@ -196,19 +218,28 @@ export default function EstimateEditor({ projectId, className = '' }: EstimateEd
     setItems(prevItems => {
       const newItems = [...prevItems]
       const item = { ...newItems[index] }
-      
+
       // Update the field
       ;(item as any)[field] = value
-      
+
       // Recalculate totals if relevant fields changed
-      if (['materialCostEst', 'laborCostEst', 'equipmentCostEst', 'markupPercent', 'overheadPercent', 'quantity'].includes(field)) {
+      if (
+        [
+          'materialCostEst',
+          'laborCostEst',
+          'equipmentCostEst',
+          'markupPercent',
+          'overheadPercent',
+          'quantity',
+        ].includes(field)
+      ) {
         const subtotal = item.materialCostEst + item.laborCostEst + item.equipmentCostEst
         item.subtotal = subtotal
         item.markup = subtotal * (item.markupPercent / 100)
         item.overhead = subtotal * (item.overheadPercent / 100)
         item.total = subtotal + item.markup + item.overhead
       }
-      
+
       newItems[index] = item
       calculateProjectTotals(newItems)
       return newItems
@@ -219,7 +250,7 @@ export default function EstimateEditor({ projectId, className = '' }: EstimateEd
     const insertIndex = afterIndex !== undefined ? afterIndex + 1 : items.length
     const defaultTradeId = tradeId || (trades.length > 0 ? trades[0].id : '')
     const tradeName = trades.find(t => t.id === defaultTradeId)?.name || ''
-    
+
     const newItem: EstimateLineItem = {
       tradeId: defaultTradeId,
       tradeName,
@@ -244,12 +275,12 @@ export default function EstimateEditor({ projectId, className = '' }: EstimateEd
     setItems(prevItems => {
       const newItems = [...prevItems]
       newItems.splice(insertIndex, 0, newItem)
-      
+
       // Update sort orders
       newItems.forEach((item, idx) => {
         item.sortOrder = idx
       })
-      
+
       return newItems
     })
   }
@@ -257,12 +288,12 @@ export default function EstimateEditor({ projectId, className = '' }: EstimateEd
   const removeRow = (index: number) => {
     setItems(prevItems => {
       const newItems = prevItems.filter((_, idx) => idx !== index)
-      
+
       // Update sort orders
       newItems.forEach((item, idx) => {
         item.sortOrder = idx
       })
-      
+
       calculateProjectTotals(newItems)
       return newItems
     })
@@ -284,7 +315,7 @@ export default function EstimateEditor({ projectId, className = '' }: EstimateEd
       isEditing: true,
     }
 
-    // Create second split item  
+    // Create second split item
     const secondItem: EstimateLineItem = {
       ...originalItem,
       id: undefined, // Remove ID so it gets treated as new
@@ -296,15 +327,15 @@ export default function EstimateEditor({ projectId, className = '' }: EstimateEd
 
     setItems(prevItems => {
       const newItems = [...prevItems]
-      
+
       // Replace original with split items
       newItems.splice(index, 1, firstItem, secondItem)
-      
+
       // Update sort orders
       newItems.forEach((item, idx) => {
         item.sortOrder = idx
       })
-      
+
       calculateProjectTotals(newItems)
       return newItems
     })
@@ -440,13 +471,16 @@ export default function EstimateEditor({ projectId, className = '' }: EstimateEd
   }
 
   // Group items by trade
-  const itemsByTrade = items.reduce((acc, item) => {
-    if (!acc[item.tradeId]) {
-      acc[item.tradeId] = []
-    }
-    acc[item.tradeId].push(item)
-    return acc
-  }, {} as Record<string, EstimateLineItem[]>)
+  const itemsByTrade = items.reduce(
+    (acc, item) => {
+      if (!acc[item.tradeId]) {
+        acc[item.tradeId] = []
+      }
+      acc[item.tradeId].push(item)
+      return acc
+    },
+    {} as Record<string, EstimateLineItem[]>
+  )
 
   return (
     <div className={`bg-white rounded-lg shadow ${className}`}>
@@ -462,12 +496,10 @@ export default function EstimateEditor({ projectId, className = '' }: EstimateEd
               Excel-like editor for project cost estimates
             </p>
           </div>
-          
+
           <div className="flex items-center space-x-3">
-            {hasUnsavedChanges && (
-              <span className="text-sm text-orange-600">Unsaved changes</span>
-            )}
-            
+            {hasUnsavedChanges && <span className="text-sm text-orange-600">Unsaved changes</span>}
+
             <button
               onClick={() => addNewRow()}
               className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700"
@@ -475,7 +507,7 @@ export default function EstimateEditor({ projectId, className = '' }: EstimateEd
               <PlusIcon className="h-4 w-4 mr-2" />
               Add Row
             </button>
-            
+
             {hasUnsavedChanges && (
               <button
                 onClick={saveChanges}
@@ -521,7 +553,9 @@ export default function EstimateEditor({ projectId, className = '' }: EstimateEd
           </div>
           <div className="text-center">
             <div className="text-xs text-gray-500 font-medium">Total</div>
-            <div className="text-lg font-bold text-blue-600">{formatCurrency(projectTotals.total)}</div>
+            <div className="text-lg font-bold text-blue-600">
+              {formatCurrency(projectTotals.total)}
+            </div>
           </div>
         </div>
       </div>
@@ -604,24 +638,25 @@ export default function EstimateEditor({ projectId, className = '' }: EstimateEd
                   </tr>
 
                   {/* Trade Items */}
-                  {!isCollapsed && tradeItems.map((item, itemIndex) => {
-                    const globalIndex = items.findIndex(i => i === item)
-                    
-                    return (
-                      <EstimateRow
-                        key={item.id || `new-${globalIndex}`}
-                        item={item}
-                        index={globalIndex}
-                        trades={trades}
-                        commonUnits={commonUnits}
-                        onUpdate={updateItem}
-                        onRemove={removeRow}
-                        onSplit={splitRow}
-                        onAddAfter={() => addNewRow(globalIndex, trade.id)}
-                        formatCurrency={formatCurrency}
-                      />
-                    )
-                  })}
+                  {!isCollapsed &&
+                    tradeItems.map((item, itemIndex) => {
+                      const globalIndex = items.findIndex(i => i === item)
+
+                      return (
+                        <EstimateRow
+                          key={item.id || `new-${globalIndex}`}
+                          item={item}
+                          index={globalIndex}
+                          trades={trades}
+                          commonUnits={commonUnits}
+                          onUpdate={updateItem}
+                          onRemove={removeRow}
+                          onSplit={splitRow}
+                          onAddAfter={() => addNewRow(globalIndex, trade.id)}
+                          formatCurrency={formatCurrency}
+                        />
+                      )
+                    })}
                 </React.Fragment>
               )
             })}
@@ -747,29 +782,19 @@ function EstimateRow({
       </td>
 
       {/* Trade */}
-      <td className="px-3 py-2">
-        {renderEditableCell('tradeId', item.tradeId, 'select', trades)}
-      </td>
+      <td className="px-3 py-2">{renderEditableCell('tradeId', item.tradeId, 'select', trades)}</td>
 
       {/* Item Code */}
-      <td className="px-3 py-2">
-        {renderEditableCell('itemCode', item.itemCode, 'text')}
-      </td>
+      <td className="px-3 py-2">{renderEditableCell('itemCode', item.itemCode, 'text')}</td>
 
       {/* Description */}
-      <td className="px-3 py-2">
-        {renderEditableCell('description', item.description, 'text')}
-      </td>
+      <td className="px-3 py-2">{renderEditableCell('description', item.description, 'text')}</td>
 
       {/* Quantity */}
-      <td className="px-3 py-2">
-        {renderEditableCell('quantity', item.quantity, 'number')}
-      </td>
+      <td className="px-3 py-2">{renderEditableCell('quantity', item.quantity, 'number')}</td>
 
       {/* Unit */}
-      <td className="px-3 py-2">
-        {renderEditableCell('unit', item.unit, 'select', commonUnits)}
-      </td>
+      <td className="px-3 py-2">{renderEditableCell('unit', item.unit, 'select', commonUnits)}</td>
 
       {/* Material Cost */}
       <td className="px-3 py-2">

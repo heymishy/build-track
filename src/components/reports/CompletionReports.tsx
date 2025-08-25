@@ -15,7 +15,7 @@ import {
   UserGroupIcon,
   BuildingOffice2Icon,
   DocumentIcon,
-  PhotoIcon
+  PhotoIcon,
 } from '@heroicons/react/24/outline'
 
 interface Project {
@@ -80,7 +80,9 @@ export function CompletionReports({ projectId }: CompletionReportsProps) {
   const [projectMetrics, setProjectMetrics] = useState<ProjectMetrics | null>(null)
   const [reconciliation, setReconciliation] = useState<ReconciliationItem[]>([])
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'summary' | 'reconciliation' | 'metrics' | 'documentation'>('summary')
+  const [activeTab, setActiveTab] = useState<
+    'summary' | 'reconciliation' | 'metrics' | 'documentation'
+  >('summary')
 
   useEffect(() => {
     if (projectId) {
@@ -91,7 +93,7 @@ export function CompletionReports({ projectId }: CompletionReportsProps) {
   const loadCompletionData = async () => {
     try {
       setLoading(true)
-      
+
       // Load project data
       const projectResponse = await fetch(`/api/projects/${projectId}`)
       const projectData = await projectResponse.json()
@@ -114,12 +116,13 @@ export function CompletionReports({ projectId }: CompletionReportsProps) {
       }
 
       // Load reconciliation data
-      const reconciliationResponse = await fetch(`/api/projects/${projectId}/completion/reconciliation`)
+      const reconciliationResponse = await fetch(
+        `/api/projects/${projectId}/completion/reconciliation`
+      )
       const reconciliationData = await reconciliationResponse.json()
       if (reconciliationData.success) {
         setReconciliation(reconciliationData.reconciliation)
       }
-
     } catch (error) {
       console.error('Failed to load completion data:', error)
     } finally {
@@ -130,7 +133,7 @@ export function CompletionReports({ projectId }: CompletionReportsProps) {
   const generateFinalReport = async () => {
     try {
       const response = await fetch(`/api/projects/${projectId}/completion/generate-report`, {
-        method: 'POST'
+        method: 'POST',
       })
       const data = await response.json()
       if (data.success) {
@@ -201,9 +204,14 @@ export function CompletionReports({ projectId }: CompletionReportsProps) {
       <div className="bg-gradient-to-r from-green-50 to-green-100 rounded-lg p-6">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold text-green-900">{project.name} - Project Completion</h2>
+            <h2 className="text-2xl font-bold text-green-900">
+              {project.name} - Project Completion
+            </h2>
             <p className="text-green-700 mt-1">
-              Completed on {project.completionDate ? new Date(project.completionDate).toLocaleDateString() : 'Unknown Date'}
+              Completed on{' '}
+              {project.completionDate
+                ? new Date(project.completionDate).toLocaleDateString()
+                : 'Unknown Date'}
             </p>
           </div>
           <div className="flex items-center space-x-3">
@@ -232,8 +240,8 @@ export function CompletionReports({ projectId }: CompletionReportsProps) {
             { id: 'summary', name: 'Executive Summary', icon: DocumentTextIcon },
             { id: 'reconciliation', name: 'Cost Reconciliation', icon: CurrencyDollarIcon },
             { id: 'metrics', name: 'Performance Metrics', icon: ChartBarIcon },
-            { id: 'documentation', name: 'Project Documentation', icon: DocumentIcon }
-          ].map((tab) => (
+            { id: 'documentation', name: 'Project Documentation', icon: DocumentIcon },
+          ].map(tab => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
@@ -278,20 +286,25 @@ export function CompletionReports({ projectId }: CompletionReportsProps) {
                       </div>
                     </div>
                   </div>
-                  <div className={`p-4 rounded-lg ${costSummary.variance >= 0 ? 'bg-red-50' : 'bg-green-50'}`}>
-                    <div className={`text-sm ${costSummary.variance >= 0 ? 'text-red-600' : 'text-green-600'}`}>
+                  <div
+                    className={`p-4 rounded-lg ${costSummary.variance >= 0 ? 'bg-red-50' : 'bg-green-50'}`}
+                  >
+                    <div
+                      className={`text-sm ${costSummary.variance >= 0 ? 'text-red-600' : 'text-green-600'}`}
+                    >
                       Total Variance
                     </div>
-                    <div className={`text-xl font-bold ${costSummary.variance >= 0 ? 'text-red-900' : 'text-green-900'}`}>
-                      {costSummary.variance >= 0 ? '+' : ''}{formatCurrency(costSummary.variance)} 
-                      ({formatPercentage(costSummary.variancePercentage)})
+                    <div
+                      className={`text-xl font-bold ${costSummary.variance >= 0 ? 'text-red-900' : 'text-green-900'}`}
+                    >
+                      {costSummary.variance >= 0 ? '+' : ''}
+                      {formatCurrency(costSummary.variance)}(
+                      {formatPercentage(costSummary.variancePercentage)})
                     </div>
                   </div>
                 </div>
               ) : (
-                <div className="text-center py-8 text-gray-500">
-                  Cost data not available
-                </div>
+                <div className="text-center py-8 text-gray-500">Cost data not available</div>
               )}
             </Card.Body>
           </Card>
@@ -321,20 +334,25 @@ export function CompletionReports({ projectId }: CompletionReportsProps) {
                       </div>
                     </div>
                   </div>
-                  <div className={`p-4 rounded-lg ${projectMetrics.timeVariance >= 0 ? 'bg-red-50' : 'bg-green-50'}`}>
-                    <div className={`text-sm ${projectMetrics.timeVariance >= 0 ? 'text-red-600' : 'text-green-600'}`}>
+                  <div
+                    className={`p-4 rounded-lg ${projectMetrics.timeVariance >= 0 ? 'bg-red-50' : 'bg-green-50'}`}
+                  >
+                    <div
+                      className={`text-sm ${projectMetrics.timeVariance >= 0 ? 'text-red-600' : 'text-green-600'}`}
+                    >
                       Schedule Variance
                     </div>
-                    <div className={`text-xl font-bold ${projectMetrics.timeVariance >= 0 ? 'text-red-900' : 'text-green-900'}`}>
-                      {projectMetrics.timeVariance >= 0 ? '+' : ''}{projectMetrics.timeVariance} days
-                      ({formatPercentage(projectMetrics.timeVariancePercentage)})
+                    <div
+                      className={`text-xl font-bold ${projectMetrics.timeVariance >= 0 ? 'text-red-900' : 'text-green-900'}`}
+                    >
+                      {projectMetrics.timeVariance >= 0 ? '+' : ''}
+                      {projectMetrics.timeVariance} days (
+                      {formatPercentage(projectMetrics.timeVariancePercentage)})
                     </div>
                   </div>
                 </div>
               ) : (
-                <div className="text-center py-8 text-gray-500">
-                  Timeline data not available
-                </div>
+                <div className="text-center py-8 text-gray-500">Timeline data not available</div>
               )}
             </Card.Body>
           </Card>
@@ -347,10 +365,14 @@ export function CompletionReports({ projectId }: CompletionReportsProps) {
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <CurrencyDollarIcon className="h-5 w-5 text-green-600" />
-                <h3 className="text-lg font-semibold text-gray-900">Detailed Cost Reconciliation</h3>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Detailed Cost Reconciliation
+                </h3>
               </div>
               <Button
-                onClick={() => {/* Export reconciliation */}}
+                onClick={() => {
+                  /* Export reconciliation */
+                }}
                 className="bg-green-600 hover:bg-green-700 text-white text-sm"
               >
                 <ArrowDownTrayIcon className="h-4 w-4 mr-2" />
@@ -396,15 +418,15 @@ export function CompletionReports({ projectId }: CompletionReportsProps) {
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
                           {formatCurrency(item.actual)}
                         </td>
-                        <td className={`px-6 py-4 whitespace-nowrap text-sm text-right font-medium ${getVarianceColor(item.variance)}`}>
+                        <td
+                          className={`px-6 py-4 whitespace-nowrap text-sm text-right font-medium ${getVarianceColor(item.variance)}`}
+                        >
                           {formatCurrency(Math.abs(item.variance))}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-center">
                           {getVarianceIcon(item.varianceType)}
                         </td>
-                        <td className="px-6 py-4 text-sm text-gray-500">
-                          {item.notes || '-'}
-                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-500">{item.notes || '-'}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -414,7 +436,9 @@ export function CompletionReports({ projectId }: CompletionReportsProps) {
               <div className="text-center py-12">
                 <CurrencyDollarIcon className="mx-auto h-12 w-12 text-gray-400" />
                 <h3 className="mt-2 text-sm font-medium text-gray-900">No Reconciliation Data</h3>
-                <p className="mt-1 text-sm text-gray-500">Cost reconciliation data will appear here once available.</p>
+                <p className="mt-1 text-sm text-gray-500">
+                  Cost reconciliation data will appear here once available.
+                </p>
               </div>
             )}
           </Card.Body>
@@ -462,9 +486,7 @@ export function CompletionReports({ projectId }: CompletionReportsProps) {
                   </div>
                 </div>
               ) : (
-                <div className="text-center py-8 text-gray-500">
-                  Milestone data not available
-                </div>
+                <div className="text-center py-8 text-gray-500">Milestone data not available</div>
               )}
             </Card.Body>
           </Card>
@@ -484,7 +506,12 @@ export function CompletionReports({ projectId }: CompletionReportsProps) {
                     <div className="bg-green-50 p-4 rounded-lg">
                       <div className="text-sm text-green-600">First-Time Pass Rate</div>
                       <div className="text-xl font-bold text-green-900">
-                        {Math.round((projectMetrics.qualityMetrics.passedFirstTime / projectMetrics.qualityMetrics.totalInspections) * 100)}%
+                        {Math.round(
+                          (projectMetrics.qualityMetrics.passedFirstTime /
+                            projectMetrics.qualityMetrics.totalInspections) *
+                            100
+                        )}
+                        %
                       </div>
                     </div>
                     <div className="bg-blue-50 p-4 rounded-lg">
@@ -510,9 +537,7 @@ export function CompletionReports({ projectId }: CompletionReportsProps) {
                   </div>
                 </div>
               ) : (
-                <div className="text-center py-8 text-gray-500">
-                  Quality data not available
-                </div>
+                <div className="text-center py-8 text-gray-500">Quality data not available</div>
               )}
             </Card.Body>
           </Card>

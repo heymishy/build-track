@@ -20,18 +20,18 @@ interface TabNavigationProps {
   variant?: 'default' | 'pills' | 'underline'
 }
 
-export function TabNavigation({ 
-  tabs, 
-  activeTab, 
-  onTabChange, 
+export function TabNavigation({
+  tabs,
+  activeTab,
+  onTabChange,
   className = '',
   size = 'md',
-  variant = 'underline'
+  variant = 'underline',
 }: TabNavigationProps) {
   const sizeClasses = {
     sm: 'text-sm py-2 px-3',
     md: 'text-sm py-3 px-4',
-    lg: 'text-base py-4 px-6'
+    lg: 'text-base py-4 px-6',
   }
 
   const baseClasses = `
@@ -44,30 +44,32 @@ export function TabNavigation({
     default: {
       container: 'border-b border-gray-200',
       active: 'text-blue-600 border-b-2 border-blue-600',
-      inactive: 'text-gray-500 hover:text-gray-700 border-b-2 border-transparent hover:border-gray-300'
+      inactive:
+        'text-gray-500 hover:text-gray-700 border-b-2 border-transparent hover:border-gray-300',
     },
     pills: {
       container: 'bg-gray-100 p-1 rounded-lg',
       active: 'bg-white text-blue-600 shadow-sm',
-      inactive: 'text-gray-500 hover:text-gray-700 hover:bg-white/50'
+      inactive: 'text-gray-500 hover:text-gray-700 hover:bg-white/50',
     },
     underline: {
       container: 'border-b border-gray-200',
       active: 'text-blue-600 border-b-2 border-blue-600',
-      inactive: 'text-gray-500 hover:text-gray-700 border-b-2 border-transparent hover:border-gray-300'
-    }
+      inactive:
+        'text-gray-500 hover:text-gray-700 border-b-2 border-transparent hover:border-gray-300',
+    },
   }
 
   const { container, active, inactive } = variantClasses[variant]
 
   return (
-    <nav 
+    <nav
       className={`${container} ${className}`}
       aria-label="Tab navigation"
       data-testid="tab-navigation"
     >
       <div className={`flex ${variant === 'pills' ? 'space-x-1' : 'space-x-8'}`}>
-        {tabs.map((tab) => {
+        {tabs.map(tab => {
           const isActive = activeTab === tab.id
           const isDisabled = tab.disabled
 
@@ -86,22 +88,17 @@ export function TabNavigation({
               aria-disabled={isDisabled}
               data-testid={`tab-${tab.id}`}
             >
-              {tab.icon && (
-                <span className="mr-2 flex-shrink-0">
-                  {tab.icon}
-                </span>
-              )}
-              
+              {tab.icon && <span className="mr-2 flex-shrink-0">{tab.icon}</span>}
+
               <span>{tab.name}</span>
-              
+
               {tab.badge && (
-                <span className={`
+                <span
+                  className={`
                   ml-2 px-2 py-0.5 text-xs rounded-full
-                  ${isActive 
-                    ? 'bg-blue-100 text-blue-800'
-                    : 'bg-gray-100 text-gray-600'
-                  }
-                `}>
+                  ${isActive ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-600'}
+                `}
+                >
                   {tab.badge}
                 </span>
               )}
@@ -122,15 +119,15 @@ interface TabPanelProps {
   lazy?: boolean
 }
 
-export function TabPanel({ 
-  tabId, 
-  activeTab, 
-  children, 
+export function TabPanel({
+  tabId,
+  activeTab,
+  children,
   className = '',
-  lazy = false
+  lazy = false,
 }: TabPanelProps) {
   const isActive = activeTab === tabId
-  
+
   // Lazy loading: don't render content until tab is active for the first time
   if (lazy && !isActive) {
     return null
@@ -183,10 +180,8 @@ export function Tabs({
         onTabChange={handleTabChange}
         {...navigationProps}
       />
-      
-      <div className="mt-6">
-        {children}
-      </div>
+
+      <div className="mt-6">{children}</div>
     </div>
   )
 }

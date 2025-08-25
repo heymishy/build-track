@@ -21,15 +21,15 @@ export async function POST(request: NextRequest) {
     // Find active supplier with this email
     const supplier = await prisma.supplierAccess.findUnique({
       where: {
-        email: email.toLowerCase().trim()
+        email: email.toLowerCase().trim(),
       },
       select: {
         id: true,
         email: true,
         name: true,
         type: true,
-        isActive: true
-      }
+        isActive: true,
+      },
     })
 
     if (!supplier) {
@@ -49,14 +49,14 @@ export async function POST(request: NextRequest) {
     // Get available projects (simplified - all active projects for now)
     const projects = await prisma.project.findMany({
       where: {
-        status: { in: ['PLANNING', 'IN_PROGRESS'] }
+        status: { in: ['PLANNING', 'IN_PROGRESS'] },
       },
       select: {
         id: true,
         name: true,
-        description: true
+        description: true,
       },
-      orderBy: { name: 'asc' }
+      orderBy: { name: 'asc' },
     })
 
     return NextResponse.json({
@@ -64,16 +64,12 @@ export async function POST(request: NextRequest) {
       supplier: {
         name: supplier.name,
         type: supplier.type,
-        email: supplier.email
+        email: supplier.email,
       },
-      projects
+      projects,
     })
-
   } catch (error) {
     console.error('Portal validation API error:', error)
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 })
   }
 }

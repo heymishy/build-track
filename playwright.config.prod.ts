@@ -17,7 +17,7 @@ export default defineConfig({
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: [
     ['html', { outputFolder: 'playwright-report-prod' }],
-    ['junit', { outputFile: 'test-results/junit.xml' }]
+    ['junit', { outputFile: 'test-results/junit.xml' }],
   ],
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
@@ -30,7 +30,7 @@ export default defineConfig({
     screenshot: 'only-on-failure',
     /* Record video on failure */
     video: 'retain-on-failure',
-    
+
     /* Global timeout for each action */
     actionTimeout: 30000,
     /* Global timeout for navigation actions */
@@ -67,22 +67,18 @@ export default defineConfig({
     {
       name: 'iPad',
       use: { ...devices['iPad Pro'] },
-    }
+    },
   ],
 
   /* Production-specific test files */
-  testMatch: [
-    '**/basic.spec.ts',
-    '**/auth.spec.ts',
-    '**/milestone-analytics-e2e.spec.ts'
-  ],
+  testMatch: ['**/basic.spec.ts', '**/auth.spec.ts', '**/milestone-analytics-e2e.spec.ts'],
 
   /* Timeout for each test */
   timeout: 120000, // 2 minutes for production tests
 
   /* Expect timeout for assertions */
   expect: {
-    timeout: 10000
+    timeout: 10000,
   },
 
   /* Global setup and teardown */
@@ -90,12 +86,14 @@ export default defineConfig({
   globalTeardown: './tests/global-teardown.ts',
 
   /* Run web server during tests only if not already running */
-  webServer: process.env.PLAYWRIGHT_SKIP_SERVER ? undefined : {
-    command: 'npm start',
-    url: 'http://localhost:3000',
-    reuseExistingServer: !process.env.CI,
-    timeout: 120000,
-  },
+  webServer: process.env.PLAYWRIGHT_SKIP_SERVER
+    ? undefined
+    : {
+        command: 'npm start',
+        url: 'http://localhost:3000',
+        reuseExistingServer: !process.env.CI,
+        timeout: 120000,
+      },
 
   /* Output directory for test artifacts */
   outputDir: 'test-results-prod/',

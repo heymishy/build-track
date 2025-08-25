@@ -59,9 +59,9 @@ export default function SettingsPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [activeTab, setActiveTab] = useState<'providers' | 'strategies' | 'advanced' | 'users' | 'suppliers'>(
-    'providers'
-  )
+  const [activeTab, setActiveTab] = useState<
+    'providers' | 'strategies' | 'advanced' | 'users' | 'suppliers'
+  >('providers')
 
   const [providers, setProviders] = useState<LLMProvider[]>([])
   const [strategies, setStrategies] = useState<ParsingStrategy[]>([])

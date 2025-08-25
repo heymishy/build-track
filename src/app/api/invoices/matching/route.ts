@@ -101,7 +101,7 @@ async function GET(request: NextRequest, user: AuthUser) {
     })
 
     // Check if we need to run LLM matching by finding unmatched items
-    const unmatchedItems = invoices.flatMap(invoice => 
+    const unmatchedItems = invoices.flatMap(invoice =>
       invoice.lineItems.filter(item => !item.lineItemId)
     )
 
@@ -109,23 +109,25 @@ async function GET(request: NextRequest, user: AuthUser) {
     let batchResult
     if (unmatchedItems.length > 0) {
       console.log(`Found ${unmatchedItems.length} unmatched items, running LLM matching...`)
-      
+
       // Prepare data for LLM matching service - only unmatched items
-      const invoicesForMatching = invoices.map(invoice => ({
-        id: invoice.id,
-        invoiceNumber: invoice.invoiceNumber,
-        supplierName: invoice.supplierName,
-        lineItems: invoice.lineItems
-          .filter(item => !item.lineItemId) // Only unmatched items
-          .map(item => ({
-            id: item.id,
-            description: item.description,
-            quantity: Number(item.quantity),
-            unitPrice: Number(item.unitPrice),
-            totalPrice: Number(item.totalPrice),
-            category: item.category,
-          })),
-      })).filter(invoice => invoice.lineItems.length > 0) // Only invoices with unmatched items
+      const invoicesForMatching = invoices
+        .map(invoice => ({
+          id: invoice.id,
+          invoiceNumber: invoice.invoiceNumber,
+          supplierName: invoice.supplierName,
+          lineItems: invoice.lineItems
+            .filter(item => !item.lineItemId) // Only unmatched items
+            .map(item => ({
+              id: item.id,
+              description: item.description,
+              quantity: Number(item.quantity),
+              unitPrice: Number(item.unitPrice),
+              totalPrice: Number(item.totalPrice),
+              category: item.category,
+            })),
+        }))
+        .filter(invoice => invoice.lineItems.length > 0) // Only invoices with unmatched items
 
       const estimatesForMatching = estimateLineItems.map(item => ({
         id: item.id,
@@ -154,7 +156,7 @@ async function GET(request: NextRequest, user: AuthUser) {
         fallbackUsed: false,
         processingTime: 0,
         cost: 0,
-        error: null
+        error: null,
       }
     }
 
@@ -163,7 +165,7 @@ async function GET(request: NextRequest, user: AuthUser) {
 
     for (const invoice of invoices) {
       const invoiceMatches: InvoiceLineItemMatch[] = []
-      
+
       for (const invoiceLineItem of invoice.lineItems) {
         // Check if there's an existing match in the database
         if (invoiceLineItem.lineItemId) {
@@ -177,10 +179,10 @@ async function GET(request: NextRequest, user: AuthUser) {
           })
         } else {
           // Look for LLM suggestion for unmatched items
-          const llmMatch = batchResult.matches.find(match => 
-            match.invoiceLineItemId === invoiceLineItem.id
+          const llmMatch = batchResult.matches.find(
+            match => match.invoiceLineItemId === invoiceLineItem.id
           )
-          
+
           if (llmMatch) {
             invoiceMatches.push({
               invoiceLineItemId: llmMatch.invoiceLineItemId,
@@ -208,12 +210,9 @@ async function GET(request: NextRequest, user: AuthUser) {
       })
     }
 
-    // Calculate summary statistics  
+    // Calculate summary statistics
     const totalInvoices = invoices.length
-    const totalAmount = invoices.reduce(
-      (sum, inv) => sum + Number(inv.totalAmount),
-      0
-    )
+    const totalAmount = invoices.reduce((sum, inv) => sum + Number(inv.totalAmount), 0)
     const totalLineItems = invoices.reduce((sum, inv) => sum + inv.lineItems.length, 0)
     const totalHighConfidenceMatches = matchingResults
       .flatMap(result => result.matches)

@@ -67,7 +67,7 @@ describe('RegisterForm', () => {
     await user.click(submitButton)
 
     await waitFor(() => {
-      expect(screen.getByText(/invalid email format/i)).toBeInTheDocument()
+      expect(screen.getByText(/Invalid email format/)).toBeInTheDocument()
     })
   })
 
@@ -111,12 +111,14 @@ describe('RegisterForm', () => {
     const emailInput = screen.getByLabelText(/email/i)
     const passwordInput = screen.getByLabelText('Password')
     const confirmPasswordInput = screen.getByLabelText(/confirm password/i)
+    const termsCheckbox = screen.getByLabelText(/i agree to the terms and conditions/i)
     const submitButton = screen.getByRole('button', { name: /create account/i })
 
     await user.type(nameInput, 'John Doe')
     await user.type(emailInput, 'john@example.com')
     await user.type(passwordInput, 'password123')
     await user.type(confirmPasswordInput, 'password123')
+    await user.click(termsCheckbox)
     await user.click(submitButton)
 
     await waitFor(() => {
@@ -139,12 +141,14 @@ describe('RegisterForm', () => {
     const emailInput = screen.getByLabelText(/email/i)
     const passwordInput = screen.getByLabelText('Password')
     const confirmPasswordInput = screen.getByLabelText(/confirm password/i)
+    const termsCheckbox = screen.getByLabelText(/i agree to the terms and conditions/i)
     const submitButton = screen.getByRole('button', { name: /create account/i })
 
     await user.type(nameInput, 'John Doe')
     await user.type(emailInput, 'existing@example.com')
     await user.type(passwordInput, 'password123')
     await user.type(confirmPasswordInput, 'password123')
+    await user.click(termsCheckbox)
     await user.click(submitButton)
 
     await waitFor(() => {

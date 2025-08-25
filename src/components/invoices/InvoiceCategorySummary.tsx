@@ -6,7 +6,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { 
+import {
   ChartBarIcon,
   CogIcon,
   CheckCircleIcon,
@@ -14,7 +14,7 @@ import {
   ArrowPathIcon,
   EyeIcon,
   AdjustmentsHorizontalIcon,
-  SparklesIcon
+  SparklesIcon,
 } from '@heroicons/react/24/outline'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
@@ -51,11 +51,11 @@ interface InvoiceCategorySummaryProps {
   onCategorize?: () => void
 }
 
-export function InvoiceCategorySummary({ 
-  invoiceId, 
-  projectId, 
+export function InvoiceCategorySummary({
+  invoiceId,
+  projectId,
   className = '',
-  onCategorize 
+  onCategorize,
 }: InvoiceCategorySummaryProps) {
   const [tradeSummary, setTradeSummary] = useState<TradeSummary[]>([])
   const [stats, setStats] = useState<CategorizationStats | null>(null)
@@ -75,7 +75,9 @@ export function InvoiceCategorySummary({
       setLoading(true)
       setError(null)
 
-      const response = await fetch(`/api/invoices/categorize?invoiceId=${invoiceId}&projectId=${projectId}`)
+      const response = await fetch(
+        `/api/invoices/categorize?invoiceId=${invoiceId}&projectId=${projectId}`
+      )
       const data = await response.json()
 
       if (data.success) {
@@ -93,7 +95,9 @@ export function InvoiceCategorySummary({
     }
   }
 
-  const handleAutoCategorize = async (provider: 'anthropic' | 'openai' | 'gemini' = 'anthropic') => {
+  const handleAutoCategorize = async (
+    provider: 'anthropic' | 'openai' | 'gemini' = 'anthropic'
+  ) => {
     try {
       setCategorizing(true)
       setError(null)
@@ -105,8 +109,8 @@ export function InvoiceCategorySummary({
           invoiceId,
           projectId,
           useAI: true,
-          provider
-        })
+          provider,
+        }),
       })
 
       const data = await response.json()
@@ -129,7 +133,7 @@ export function InvoiceCategorySummary({
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'USD'
+      currency: 'USD',
     }).format(amount)
   }
 
@@ -141,10 +145,14 @@ export function InvoiceCategorySummary({
 
   const getCategoryIcon = (category: string) => {
     switch (category) {
-      case 'MATERIAL': return '🏗️'
-      case 'LABOR': return '👷'
-      case 'EQUIPMENT': return '⚙️'
-      default: return '📋'
+      case 'MATERIAL':
+        return '🏗️'
+      case 'LABOR':
+        return '👷'
+      case 'EQUIPMENT':
+        return '⚙️'
+      default:
+        return '📋'
     }
   }
 
@@ -195,7 +203,10 @@ export function InvoiceCategorySummary({
             <div className="flex items-center space-x-2">
               {stats && (
                 <div className="text-xs text-gray-500 mr-4">
-                  <div>AI: {stats.usedAI ? 'Yes' : 'No'} • Confidence: {(stats.averageConfidence * 100).toFixed(0)}%</div>
+                  <div>
+                    AI: {stats.usedAI ? 'Yes' : 'No'} • Confidence:{' '}
+                    {(stats.averageConfidence * 100).toFixed(0)}%
+                  </div>
                   {stats.cost > 0 && <div>Cost: ${stats.cost.toFixed(4)}</div>}
                 </div>
               )}
@@ -254,7 +265,7 @@ export function InvoiceCategorySummary({
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {tradeSummary.map((trade) => {
+                  {tradeSummary.map(trade => {
                     const percentage = totalAmount > 0 ? (trade.totalAmount / totalAmount) * 100 : 0
                     const isExpanded = expandedTrade === trade.tradeId
 
@@ -277,8 +288,8 @@ export function InvoiceCategorySummary({
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center">
                               <div className="flex-1 bg-gray-200 rounded-full h-2 mr-2">
-                                <div 
-                                  className="bg-blue-600 h-2 rounded-full" 
+                                <div
+                                  className="bg-blue-600 h-2 rounded-full"
                                   style={{ width: `${percentage}%` }}
                                 ></div>
                               </div>
@@ -290,7 +301,7 @@ export function InvoiceCategorySummary({
                           {stats?.usedAI && (
                             <td className="px-6 py-4 whitespace-nowrap">
                               {trade.averageConfidence !== undefined && (
-                                <Badge 
+                                <Badge
                                   className={getConfidenceColor(trade.averageConfidence)}
                                   variant="secondary"
                                 >
@@ -338,7 +349,7 @@ export function InvoiceCategorySummary({
                                           {formatCurrency(item.amount)}
                                         </div>
                                         {item.confidence !== undefined && (
-                                          <Badge 
+                                          <Badge
                                             size="sm"
                                             className={getConfidenceColor(item.confidence)}
                                             variant="secondary"

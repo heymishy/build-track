@@ -1,14 +1,14 @@
 'use client'
 
 import React, { useState } from 'react'
-import { 
+import {
   PlusIcon,
   ClockIcon,
   PhotoIcon,
   CurrencyDollarIcon,
   UserGroupIcon,
   WrenchScrewdriverIcon,
-  CheckCircleIcon
+  CheckCircleIcon,
 } from '@heroicons/react/24/outline'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
@@ -38,35 +38,31 @@ export function ConstructionStage({ project, activeTab }: ConstructionStageProps
     switch (activeTab) {
       case 'overview':
         return <ConstructionOverview project={project} />
-      
+
       case 'progress':
         return <WeeklyProgressManager projectId={project.id} />
-      
+
       case 'milestones':
         return <MilestoneManagement project={project} />
-      
+
       case 'labor':
         return <LaborTrackingManager projectId={project.id} />
-      
+
       case 'invoices':
         return <InvoiceManagement project={project} />
-      
+
       case 'subcontractors':
         return <SubcontractorManagement project={project} />
-      
+
       case 'documents':
         return <ConstructionDocuments project={project} />
-      
+
       default:
         return <ConstructionOverview project={project} />
     }
   }
 
-  return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-      {renderTabContent()}
-    </div>
-  )
+  return <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">{renderTabContent()}</div>
 }
 
 function ConstructionOverview({ project }: { project: Project }) {
@@ -76,29 +72,29 @@ function ConstructionOverview({ project }: { project: Project }) {
       description: 'Add weekly progress with photos',
       icon: PhotoIcon,
       color: 'bg-orange-500',
-      action: () => console.log('Log progress')
+      action: () => console.log('Log progress'),
     },
     {
       title: 'Track Labor',
       description: 'Log work hours for team members',
       icon: ClockIcon,
       color: 'bg-blue-500',
-      action: () => console.log('Track labor')
+      action: () => console.log('Track labor'),
     },
     {
       title: 'Process Invoice',
       description: 'Add supplier and subcontractor invoices',
       icon: CurrencyDollarIcon,
       color: 'bg-green-500',
-      action: () => console.log('Process invoice')
+      action: () => console.log('Process invoice'),
     },
     {
       title: 'Update Milestone',
       description: 'Mark milestones as complete',
       icon: CheckCircleIcon,
       color: 'bg-purple-500',
-      action: () => console.log('Update milestone')
-    }
+      action: () => console.log('Update milestone'),
+    },
   ]
 
   return (
@@ -107,9 +103,7 @@ function ConstructionOverview({ project }: { project: Project }) {
       <div className="bg-gradient-to-r from-orange-50 to-red-50 rounded-lg p-6 border border-orange-200">
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">
-              Construction in Progress
-            </h1>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">Construction in Progress</h1>
             <p className="text-gray-600 mb-4">
               Track work progress, manage labor, and process invoices
             </p>
@@ -118,31 +112,30 @@ function ConstructionOverview({ project }: { project: Project }) {
                 Construction Stage
               </Badge>
               <span className="text-sm text-gray-500">
-                Started: {project.startDate ? new Date(project.startDate).toLocaleDateString() : 'Not set'}
+                Started:{' '}
+                {project.startDate ? new Date(project.startDate).toLocaleDateString() : 'Not set'}
               </span>
             </div>
           </div>
-          <Button className="bg-green-600 hover:bg-green-700">
-            Mark Complete
-          </Button>
+          <Button className="bg-green-600 hover:bg-green-700">Mark Complete</Button>
         </div>
       </div>
 
       {/* Quick Actions Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {quickActions.map((action, index) => (
-          <Card key={index} className="p-6 hover:shadow-md transition-shadow cursor-pointer" onClick={action.action}>
+          <Card
+            key={index}
+            className="p-6 hover:shadow-md transition-shadow cursor-pointer"
+            onClick={action.action}
+          >
             <div className="flex items-start">
               <div className={`rounded-lg p-3 ${action.color}`}>
                 <action.icon className="w-6 h-6 text-white" />
               </div>
               <div className="ml-4">
-                <h3 className="text-lg font-medium text-gray-900 mb-1">
-                  {action.title}
-                </h3>
-                <p className="text-sm text-gray-500">
-                  {action.description}
-                </p>
+                <h3 className="text-lg font-medium text-gray-900 mb-1">{action.title}</h3>
+                <p className="text-sm text-gray-500">{action.description}</p>
               </div>
             </div>
           </Card>
@@ -161,7 +154,9 @@ function ConstructionOverview({ project }: { project: Project }) {
             <div className="flex justify-between">
               <span className="text-gray-600">Completion Date</span>
               <span className="font-medium text-sm">
-                {project.estimatedEndDate ? new Date(project.estimatedEndDate).toLocaleDateString() : 'TBD'}
+                {project.estimatedEndDate
+                  ? new Date(project.estimatedEndDate).toLocaleDateString()
+                  : 'TBD'}
               </span>
             </div>
           </div>
@@ -278,8 +273,11 @@ function LaborTracking({ project }: { project: Project }) {
       <Card className="p-6">
         <h3 className="text-lg font-medium text-gray-900 mb-4">Hourly Rates</h3>
         <div className="space-y-4">
-          {laborRoles.map((labor) => (
-            <div key={labor.role} className="flex items-center justify-between py-3 border-b last:border-b-0">
+          {laborRoles.map(labor => (
+            <div
+              key={labor.role}
+              className="flex items-center justify-between py-3 border-b last:border-b-0"
+            >
               <div>
                 <span className="font-medium text-gray-900">{labor.role}</span>
                 <span className="text-sm text-gray-500 ml-2">
@@ -410,7 +408,8 @@ function ConstructionDocuments({ project }: { project: Project }) {
           </div>
           <div className="ml-3">
             <p className="text-sm text-orange-800">
-              <strong>Construction Stage:</strong> Estimates are now locked. Documents uploaded here are for construction tracking and progress documentation.
+              <strong>Construction Stage:</strong> Estimates are now locked. Documents uploaded here
+              are for construction tracking and progress documentation.
             </p>
           </div>
         </div>
@@ -424,9 +423,7 @@ function ConstructionDocuments({ project }: { project: Project }) {
             Upload progress photos, updated plans, and construction documentation
           </p>
           <div className="mt-6">
-            <Button>
-              Upload Documents
-            </Button>
+            <Button>Upload Documents</Button>
           </div>
         </div>
       </Card>

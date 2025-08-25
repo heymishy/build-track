@@ -94,7 +94,7 @@ describe('MilestoneManagement', () => {
 
       expect(screen.getByText('Project Milestones')).toBeInTheDocument()
       expect(screen.getByRole('button', { name: /add milestone/i })).toBeInTheDocument()
-      
+
       await waitFor(() => {
         expect(screen.getByText('Foundation Complete')).toBeInTheDocument()
         expect(screen.getByText('Framing Complete')).toBeInTheDocument()
@@ -109,7 +109,7 @@ describe('MilestoneManagement', () => {
         // Check for progress indicators
         const progressBars = screen.getAllByRole('progressbar')
         expect(progressBars).toHaveLength(3)
-        
+
         // Check for status badges
         expect(screen.getByText('COMPLETED')).toBeInTheDocument()
         expect(screen.getByText('IN_PROGRESS')).toBeInTheDocument()

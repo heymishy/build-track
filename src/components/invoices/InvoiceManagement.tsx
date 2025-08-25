@@ -71,7 +71,7 @@ interface InvoiceManagementProps {
 const getCurrentProject = () => {
   return {
     id: 'mock-project-id',
-    name: 'Mock Project'
+    name: 'Mock Project',
   }
 }
 
@@ -94,7 +94,7 @@ export function InvoiceManagement({
   const [reviewingInvoice, setReviewingInvoice] = useState<ParsedInvoice | null>(null)
   const [showPdfReviewModal, setShowPdfReviewModal] = useState(false)
   const [detailTab, setDetailTab] = useState<'details' | 'categories'>('details')
-  
+
   // Mock current project (in real implementation, this would come from context)
   const currentProject = getCurrentProject()
 
@@ -644,7 +644,7 @@ export function InvoiceManagement({
                 <XMarkIcon className="h-6 w-6" />
               </button>
             </div>
-            
+
             {/* Tab Navigation */}
             <div className="border-b border-gray-200 mb-6">
               <nav className="-mb-px flex space-x-8">
@@ -678,19 +678,33 @@ export function InvoiceManagement({
                   <div>
                     <h4 className="font-medium text-gray-900 mb-2">Invoice Information</h4>
                     <div className="space-y-2 text-sm">
-                      <p><span className="font-medium">Number:</span> {selectedInvoice.invoiceNumber}</p>
-                      <p><span className="font-medium">Supplier:</span> {selectedInvoice.supplierName}</p>
-                      <p><span className="font-medium">Date:</span> {formatDate(selectedInvoice.invoiceDate)}</p>
-                      <p><span className="font-medium">Total:</span> {formatCurrency(selectedInvoice.totalAmount)}</p>
-                      <p><span className="font-medium">Status:</span> 
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ml-2 ${getStatusColor(selectedInvoice.status)}`}>
+                      <p>
+                        <span className="font-medium">Number:</span> {selectedInvoice.invoiceNumber}
+                      </p>
+                      <p>
+                        <span className="font-medium">Supplier:</span>{' '}
+                        {selectedInvoice.supplierName}
+                      </p>
+                      <p>
+                        <span className="font-medium">Date:</span>{' '}
+                        {formatDate(selectedInvoice.invoiceDate)}
+                      </p>
+                      <p>
+                        <span className="font-medium">Total:</span>{' '}
+                        {formatCurrency(selectedInvoice.totalAmount)}
+                      </p>
+                      <p>
+                        <span className="font-medium">Status:</span>
+                        <span
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ml-2 ${getStatusColor(selectedInvoice.status)}`}
+                        >
                           {getStatusIcon(selectedInvoice.status)}
                           <span className="ml-1">{selectedInvoice.status}</span>
                         </span>
                       </p>
                     </div>
                   </div>
-                  
+
                   {selectedInvoice.pdfUrl && (
                     <div>
                       <h4 className="font-medium text-gray-900 mb-2">PDF Document</h4>
@@ -763,7 +777,9 @@ export function InvoiceManagement({
                 {selectedInvoice.notes && (
                   <div className="mb-6">
                     <h4 className="font-medium text-gray-900 mb-2">Notes</h4>
-                    <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-md">{selectedInvoice.notes}</p>
+                    <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-md">
+                      {selectedInvoice.notes}
+                    </p>
                   </div>
                 )}
               </>

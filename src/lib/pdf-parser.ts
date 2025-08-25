@@ -71,13 +71,13 @@ export async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string[]> {
     }
   } catch (error) {
     console.warn('Primary PDF.js extraction failed:', error)
-    
+
     try {
       // Try alternative extraction method
       return await extractAlternative(pdfBuffer)
     } catch (alternativeError) {
       console.warn('Alternative extraction failed:', alternativeError)
-      
+
       // Final fallback with structured content
       return generateEnhancedFallback(pdfBuffer, error as Error)
     }
@@ -89,7 +89,7 @@ export async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string[]> {
  */
 function isPDFBuffer(buffer: Buffer): boolean {
   if (buffer.length < 5) return false
-  
+
   // Check PDF header signature
   const header = buffer.toString('ascii', 0, 5)
   return header === '%PDF-'
@@ -129,7 +129,7 @@ function generateEnhancedFallback(pdfBuffer: Buffer, originalError: Error): stri
   const errorInfo = `Error: ${originalError.message.slice(0, 100)}`
   const timestamp = new Date().toISOString()
   const fileSizeKB = (pdfBuffer.length / 1024).toFixed(1)
-  
+
   // Generate structured content that LLM can still parse for basic info
   return [
     `INVOICE PROCESSING FALLBACK
@@ -161,7 +161,7 @@ INSTRUCTIONS:
 - Verify all calculations
 - Update vendor and description information
 
-PROCESSING NOTE: This document requires manual data entry due to PDF extraction limitations.`
+PROCESSING NOTE: This document requires manual data entry due to PDF extraction limitations.`,
   ]
 }
 
@@ -356,16 +356,16 @@ function isInvoicePage(text: string): boolean {
 
   // Scoring system
   let score = 0
-  
+
   // Strong indicators (high confidence)
   score += strongIndicators.filter(pattern => pattern.test(text)).length * 10
-  
+
   // Medium indicators
   score += mediumIndicators.filter(pattern => pattern.test(text)).length * 5
-  
-  // Weak indicators  
+
+  // Weak indicators
   score += weakIndicators.filter(pattern => pattern.test(text)).length * 1
-  
+
   // Negative scoring
   score -= negativeIndicators.filter(pattern => pattern.test(text)).length * 3
 
@@ -382,7 +382,7 @@ function isInvoicePage(text: string): boolean {
     /\bsteel\b/i,
     /\btimber\b/i,
   ]
-  
+
   score += constructionTerms.filter(pattern => pattern.test(text)).length * 2
 
   // Need minimum score to be considered an invoice
@@ -559,21 +559,21 @@ function extractInvoiceNumber(text: string): string | null {
     /\binvoice\s*#:?\s*([A-Z0-9\-_\/]+)/i,
     /\binvoice\s*(?:number|no\.?|num):?\s*([A-Z0-9\-_\/]+)/i,
     /\btax\s*invoice\s*(?:#|number|no\.?)?:?\s*([A-Z0-9\-_\/]+)/i,
-    
+
     // Short forms
     /\binv\.?\s*(?:#|number|no\.?|num)?:?\s*([A-Z0-9\-_\/]+)/i,
     /\bin\.?\s*(?:#|number|no\.?)?:?\s*([A-Z0-9\-_\/]+)/i,
-    
+
     // Reference patterns
     /\b(?:reference|ref\.?)\s*(?:#|number|no\.?)?:?\s*([A-Z0-9\-_\/]+)/i,
     /\bdocument\s*(?:#|number|no\.?)?:?\s*([A-Z0-9\-_\/]+)/i,
-    
+
     // Common invoice formats
     /\b(INV[-_]?\d{4,8})\b/i, // INV-12345, INV12345
     /\b(I\d{4,8})\b/, // I12345
     /\b(\d{4,8}[-_][A-Z]{2,4})\b/i, // 12345-INV, 12345_ABC
     /\b([A-Z]{2,4}[-_]?\d{4,8})\b/i, // ABC-12345, ABC12345
-    
+
     // Date-based invoice numbers
     /\b(\d{4}[-\/]\d{2}[-\/]\d{2}[-_]\d{3,6})\b/, // 2024-01-15-001
     /\b(\d{8}[-_]\d{3,6})\b/, // 20240115-001
@@ -583,7 +583,7 @@ function extractInvoiceNumber(text: string): string | null {
     const match = text.match(pattern)
     if (match && match[1]) {
       const invoiceNum = match[1].trim()
-      
+
       // Validate invoice number format
       if (isValidInvoiceNumber(invoiceNum)) {
         return invoiceNum
@@ -600,17 +600,17 @@ function extractInvoiceNumber(text: string): string | null {
 function isValidInvoiceNumber(text: string): boolean {
   // Length check (reasonable invoice number length)
   if (text.length < 3 || text.length > 20) return false
-  
+
   // Must contain at least one number or letter
   if (!/[A-Za-z0-9]/.test(text)) return false
-  
+
   // Shouldn't be all numbers if very short (likely not an invoice number)
   if (text.length < 5 && /^\d+$/.test(text)) return false
-  
+
   // Shouldn't contain common false positives
   const falsePositives = ['page', 'total', 'date', 'amount', 'tax', 'gst', 'vat']
   if (falsePositives.some(fp => text.toLowerCase().includes(fp))) return false
-  
+
   return true
 }
 
@@ -624,17 +624,17 @@ function extractDate(text: string): string | null {
     /\b(?:invoice\s*date|date\s*of\s*invoice|issue\s*date|bill\s*date)\s*:?\s*(\d{4}[-\/]\d{1,2}[-\/]\d{1,2})/i,
     /\b(?:invoice\s*date|date\s*of\s*invoice|issue\s*date|bill\s*date)\s*:?\s*([A-Za-z]{3,9}\s+\d{1,2},?\s+\d{4})/i,
     /\b(?:invoice\s*date|date\s*of\s*invoice|issue\s*date|bill\s*date)\s*:?\s*(\d{1,2}[-\s][A-Za-z]{3,9}[-\s]\d{4})/i,
-    
+
     // Generic date labels
     /\b(?:date|dated?)\s*:?\s*(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4})/i,
     /\b(?:date|dated?)\s*:?\s*(\d{4}[-\/]\d{1,2}[-\/]\d{1,2})/i,
     /\b(?:date|dated?)\s*:?\s*([A-Za-z]{3,9}\s+\d{1,2},?\s+\d{4})/i,
     /\b(?:date|dated?)\s*:?\s*(\d{1,2}[-\s][A-Za-z]{3,9}[-\s]\d{4})/i,
-    
+
     // International date formats
     /\b(\d{1,2}\.\d{1,2}\.\d{4})\b/, // DD.MM.YYYY (European)
     /\b(\d{4}\.\d{1,2}\.\d{1,2})\b/, // YYYY.MM.DD (International)
-    
+
     // Common standalone patterns (with context validation)
     /\b(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4})\b/g, // DD/MM/YYYY or MM/DD/YYYY
     /\b(\d{4}[-\/]\d{1,2}[-\/]\d{1,2})\b/g, // YYYY-MM-DD
@@ -643,7 +643,8 @@ function extractDate(text: string): string | null {
   ]
 
   // Try labeled patterns first (more reliable)
-  for (let i = 0; i < 8; i++) { // First 8 patterns have labels
+  for (let i = 0; i < 8; i++) {
+    // First 8 patterns have labels
     const pattern = patterns[i]
     const match = text.match(pattern)
     if (match && match[1]) {
@@ -657,7 +658,7 @@ function extractDate(text: string): string | null {
 
   // Try unlabeled patterns with context validation
   const candidates: string[] = []
-  
+
   for (let i = 8; i < patterns.length; i++) {
     const pattern = patterns[i]
     let match
@@ -665,16 +666,16 @@ function extractDate(text: string): string | null {
     while ((match = pattern.exec(text)) !== null) {
       const dateStr = match[1].trim()
       const normalized = normalizeDate(dateStr)
-      
+
       if (normalized && isReasonableDate(normalized)) {
         // Check context - prefer dates near invoice-related terms
         const matchIndex = match.index
         const contextBefore = text.substring(Math.max(0, matchIndex - 50), matchIndex)
         const contextAfter = text.substring(matchIndex, Math.min(text.length, matchIndex + 50))
         const context = contextBefore + contextAfter
-        
+
         const hasInvoiceContext = /\b(?:invoice|bill|date|issue|tax)\b/i.test(context)
-        
+
         if (hasInvoiceContext) {
           candidates.push(normalized)
         }
@@ -695,7 +696,7 @@ function isReasonableDate(dateStr: string): boolean {
     const now = new Date()
     const fiveYearsAgo = new Date(now.getFullYear() - 5, now.getMonth(), now.getDate())
     const oneYearFromNow = new Date(now.getFullYear() + 1, now.getMonth(), now.getDate())
-    
+
     // Must be a valid date within reasonable bounds
     return !isNaN(date.getTime()) && date >= fiveYearsAgo && date <= oneYearFromNow
   } catch {

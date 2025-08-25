@@ -18,24 +18,28 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 const sizeClasses = {
   sm: 'px-3 py-1.5 text-sm',
   md: 'px-4 py-2 text-base',
-  lg: 'px-6 py-3 text-lg'
+  lg: 'px-6 py-3 text-lg',
 }
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-  ({
-    variant = 'primary',
-    size = 'md',
-    loading = false,
-    icon,
-    iconPosition = 'left',
-    fullWidth = false,
-    disabled,
-    children,
-    className = '',
-    ...props
-  }, ref) => {
-    const baseClasses = 'inline-flex items-center justify-center font-medium rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed'
-    
+  (
+    {
+      variant = 'primary',
+      size = 'md',
+      loading = false,
+      icon,
+      iconPosition = 'left',
+      fullWidth = false,
+      disabled,
+      children,
+      className = '',
+      ...props
+    },
+    ref
+  ) => {
+    const baseClasses =
+      'inline-flex items-center justify-center font-medium rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed'
+
     const classes = utilities.cn(
       baseClasses,
       componentVariants.button[variant],
@@ -43,14 +47,9 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       fullWidth && 'w-full',
       className
     )
-    
+
     return (
-      <button
-        ref={ref}
-        disabled={disabled || loading}
-        className={classes}
-        {...props}
-      >
+      <button ref={ref} disabled={disabled || loading} className={classes} {...props}>
         {loading && (
           <svg
             className={utilities.cn(
@@ -76,19 +75,15 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
             />
           </svg>
         )}
-        
+
         {!loading && icon && iconPosition === 'left' && (
-          <span className={utilities.cn('mr-2', size === 'sm' && 'mr-1.5')}>
-            {icon}
-          </span>
+          <span className={utilities.cn('mr-2', size === 'sm' && 'mr-1.5')}>{icon}</span>
         )}
-        
+
         {children}
-        
+
         {!loading && icon && iconPosition === 'right' && (
-          <span className={utilities.cn('ml-2', size === 'sm' && 'ml-1.5')}>
-            {icon}
-          </span>
+          <span className={utilities.cn('ml-2', size === 'sm' && 'ml-1.5')}>{icon}</span>
         )}
       </button>
     )

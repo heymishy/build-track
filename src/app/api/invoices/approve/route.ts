@@ -96,7 +96,7 @@ async function POST(request: NextRequest, user: AuthUser) {
       for (const invoice of invoicesToApprove) {
         const approved = await tx.invoice.update({
           where: { id: invoice.id },
-          data: { 
+          data: {
             status: 'APPROVED',
             updatedAt: new Date(),
           },

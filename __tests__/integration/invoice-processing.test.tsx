@@ -25,7 +25,7 @@ jest.mock('next/navigation', () => ({
 // Mock PDF parser
 const mockParsePDF = jest.fn()
 jest.mock('@/lib/pdf-parser', () => ({
-  parsePDFInvoice: mockParsePDF
+  parsePDFInvoice: mockParsePDF,
 }))
 
 // Mock API service
@@ -41,9 +41,9 @@ jest.mock('@/services/data-service', () => ({
       uploadPDF: mockUploadInvoice,
       approve: mockApproveInvoice,
       reject: mockRejectInvoice,
-      getById: jest.fn()
-    }
-  }
+      getById: jest.fn(),
+    },
+  },
 }))
 
 const mockAuthContext = {
@@ -51,23 +51,21 @@ const mockAuthContext = {
     id: '1',
     email: 'test@example.com',
     name: 'Test User',
-    role: 'USER' as const
+    role: 'USER' as const,
   },
   isAuthenticated: true,
   login: jest.fn(),
   logout: jest.fn(),
   loading: false,
-  error: null
+  error: null,
 }
 
 jest.mock('@/hooks/useAuth', () => ({
-  useAuth: () => mockAuthContext
+  useAuth: () => mockAuthContext,
 }))
 
 const TestWrapper = ({ children }: { children: React.ReactNode }) => (
-  <AuthProvider>
-    {children}
-  </AuthProvider>
+  <AuthProvider>{children}</AuthProvider>
 )
 
 describe('Invoice Processing Integration Flow', () => {
@@ -76,34 +74,34 @@ describe('Invoice Processing Integration Flow', () => {
       id: '1',
       invoiceNumber: 'INV-001',
       supplierName: 'ABC Supplies',
-      totalAmount: 1250.00,
+      totalAmount: 1250.0,
       currency: 'USD',
       status: 'PENDING',
       invoiceDate: new Date('2024-01-15'),
       dueDate: new Date('2024-02-15'),
       projectId: 'proj-1',
       createdAt: new Date('2024-01-16'),
-      updatedAt: new Date('2024-01-16')
+      updatedAt: new Date('2024-01-16'),
     },
     {
       id: '2',
       invoiceNumber: 'INV-002',
       supplierName: 'XYZ Construction',
-      totalAmount: 5000.00,
+      totalAmount: 5000.0,
       currency: 'USD',
       status: 'APPROVED',
       invoiceDate: new Date('2024-01-20'),
       dueDate: new Date('2024-02-20'),
       projectId: 'proj-1',
       createdAt: new Date('2024-01-21'),
-      updatedAt: new Date('2024-01-25')
-    }
+      updatedAt: new Date('2024-01-25'),
+    },
   ]
 
   const mockParsedInvoice: ParsedInvoice = {
     invoiceNumber: 'INV-003',
     supplierName: 'New Supplier Inc',
-    totalAmount: 2500.00,
+    totalAmount: 2500.0,
     currency: 'USD',
     invoiceDate: new Date('2024-02-01'),
     dueDate: new Date('2024-03-01'),
@@ -111,17 +109,17 @@ describe('Invoice Processing Integration Flow', () => {
       {
         description: 'Construction Materials',
         quantity: 10,
-        unitPrice: 150.00,
-        totalPrice: 1500.00
+        unitPrice: 150.0,
+        totalPrice: 1500.0,
       },
       {
         description: 'Labor',
         quantity: 20,
-        unitPrice: 50.00,
-        totalPrice: 1000.00
-      }
+        unitPrice: 50.0,
+        totalPrice: 1000.0,
+      },
     ],
-    confidence: 0.95
+    confidence: 0.95,
   }
 
   beforeEach(() => {
@@ -133,8 +131,8 @@ describe('Invoice Processing Integration Flow', () => {
         page: 1,
         limit: 20,
         total: 2,
-        hasMore: false
-      }
+        hasMore: false,
+      },
     })
   })
 
@@ -169,8 +167,8 @@ describe('Invoice Processing Integration Flow', () => {
           page: 1,
           limit: 20,
           total: 0,
-          hasMore: false
-        }
+          hasMore: false,
+        },
       })
 
       render(
@@ -192,8 +190,8 @@ describe('Invoice Processing Integration Flow', () => {
         success: true,
         data: {
           invoices: [mockParsedInvoice],
-          processed: 1
-        }
+          processed: 1,
+        },
       })
 
       render(
@@ -209,7 +207,7 @@ describe('Invoice Processing Integration Flow', () => {
 
       // Create a mock PDF file
       const pdfFile = new File(['mock pdf content'], 'invoice.pdf', {
-        type: 'application/pdf'
+        type: 'application/pdf',
       })
 
       // Find file input and upload
@@ -227,7 +225,7 @@ describe('Invoice Processing Integration Flow', () => {
     it('handles PDF upload errors gracefully', async () => {
       mockUploadInvoice.mockResolvedValue({
         success: false,
-        error: 'Invalid PDF format'
+        error: 'Invalid PDF format',
       })
 
       render(
@@ -241,7 +239,7 @@ describe('Invoice Processing Integration Flow', () => {
       })
 
       const pdfFile = new File(['invalid content'], 'invalid.pdf', {
-        type: 'application/pdf'
+        type: 'application/pdf',
       })
 
       const fileInput = screen.getByLabelText(/upload invoice/i)
@@ -254,13 +252,18 @@ describe('Invoice Processing Integration Flow', () => {
 
     it('shows processing progress during upload', async () => {
       // Mock delayed response
-      mockUploadInvoice.mockImplementation(() => 
-        new Promise(resolve => 
-          setTimeout(() => resolve({
-            success: true,
-            data: { invoices: [mockParsedInvoice], processed: 1 }
-          }), 100)
-        )
+      mockUploadInvoice.mockImplementation(
+        () =>
+          new Promise(resolve =>
+            setTimeout(
+              () =>
+                resolve({
+                  success: true,
+                  data: { invoices: [mockParsedInvoice], processed: 1 },
+                }),
+              100
+            )
+          )
       )
 
       render(
@@ -270,7 +273,7 @@ describe('Invoice Processing Integration Flow', () => {
       )
 
       const pdfFile = new File(['mock pdf'], 'test.pdf', {
-        type: 'application/pdf'
+        type: 'application/pdf',
       })
 
       const fileInput = screen.getByLabelText(/upload invoice/i)
@@ -291,8 +294,8 @@ describe('Invoice Processing Integration Flow', () => {
         success: true,
         data: {
           ...mockInvoices[0],
-          status: 'APPROVED'
-        }
+          status: 'APPROVED',
+        },
       })
 
       render(
@@ -322,8 +325,8 @@ describe('Invoice Processing Integration Flow', () => {
         success: true,
         data: {
           ...mockInvoices[0],
-          status: 'REJECTED'
-        }
+          status: 'REJECTED',
+        },
       })
 
       render(
@@ -341,8 +344,8 @@ describe('Invoice Processing Integration Flow', () => {
 
       // Add rejection reason
       const reasonInput = screen.getByPlaceholderText(/rejection reason/i)
-      fireEvent.change(reasonInput, { 
-        target: { value: 'Incorrect amount' } 
+      fireEvent.change(reasonInput, {
+        target: { value: 'Incorrect amount' },
       })
 
       const confirmButton = screen.getByText(/confirm rejection/i)
@@ -375,7 +378,7 @@ describe('Invoice Processing Integration Flow', () => {
       // Verify detailed view shows parsed data
       expect(screen.getByText('ABC Supplies')).toBeInTheDocument()
       expect(screen.getByText('$1,250.00')).toBeInTheDocument()
-      
+
       // Check for validation indicators
       expect(screen.getByTestId(/validation-status/i)).toBeInTheDocument()
     })
@@ -396,14 +399,14 @@ describe('Invoice Processing Integration Flow', () => {
 
       // Edit supplier name
       const supplierInput = screen.getByDisplayValue('ABC Supplies')
-      fireEvent.change(supplierInput, { 
-        target: { value: 'ABC Supplies Ltd' } 
+      fireEvent.change(supplierInput, {
+        target: { value: 'ABC Supplies Ltd' },
       })
 
       // Edit amount
       const amountInput = screen.getByDisplayValue('1250.00')
-      fireEvent.change(amountInput, { 
-        target: { value: '1275.00' } 
+      fireEvent.change(amountInput, {
+        target: { value: '1275.00' },
       })
 
       const saveButton = screen.getByText(/save changes/i)
@@ -434,7 +437,7 @@ describe('Invoice Processing Integration Flow', () => {
       await waitFor(() => {
         expect(mockFetchInvoices).toHaveBeenCalledWith(
           expect.objectContaining({
-            search: 'ABC'
+            search: 'ABC',
           })
         )
       })
@@ -457,7 +460,7 @@ describe('Invoice Processing Integration Flow', () => {
       await waitFor(() => {
         expect(mockFetchInvoices).toHaveBeenCalledWith(
           expect.objectContaining({
-            status: ['PENDING']
+            status: ['PENDING'],
           })
         )
       })
@@ -488,8 +491,8 @@ describe('Invoice Processing Integration Flow', () => {
           expect.objectContaining({
             dateRange: {
               start: '2024-01-01',
-              end: '2024-01-31'
-            }
+              end: '2024-01-31',
+            },
           })
         )
       })
@@ -520,7 +523,7 @@ describe('Invoice Processing Integration Flow', () => {
     it('handles approval failures with user feedback', async () => {
       mockApproveInvoice.mockResolvedValue({
         success: false,
-        error: 'Insufficient permissions'
+        error: 'Insufficient permissions',
       })
 
       render(

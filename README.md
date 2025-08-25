@@ -108,7 +108,7 @@ npm run start           # Start production server locally
 
 # Code Quality (REQUIRED before commits)
 npm run lint            # ESLint checking - must pass
-npm run typecheck       # TypeScript validation - must pass  
+npm run typecheck       # TypeScript validation - must pass
 npm run format          # Prettier formatting - auto-fix
 npm run format:check    # Check formatting compliance
 
@@ -136,36 +136,40 @@ npm run deploy:vercel   # Deploy to Vercel production
 ## 🏗️ Development Workflow
 
 ### Multi-Tier Architecture
+
 This application operates across multiple deployment tiers with different characteristics:
 
-| Aspect | Development (`localhost:3006`) | Production (Vercel) |
-|--------|-------------------------------|-------------------|
-| **Database** | SQLite (`prisma/dev.db`) | PostgreSQL (Supabase) |
-| **File Storage** | Local filesystem | Vercel Blob storage |
-| **Security** | Relaxed CORS policies | Strict CSP headers |
-| **Performance** | Fast iteration, debug logging | Optimized builds, error tracking |
-| **Environment** | `.env.local` configuration | Vercel environment variables |
+| Aspect           | Development (`localhost:3006`) | Production (Vercel)              |
+| ---------------- | ------------------------------ | -------------------------------- |
+| **Database**     | SQLite (`prisma/dev.db`)       | PostgreSQL (Supabase)            |
+| **File Storage** | Local filesystem               | Vercel Blob storage              |
+| **Security**     | Relaxed CORS policies          | Strict CSP headers               |
+| **Performance**  | Fast iteration, debug logging  | Optimized builds, error tracking |
+| **Environment**  | `.env.local` configuration     | Vercel environment variables     |
 
 ### Change Management Process
+
 Every code change must follow this workflow:
 
 1. **🔍 Analysis**: Understand impact across development and production tiers
-2. **📝 Planning**: Update relevant specifications and documentation  
+2. **📝 Planning**: Update relevant specifications and documentation
 3. **⚡ Implementation**: Code with tier-specific considerations
 4. **🧪 Testing**: Validate functionality across both SQLite and PostgreSQL
 5. **📚 Documentation**: Update CLAUDE.md, prod-spec.md, and README.md
 6. **🚀 Deployment**: Staged rollout with monitoring and validation
 
 ### Pre-Commit Requirements
+
 ```bash
 # These commands MUST pass before any commit:
 npm run typecheck    # TypeScript compilation - zero errors
-npm run lint        # ESLint validation - zero warnings  
+npm run lint        # ESLint validation - zero warnings
 npm run test        # Unit tests - 100% pass rate
 npm run format:check # Code formatting - compliance required
 ```
 
 ### Pre-Deployment Requirements
+
 ```bash
 # These commands MUST pass before production deployment:
 npm run test:all     # Complete test suite - all tests passing
@@ -249,8 +253,9 @@ src/
 #### 🆕 Complete Feature Implementation (August 2025)
 
 **NEW PAGES IMPLEMENTED:**
+
 - **🆕 Projects Management** (`/projects`): Complete project interface with statistics, CRUD operations, and budget tracking
-- **🆕 Estimates Manager** (`/estimates`): Comprehensive cost management with accuracy analysis and variance tracking  
+- **🆕 Estimates Manager** (`/estimates`): Comprehensive cost management with accuracy analysis and variance tracking
 - **🆕 Analytics Dashboard** (`/analytics`): Financial insights, project health scoring, and performance reporting
 - **🔧 Security Hardening**: Fixed critical API security vulnerabilities and enhanced middleware protection
 
@@ -262,7 +267,7 @@ src/
 - **Intelligent Batch Processing**: Process multiple invoices against project estimates efficiently
 - **Three-Tier Fallback System**:
   1. **Primary**: LLM-based matching with confidence scoring
-  2. **Fallback**: Logic-based string similarity and semantic analysis  
+  2. **Fallback**: Logic-based string similarity and semantic analysis
   3. **Manual**: User-controlled override with dropdown selection
 - **Cost Optimization**: ~$0.001 per request, with cache hits costing nothing
 - **Performance Improvements**:
@@ -273,6 +278,7 @@ src/
 #### 🚧 Upcoming Feature: Supplier/Subcontractor Portal
 
 **NEW REQUIREMENT**: Direct invoice upload portal for external suppliers
+
 - **📧 Email-Based Access**: Simple authentication using approved supplier email lists
 - **🏗️ Project Association**: Automatic invoice linking to correct projects
 - **📱 Mobile-Optimized**: Field-ready interface for suppliers and subcontractors
@@ -304,23 +310,23 @@ src/
 
 ### ✅ **Fully Implemented Features**
 
-| Feature | UI Page | API Endpoints | Status |
-|---------|---------|---------------|--------|
-| **Authentication** | `/login`, `/register` | `/api/auth/*` | ✅ Complete |
-| **Projects** | `/projects` 🆕 | `/api/projects/*` | ✅ Complete |
-| **Estimates** | `/estimates` 🆕 | `/api/estimates/*` | ✅ Complete |
-| **Invoices** | `/invoices` | `/api/invoices/*` | ✅ Complete |
-| **Analytics** | `/analytics` 🆕 | `/api/analytics/*` | ✅ Complete |
-| **Documents** | `/documents` | `/api/documents/*` | ✅ Complete |
-| **Settings** | `/settings` | `/api/settings/*` | ✅ Complete |
-| **Dashboard** | `/dashboard` | Multiple APIs | ✅ Complete |
+| Feature            | UI Page               | API Endpoints      | Status      |
+| ------------------ | --------------------- | ------------------ | ----------- |
+| **Authentication** | `/login`, `/register` | `/api/auth/*`      | ✅ Complete |
+| **Projects**       | `/projects` 🆕        | `/api/projects/*`  | ✅ Complete |
+| **Estimates**      | `/estimates` 🆕       | `/api/estimates/*` | ✅ Complete |
+| **Invoices**       | `/invoices`           | `/api/invoices/*`  | ✅ Complete |
+| **Analytics**      | `/analytics` 🆕       | `/api/analytics/*` | ✅ Complete |
+| **Documents**      | `/documents`          | `/api/documents/*` | ✅ Complete |
+| **Settings**       | `/settings`           | `/api/settings/*`  | ✅ Complete |
+| **Dashboard**      | `/dashboard`          | Multiple APIs      | ✅ Complete |
 
 ### 🚧 **Planned Features**
 
-| Feature | Status | Priority |
-|---------|--------|----------|
-| **Supplier Portal** | 📋 Specified | High |
-| **Supplier Management** | 📋 Specified | High |
+| Feature                 | Status       | Priority |
+| ----------------------- | ------------ | -------- |
+| **Supplier Portal**     | 📋 Specified | High     |
+| **Supplier Management** | 📋 Specified | High     |
 
 ### 🔧 **Security Status**
 
@@ -350,6 +356,7 @@ Test files include:
 - **PDF Testing**: Automated PDF generation and parsing validation
 
 ### Test Coverage Requirements
+
 - **Unit Tests**: 90%+ coverage for business logic
 - **Integration Tests**: All API endpoints tested
 - **E2E Tests**: Critical user journeys covered

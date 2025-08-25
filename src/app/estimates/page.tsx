@@ -14,13 +14,13 @@ import { CostTrackingDashboard } from '@/components/estimates/CostTrackingDashbo
 import { ProjectSelector } from '@/components/projects/ProjectSelector'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
-import { 
+import {
   CalculatorIcon,
   ChartBarIcon,
   DocumentTextIcon,
   ExclamationTriangleIcon,
   ArrowPathIcon,
-  PlusIcon
+  PlusIcon,
 } from '@heroicons/react/24/outline'
 
 interface Project {
@@ -52,7 +52,7 @@ export default function EstimatesPage() {
     try {
       setLoading(true)
       const response = await fetch('/api/projects', {
-        credentials: 'include'
+        credentials: 'include',
       })
 
       if (!response.ok) {
@@ -61,7 +61,7 @@ export default function EstimatesPage() {
 
       const data = await response.json()
       setProjects(data.projects || [])
-      
+
       // Auto-select first project if none selected
       if (!selectedProject && data.projects?.length > 0) {
         setSelectedProject(data.projects[0])
@@ -69,7 +69,6 @@ export default function EstimatesPage() {
 
       // Fetch estimates accuracy data
       await fetchEstimatesAccuracy()
-
     } catch (err) {
       console.error('Error fetching projects:', err)
       setError('Failed to load projects')
@@ -81,7 +80,7 @@ export default function EstimatesPage() {
   const fetchEstimatesAccuracy = async () => {
     try {
       const response = await fetch('/api/estimates/accuracy', {
-        credentials: 'include'
+        credentials: 'include',
       })
 
       if (response.ok) {
@@ -91,7 +90,7 @@ export default function EstimatesPage() {
           projectsWithEstimates: data.projectsWithEstimates || 0,
           averageAccuracy: data.averageAccuracy || 0,
           totalEstimatedValue: data.totalEstimatedValue || 0,
-          currency: 'NZD'
+          currency: 'NZD',
         })
       }
     } catch (err) {
@@ -171,7 +170,7 @@ export default function EstimatesPage() {
             <h1 className="text-2xl font-bold text-gray-900">Estimates</h1>
             <p className="text-gray-600">Manage project estimates and track accuracy</p>
           </div>
-          
+
           <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-3 sm:space-y-0 sm:space-x-4">
             <ProjectSelector
               selectedProject={selectedProject}
@@ -205,7 +204,9 @@ export default function EstimatesPage() {
                 </div>
                 <div className="ml-4">
                   <dt className="text-sm font-medium text-gray-500">With Estimates</dt>
-                  <dd className="text-2xl font-bold text-gray-900">{summary.projectsWithEstimates}</dd>
+                  <dd className="text-2xl font-bold text-gray-900">
+                    {summary.projectsWithEstimates}
+                  </dd>
                 </div>
               </div>
             </Card>
@@ -285,10 +286,7 @@ export default function EstimatesPage() {
         {selectedProject ? (
           <div className="space-y-6">
             {activeTab === 'overview' && (
-              <EstimateManager
-                projectId={selectedProject.id}
-                data-testid="estimate-manager"
-              />
+              <EstimateManager projectId={selectedProject.id} data-testid="estimate-manager" />
             )}
 
             {activeTab === 'accuracy' && (
@@ -297,10 +295,7 @@ export default function EstimatesPage() {
                   <h2 className="text-lg font-medium text-gray-900 mb-4">
                     Estimate Accuracy Analysis
                   </h2>
-                  <AccuracyMeter
-                    projectId={selectedProject.id}
-                    data-testid="accuracy-meter"
-                  />
+                  <AccuracyMeter projectId={selectedProject.id} data-testid="accuracy-meter" />
                 </Card>
               </div>
             )}
@@ -320,14 +315,13 @@ export default function EstimatesPage() {
               <CalculatorIcon className="mx-auto h-12 w-12 text-gray-400" />
               <h3 className="mt-2 text-sm font-medium text-gray-900">No Project Selected</h3>
               <p className="mt-1 text-sm text-gray-500">
-                {projects.length > 0 
+                {projects.length > 0
                   ? 'Please select a project to view and manage estimates.'
-                  : 'Create a project first to start managing estimates.'
-                }
+                  : 'Create a project first to start managing estimates.'}
               </p>
               {projects.length === 0 && (
                 <div className="mt-6">
-                  <Button onClick={() => window.location.href = '/projects'}>
+                  <Button onClick={() => (window.location.href = '/projects')}>
                     <PlusIcon className="h-4 w-4 mr-2" />
                     Create Project
                   </Button>

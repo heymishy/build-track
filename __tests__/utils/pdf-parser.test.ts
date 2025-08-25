@@ -52,7 +52,7 @@ describe('PDF Parser', () => {
       const mockPDFBuffer = Buffer.from('%PDF-1.4 construction invoice data')
 
       const result = await extractTextFromPDF(mockPDFBuffer)
-      
+
       expect(result[0]).toMatch(/INVOICE|Invoice|TAX INVOICE/)
       expect(result[0]).toMatch(/\$[\d,]+\.?\d*/)
       expect(result[0]).toContain('PROCESSING FALLBACK')
@@ -68,7 +68,7 @@ describe('PDF Parser', () => {
       const invoiceBuffer = Buffer.from('%PDF-1.4\nTAX INVOICE\nABN: 123456789\nGST: $150.00')
 
       const result = await extractTextFromPDF(invoiceBuffer)
-      
+
       expect(result[0]).toContain('ERROR:')
       expect(result[0]).toContain('TIMESTAMP:')
       expect(result[0]).toContain('FILE:')
@@ -161,7 +161,7 @@ No clear structure here`
     it('should parse dates in various formats', async () => {
       const invoiceText = `INVOICE\nInvoice #: TEST-001\nDate: 2024-01-15\nTotal: $100.00`
       const parsed = await parseInvoiceFromText(invoiceText)
-      
+
       // Mock returns standardized date
       expect(parsed.date).toBe('2024-01-15')
     })

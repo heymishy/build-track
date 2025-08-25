@@ -11,17 +11,14 @@ export async function POST(request: NextRequest) {
     // Verify this is a legitimate cron request
     const authHeader = request.headers.get('authorization')
     const cronSecret = process.env.CRON_SECRET
-    
+
     if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const cleanupResults = {
       timestamp: new Date().toISOString(),
-      tasks: [] as Array<{ task: string; status: string; count?: number; error?: string }>
+      tasks: [] as Array<{ task: string; status: string; count?: number; error?: string }>,
     }
 
     // Task 1: Clean up old temporary files and expired sessions
@@ -30,13 +27,13 @@ export async function POST(request: NextRequest) {
       cleanupResults.tasks.push({
         task: 'temporary_files',
         status: 'success',
-        count: 0
+        count: 0,
       })
     } catch (error) {
       cleanupResults.tasks.push({
         task: 'temporary_files',
         status: 'error',
-        error: (error as Error).message
+        error: (error as Error).message,
       })
     }
 
@@ -47,17 +44,17 @@ export async function POST(request: NextRequest) {
 
       // In a real implementation, you might archive rather than delete
       const archivedCount = 0 // Placeholder
-      
+
       cleanupResults.tasks.push({
         task: 'archive_training_data',
         status: 'success',
-        count: archivedCount
+        count: archivedCount,
       })
     } catch (error) {
       cleanupResults.tasks.push({
         task: 'archive_training_data',
         status: 'error',
-        error: (error as Error).message
+        error: (error as Error).message,
       })
     }
 
@@ -65,20 +62,20 @@ export async function POST(request: NextRequest) {
     try {
       const orphanedItems = await prisma.invoiceLineItem.deleteMany({
         where: {
-          invoice: null
-        }
+          invoice: null,
+        },
       })
 
       cleanupResults.tasks.push({
         task: 'cleanup_orphaned_items',
         status: 'success',
-        count: orphanedItems.count
+        count: orphanedItems.count,
       })
     } catch (error) {
       cleanupResults.tasks.push({
         task: 'cleanup_orphaned_items',
         status: 'error',
-        error: (error as Error).message
+        error: (error as Error).message,
       })
     }
 
@@ -86,42 +83,45 @@ export async function POST(request: NextRequest) {
     try {
       // This would update any cached analytics or statistics
       const projectCount = await prisma.project.count()
-      
+
       cleanupResults.tasks.push({
         task: 'update_statistics_cache',
         status: 'success',
-        count: projectCount
+        count: projectCount,
       })
     } catch (error) {
       cleanupResults.tasks.push({
         task: 'update_statistics_cache',
         status: 'error',
-        error: (error as Error).message
+        error: (error as Error).message,
       })
     }
 
     // Task 5: Vacuum database (PostgreSQL specific)
     try {
-      if (process.env.NODE_ENV === 'production' && process.env.DATABASE_URL?.includes('postgresql')) {
+      if (
+        process.env.NODE_ENV === 'production' &&
+        process.env.DATABASE_URL?.includes('postgresql')
+      ) {
         // Note: VACUUM cannot be run inside a transaction in PostgreSQL
         // This would typically be handled at the database level
         cleanupResults.tasks.push({
           task: 'database_vacuum',
           status: 'skipped',
-          count: 0
+          count: 0,
         })
       } else {
         cleanupResults.tasks.push({
           task: 'database_vacuum',
           status: 'not_applicable',
-          count: 0
+          count: 0,
         })
       }
     } catch (error) {
       cleanupResults.tasks.push({
         task: 'database_vacuum',
         status: 'error',
-        error: (error as Error).message
+        error: (error as Error).message,
       })
     }
 
@@ -131,24 +131,23 @@ export async function POST(request: NextRequest) {
     console.log('Cleanup completed:', {
       successCount,
       errorCount,
-      tasks: cleanupResults.tasks
+      tasks: cleanupResults.tasks,
     })
 
     return NextResponse.json({
       success: true,
       message: `Cleanup completed: ${successCount} successful, ${errorCount} errors`,
-      results: cleanupResults
+      results: cleanupResults,
     })
-
   } catch (error) {
     console.error('System cleanup failed:', error)
-    
+
     return NextResponse.json(
       {
         success: false,
         error: 'System cleanup failed',
         message: (error as Error).message,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       },
       { status: 500 }
     )
@@ -161,10 +160,7 @@ export async function POST(request: NextRequest) {
 // Allow GET requests for manual testing (in non-production environments)
 export async function GET(request: NextRequest) {
   if (process.env.NODE_ENV === 'production') {
-    return NextResponse.json(
-      { error: 'GET method not allowed in production' },
-      { status: 405 }
-    )
+    return NextResponse.json({ error: 'GET method not allowed in production' }, { status: 405 })
   }
 
   // In development, allow manual cleanup trigger

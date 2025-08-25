@@ -4,11 +4,15 @@
  */
 
 import { NextRequest } from 'next/server'
-import { GET as getMilestones, POST as createMilestone, PUT as updateMilestone } from '@/app/api/projects/[id]/milestones/route'
+import {
+  GET as getMilestones,
+  POST as createMilestone,
+  PUT as updateMilestone,
+} from '@/app/api/projects/[id]/milestones/route'
 import { GET as getAnalytics } from '@/app/api/projects/[id]/analytics/route'
 
 // Mock database operations
-jest.mock('@/lib/db', () => ({
+jest.mock('@/lib/prisma', () => ({
   prisma: {
     milestone: {
       findMany: jest.fn(),
@@ -123,8 +127,8 @@ describe('Milestone and Analytics Integration', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
-    mockPrisma = require('@/lib/db').prisma
-    
+    mockPrisma = require('@/lib/prisma').prisma
+
     // Setup default mocks
     mockPrisma.project.findUnique.mockResolvedValue(mockProject)
     mockPrisma.milestone.findMany.mockResolvedValue(mockMilestones)
@@ -153,16 +157,19 @@ describe('Milestone and Analytics Integration', () => {
       mockPrisma.milestone.findMany.mockResolvedValue([...mockMilestones, newMilestone])
 
       // Create milestone
-      const createRequest = new NextRequest('http://localhost:3000/api/projects/project-1/milestones', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: 'Electrical Complete',
-          description: 'Complete electrical work',
-          targetDate: '2024-08-15',
-          amount: 15000,
-        }),
-      })
+      const createRequest = new NextRequest(
+        'http://localhost:3000/api/projects/project-1/milestones',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: 'Electrical Complete',
+            description: 'Complete electrical work',
+            targetDate: '2024-08-15',
+            amount: 15000,
+          }),
+        }
+      )
 
       const createResponse = await createMilestone(createRequest, { params: { id: 'project-1' } })
       const createResult = await createResponse.json()
@@ -171,8 +178,12 @@ describe('Milestone and Analytics Integration', () => {
       expect(mockPrisma.milestone.create).toHaveBeenCalled()
 
       // Verify analytics reflect the new milestone
-      const analyticsRequest = new NextRequest('http://localhost:3000/api/projects/project-1/analytics')
-      const analyticsResponse = await getAnalytics(analyticsRequest, { params: { id: 'project-1' } })
+      const analyticsRequest = new NextRequest(
+        'http://localhost:3000/api/projects/project-1/analytics'
+      )
+      const analyticsResponse = await getAnalytics(analyticsRequest, {
+        params: { id: 'project-1' },
+      })
       const analyticsResult = await analyticsResponse.json()
 
       expect(analyticsResult.success).toBe(true)
@@ -190,31 +201,34 @@ describe('Milestone and Analytics Integration', () => {
       }
 
       mockPrisma.milestone.update.mockResolvedValue(updatedMilestone)
-      mockPrisma.milestone.findMany.mockResolvedValue([
-        mockMilestones[0],
-        updatedMilestone,
-      ])
+      mockPrisma.milestone.findMany.mockResolvedValue([mockMilestones[0], updatedMilestone])
 
       // Update milestone progress
-      const updateRequest = new NextRequest('http://localhost:3000/api/projects/project-1/milestones/milestone-2', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          progress: 90,
-        }),
-      })
-
-      const updateResponse = await updateMilestone(
-        updateRequest,
-        { params: { id: 'project-1', milestoneId: 'milestone-2' } }
+      const updateRequest = new NextRequest(
+        'http://localhost:3000/api/projects/project-1/milestones/milestone-2',
+        {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            progress: 90,
+          }),
+        }
       )
+
+      const updateResponse = await updateMilestone(updateRequest, {
+        params: { id: 'project-1', milestoneId: 'milestone-2' },
+      })
       const updateResult = await updateResponse.json()
 
       expect(updateResult.success).toBe(true)
 
       // Verify analytics show updated progress
-      const analyticsRequest = new NextRequest('http://localhost:3000/api/projects/project-1/analytics')
-      const analyticsResponse = await getAnalytics(analyticsRequest, { params: { id: 'project-1' } })
+      const analyticsRequest = new NextRequest(
+        'http://localhost:3000/api/projects/project-1/analytics'
+      )
+      const analyticsResponse = await getAnalytics(analyticsRequest, {
+        params: { id: 'project-1' },
+      })
       const analyticsResult = await analyticsResponse.json()
 
       expect(analyticsResult.success).toBe(true)
@@ -235,38 +249,41 @@ describe('Milestone and Analytics Integration', () => {
       }
 
       mockPrisma.milestone.update.mockResolvedValue(completedMilestone)
-      mockPrisma.milestone.findMany.mockResolvedValue([
-        mockMilestones[0],
-        completedMilestone,
-      ])
+      mockPrisma.milestone.findMany.mockResolvedValue([mockMilestones[0], completedMilestone])
 
       // Complete milestone
-      const updateRequest = new NextRequest('http://localhost:3000/api/projects/project-1/milestones/milestone-2', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          progress: 100,
-          status: 'COMPLETED',
-          actualDate: '2024-06-10',
-        }),
-      })
-
-      const updateResponse = await updateMilestone(
-        updateRequest,
-        { params: { id: 'project-1', milestoneId: 'milestone-2' } }
+      const updateRequest = new NextRequest(
+        'http://localhost:3000/api/projects/project-1/milestones/milestone-2',
+        {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            progress: 100,
+            status: 'COMPLETED',
+            actualDate: '2024-06-10',
+          }),
+        }
       )
+
+      const updateResponse = await updateMilestone(updateRequest, {
+        params: { id: 'project-1', milestoneId: 'milestone-2' },
+      })
 
       expect(updateResponse.status).toBe(200)
 
       // Verify analytics show milestone completion
-      const analyticsRequest = new NextRequest('http://localhost:3000/api/projects/project-1/analytics')
-      const analyticsResponse = await getAnalytics(analyticsRequest, { params: { id: 'project-1' } })
+      const analyticsRequest = new NextRequest(
+        'http://localhost:3000/api/projects/project-1/analytics'
+      )
+      const analyticsResponse = await getAnalytics(analyticsRequest, {
+        params: { id: 'project-1' },
+      })
       const analyticsResult = await analyticsResponse.json()
 
       expect(analyticsResult.success).toBe(true)
       expect(analyticsResult.data.overview.completedMilestones).toBe(2)
       expect(analyticsResult.data.kpis.schedulePerformanceIndex).toBeDefined()
-      
+
       // Should have alerts about milestone completion
       expect(analyticsResult.data.alerts).toEqual(
         expect.arrayContaining([
@@ -284,23 +301,27 @@ describe('Milestone and Analytics Integration', () => {
       // Update milestone amounts to test budget calculations
       const milestonesWithProgress = [
         { ...mockMilestones[0], progress: 100, amount: 25000 }, // Completed
-        { ...mockMilestones[1], progress: 75, amount: 35000 },  // 75% complete
+        { ...mockMilestones[1], progress: 75, amount: 35000 }, // 75% complete
       ]
 
       mockPrisma.milestone.findMany.mockResolvedValue(milestonesWithProgress)
 
-      const analyticsRequest = new NextRequest('http://localhost:3000/api/projects/project-1/analytics')
-      const analyticsResponse = await getAnalytics(analyticsRequest, { params: { id: 'project-1' } })
+      const analyticsRequest = new NextRequest(
+        'http://localhost:3000/api/projects/project-1/analytics'
+      )
+      const analyticsResponse = await getAnalytics(analyticsRequest, {
+        params: { id: 'project-1' },
+      })
       const analyticsResult = await analyticsResponse.json()
 
       expect(analyticsResult.success).toBe(true)
-      
+
       // Budget utilization should account for milestone progress
       // Completed milestone: $25,000 (100%)
       // In-progress milestone: $26,250 (75% of $35,000)
       // Expected total commitment: $51,250 out of $100,000 = ~51%
       expect(analyticsResult.data.overview.budgetUtilization).toBeCloseTo(51, 0)
-      
+
       // Should have proper remaining budget calculation
       expect(analyticsResult.data.overview.remainingBudget).toBeCloseTo(48750, -2)
     })
@@ -308,15 +329,19 @@ describe('Milestone and Analytics Integration', () => {
 
   describe('Analytics Trend Calculations', () => {
     it('should generate accurate spending trends from milestone data', async () => {
-      const analyticsRequest = new NextRequest('http://localhost:3000/api/projects/project-1/analytics')
-      const analyticsResponse = await getAnalytics(analyticsRequest, { params: { id: 'project-1' } })
+      const analyticsRequest = new NextRequest(
+        'http://localhost:3000/api/projects/project-1/analytics'
+      )
+      const analyticsResponse = await getAnalytics(analyticsRequest, {
+        params: { id: 'project-1' },
+      })
       const analyticsResult = await analyticsResponse.json()
 
       expect(analyticsResult.success).toBe(true)
       expect(analyticsResult.data.trends).toBeDefined()
       expect(analyticsResult.data.trends.spendingTrend).toBeInstanceOf(Array)
       expect(analyticsResult.data.trends.budgetBurnRate).toBeInstanceOf(Array)
-      
+
       // Verify trend data structure
       const spendingTrend = analyticsResult.data.trends.spendingTrend
       expect(spendingTrend.length).toBeGreaterThan(0)
@@ -330,8 +355,12 @@ describe('Milestone and Analytics Integration', () => {
     it('should handle milestone API errors gracefully in analytics', async () => {
       mockPrisma.milestone.findMany.mockRejectedValue(new Error('Database error'))
 
-      const analyticsRequest = new NextRequest('http://localhost:3000/api/projects/project-1/analytics')
-      const analyticsResponse = await getAnalytics(analyticsRequest, { params: { id: 'project-1' } })
+      const analyticsRequest = new NextRequest(
+        'http://localhost:3000/api/projects/project-1/analytics'
+      )
+      const analyticsResponse = await getAnalytics(analyticsRequest, {
+        params: { id: 'project-1' },
+      })
       const analyticsResult = await analyticsResponse.json()
 
       // Analytics should still work with fallback data
@@ -348,22 +377,30 @@ describe('Milestone and Analytics Integration', () => {
       const startTime = Date.now()
 
       // Load milestones
-      const milestonesRequest = new NextRequest('http://localhost:3000/api/projects/project-1/milestones')
-      const milestonesResponse = await getMilestones(milestonesRequest, { params: { id: 'project-1' } })
-      
+      const milestonesRequest = new NextRequest(
+        'http://localhost:3000/api/projects/project-1/milestones'
+      )
+      const milestonesResponse = await getMilestones(milestonesRequest, {
+        params: { id: 'project-1' },
+      })
+
       // Load analytics
-      const analyticsRequest = new NextRequest('http://localhost:3000/api/projects/project-1/analytics')
-      const analyticsResponse = await getAnalytics(analyticsRequest, { params: { id: 'project-1' } })
+      const analyticsRequest = new NextRequest(
+        'http://localhost:3000/api/projects/project-1/analytics'
+      )
+      const analyticsResponse = await getAnalytics(analyticsRequest, {
+        params: { id: 'project-1' },
+      })
 
       const endTime = Date.now()
       const totalTime = endTime - startTime
 
       expect(milestonesResponse.status).toBe(200)
       expect(analyticsResponse.status).toBe(200)
-      
+
       // Should complete within reasonable time
       expect(totalTime).toBeLessThan(1000) // 1 second
-      
+
       // Verify database queries were optimized
       expect(mockPrisma.milestone.findMany).toHaveBeenCalledTimes(2)
       expect(mockPrisma.project.findUnique).toHaveBeenCalledWith({

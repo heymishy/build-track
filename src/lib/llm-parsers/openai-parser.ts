@@ -21,18 +21,18 @@ export async function openaiParse(
     // TODO: Implement OpenAI API integration
     // For now, return a mock response
     console.warn('OpenAI integration not yet implemented')
-    
+
     return {
       success: false,
       cost: 0,
-      error: 'OpenAI integration not yet implemented'
+      error: 'OpenAI integration not yet implemented',
     }
   } catch (error) {
     console.error('OpenAI parse error:', error)
     return {
       success: false,
       cost: 0,
-      error: error instanceof Error ? error.message : 'Unknown OpenAI error'
+      error: error instanceof Error ? error.message : 'Unknown OpenAI error',
     }
   }
 }

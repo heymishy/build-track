@@ -3,11 +3,11 @@
 import React from 'react'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
-import { 
+import {
   DocumentCheckIcon,
   ClockIcon,
   CheckCircleIcon,
-  PauseIcon
+  PauseIcon,
 } from '@heroicons/react/24/outline'
 
 interface Project {
@@ -29,31 +29,31 @@ const statusConfig = {
   PLANNING: {
     label: 'Planning',
     color: 'bg-blue-100 text-blue-800',
-    icon: DocumentCheckIcon
+    icon: DocumentCheckIcon,
   },
   IN_PROGRESS: {
     label: 'In Progress',
     color: 'bg-orange-100 text-orange-800',
-    icon: ClockIcon
+    icon: ClockIcon,
   },
   COMPLETED: {
     label: 'Completed',
     color: 'bg-green-100 text-green-800',
-    icon: CheckCircleIcon
+    icon: CheckCircleIcon,
   },
   ON_HOLD: {
     label: 'On Hold',
     color: 'bg-gray-100 text-gray-800',
-    icon: PauseIcon
+    icon: PauseIcon,
   },
   CANCELLED: {
     label: 'Cancelled',
     color: 'bg-red-100 text-red-800',
-    icon: PauseIcon
-  }
+    icon: PauseIcon,
+  },
 }
 
-export function ProjectList({ projects, emptyMessage = "No projects found" }: ProjectListProps) {
+export function ProjectList({ projects, emptyMessage = 'No projects found' }: ProjectListProps) {
   if (projects.length === 0) {
     return (
       <div className="text-center py-12">
@@ -65,7 +65,7 @@ export function ProjectList({ projects, emptyMessage = "No projects found" }: Pr
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {projects.map((project) => {
+      {projects.map(project => {
         const config = statusConfig[project.status]
         const Icon = config.icon
 
@@ -75,19 +75,13 @@ export function ProjectList({ projects, emptyMessage = "No projects found" }: Pr
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center space-x-2">
                   <Icon className="h-5 w-5 text-gray-600" />
-                  <h3 className="text-lg font-semibold text-gray-900 truncate">
-                    {project.name}
-                  </h3>
+                  <h3 className="text-lg font-semibold text-gray-900 truncate">{project.name}</h3>
                 </div>
-                <Badge className={config.color}>
-                  {config.label}
-                </Badge>
+                <Badge className={config.color}>{config.label}</Badge>
               </div>
 
               {project.description && (
-                <p className="text-gray-600 text-sm mb-4 line-clamp-2">
-                  {project.description}
-                </p>
+                <p className="text-gray-600 text-sm mb-4 line-clamp-2">{project.description}</p>
               )}
 
               <div className="space-y-2">

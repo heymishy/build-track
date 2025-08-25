@@ -22,12 +22,12 @@ export function PageLayout({
   breadcrumbs,
   actions,
   className = '',
-  fullWidth = false
+  fullWidth = false,
 }: PageLayoutProps) {
   return (
     <div className="min-h-screen bg-gray-50">
       <Navigation />
-      
+
       {/* Main Content */}
       <div className="lg:pl-64">
         {/* Page Header */}
@@ -40,7 +40,7 @@ export function PageLayout({
                   <Breadcrumb items={breadcrumbs} />
                 </div>
               )}
-              
+
               {/* Title and Actions */}
               {(title || actions) && (
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
@@ -50,11 +50,7 @@ export function PageLayout({
                         {title}
                       </h1>
                     )}
-                    {subtitle && (
-                      <p className="mt-1 text-sm text-gray-500">
-                        {subtitle}
-                      </p>
-                    )}
+                    {subtitle && <p className="mt-1 text-sm text-gray-500">{subtitle}</p>}
                   </div>
                   {actions && (
                     <div className="mt-4 sm:mt-0 sm:ml-4 flex-shrink-0 flex space-x-3">
@@ -84,23 +80,16 @@ interface DashboardLayoutProps extends Omit<PageLayoutProps, 'breadcrumbs'> {
 }
 
 export function DashboardLayout({ tab, ...props }: DashboardLayoutProps) {
-  const breadcrumbs: BreadcrumbItem[] = [
-    { label: 'Dashboard', href: '/dashboard' }
-  ]
-  
+  const breadcrumbs: BreadcrumbItem[] = [{ label: 'Dashboard', href: '/dashboard' }]
+
   if (tab && tab !== 'overview') {
     breadcrumbs.push({
       label: tab.charAt(0).toUpperCase() + tab.slice(1),
-      current: true
+      current: true,
     })
   }
 
-  return (
-    <PageLayout
-      {...props}
-      breadcrumbs={breadcrumbs}
-    />
-  )
+  return <PageLayout {...props} breadcrumbs={breadcrumbs} />
 }
 
 interface ProjectLayoutProps extends Omit<PageLayoutProps, 'breadcrumbs'> {
@@ -111,22 +100,17 @@ interface ProjectLayoutProps extends Omit<PageLayoutProps, 'breadcrumbs'> {
 export function ProjectLayout({ projectName, projectId, ...props }: ProjectLayoutProps) {
   const breadcrumbs: BreadcrumbItem[] = [
     { label: 'Dashboard', href: '/dashboard' },
-    { label: 'Projects', href: '/dashboard?tab=projects' }
+    { label: 'Projects', href: '/dashboard?tab=projects' },
   ]
-  
+
   if (projectName || projectId) {
     breadcrumbs.push({
       label: projectName || `Project ${projectId}`,
-      current: true
+      current: true,
     })
   }
 
-  return (
-    <PageLayout
-      {...props}
-      breadcrumbs={breadcrumbs}
-    />
-  )
+  return <PageLayout {...props} breadcrumbs={breadcrumbs} />
 }
 
 interface SettingsLayoutProps extends Omit<PageLayoutProps, 'breadcrumbs'> {
@@ -136,20 +120,15 @@ interface SettingsLayoutProps extends Omit<PageLayoutProps, 'breadcrumbs'> {
 export function SettingsLayout({ section, ...props }: SettingsLayoutProps) {
   const breadcrumbs: BreadcrumbItem[] = [
     { label: 'Dashboard', href: '/dashboard' },
-    { label: 'Settings', href: '/settings' }
+    { label: 'Settings', href: '/settings' },
   ]
-  
+
   if (section) {
     breadcrumbs.push({
       label: section.charAt(0).toUpperCase() + section.slice(1),
-      current: true
+      current: true,
     })
   }
 
-  return (
-    <PageLayout
-      {...props}
-      breadcrumbs={breadcrumbs}
-    />
-  )
+  return <PageLayout {...props} breadcrumbs={breadcrumbs} />
 }

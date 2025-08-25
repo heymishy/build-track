@@ -493,7 +493,9 @@ export function MilestoneManagement({ project, className = '' }: MilestoneManage
             ></div>
 
             {/* This span hack is required for centering on mobile Safari */}
-            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">
+              &#8203;
+            </span>
 
             <div className="relative inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full z-50">
               <form onSubmit={handleCreateMilestone}>
@@ -590,7 +592,9 @@ export function MilestoneManagement({ project, className = '' }: MilestoneManage
             ></div>
 
             {/* This span hack is required for centering on mobile Safari */}
-            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">
+              &#8203;
+            </span>
 
             <div className="relative inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full z-50">
               <form onSubmit={handleEditSubmit}>
@@ -660,7 +664,9 @@ export function MilestoneManagement({ project, className = '' }: MilestoneManage
                         min="0"
                         max="100"
                         value={formData.percentComplete}
-                        onChange={e => setFormData({ ...formData, percentComplete: e.target.value })}
+                        onChange={e =>
+                          setFormData({ ...formData, percentComplete: e.target.value })
+                        }
                         className="block w-full"
                       />
                       <div className="flex justify-between text-xs text-gray-500 mt-1">

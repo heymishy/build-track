@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect } from 'react'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
-import { 
+import {
   DocumentTextIcon,
   FolderIcon,
   CloudArrowUpIcon,
@@ -15,7 +15,7 @@ import {
   PlusIcon,
   CalendarIcon,
   UserIcon,
-  DocumentIcon
+  DocumentIcon,
 } from '@heroicons/react/24/outline'
 
 interface Document {
@@ -34,10 +34,20 @@ interface Document {
   url?: string
 }
 
-type DocumentCategory = 
-  | 'PLANS' | 'PERMITS' | 'CONTRACTS' | 'ESTIMATES' | 'DESIGNS'
-  | 'PHOTOS' | 'INSPECTIONS' | 'CHANGE_ORDERS' | 'INVOICES'
-  | 'WARRANTIES' | 'AS_BUILT' | 'MANUALS' | 'CERTIFICATES'
+type DocumentCategory =
+  | 'PLANS'
+  | 'PERMITS'
+  | 'CONTRACTS'
+  | 'ESTIMATES'
+  | 'DESIGNS'
+  | 'PHOTOS'
+  | 'INSPECTIONS'
+  | 'CHANGE_ORDERS'
+  | 'INVOICES'
+  | 'WARRANTIES'
+  | 'AS_BUILT'
+  | 'MANUALS'
+  | 'CERTIFICATES'
 
 type ProjectPhase = 'PLANNING' | 'CONSTRUCTION' | 'COMPLETION'
 
@@ -49,24 +59,89 @@ interface DocumentManagerProps {
 
 const documentCategories = {
   PLANNING: [
-    { key: 'PLANS' as DocumentCategory, label: 'Architectural Plans', icon: DocumentIcon, color: 'bg-blue-100 text-blue-800' },
-    { key: 'PERMITS' as DocumentCategory, label: 'Permits & Approvals', icon: DocumentTextIcon, color: 'bg-green-100 text-green-800' },
-    { key: 'CONTRACTS' as DocumentCategory, label: 'Contracts', icon: DocumentTextIcon, color: 'bg-purple-100 text-purple-800' },
-    { key: 'ESTIMATES' as DocumentCategory, label: 'Cost Estimates', icon: DocumentIcon, color: 'bg-yellow-100 text-yellow-800' },
-    { key: 'DESIGNS' as DocumentCategory, label: 'Design Documents', icon: DocumentIcon, color: 'bg-indigo-100 text-indigo-800' }
+    {
+      key: 'PLANS' as DocumentCategory,
+      label: 'Architectural Plans',
+      icon: DocumentIcon,
+      color: 'bg-blue-100 text-blue-800',
+    },
+    {
+      key: 'PERMITS' as DocumentCategory,
+      label: 'Permits & Approvals',
+      icon: DocumentTextIcon,
+      color: 'bg-green-100 text-green-800',
+    },
+    {
+      key: 'CONTRACTS' as DocumentCategory,
+      label: 'Contracts',
+      icon: DocumentTextIcon,
+      color: 'bg-purple-100 text-purple-800',
+    },
+    {
+      key: 'ESTIMATES' as DocumentCategory,
+      label: 'Cost Estimates',
+      icon: DocumentIcon,
+      color: 'bg-yellow-100 text-yellow-800',
+    },
+    {
+      key: 'DESIGNS' as DocumentCategory,
+      label: 'Design Documents',
+      icon: DocumentIcon,
+      color: 'bg-indigo-100 text-indigo-800',
+    },
   ],
   CONSTRUCTION: [
-    { key: 'PHOTOS' as DocumentCategory, label: 'Progress Photos', icon: DocumentIcon, color: 'bg-orange-100 text-orange-800' },
-    { key: 'INSPECTIONS' as DocumentCategory, label: 'Inspection Reports', icon: DocumentTextIcon, color: 'bg-red-100 text-red-800' },
-    { key: 'CHANGE_ORDERS' as DocumentCategory, label: 'Change Orders', icon: DocumentTextIcon, color: 'bg-yellow-100 text-yellow-800' },
-    { key: 'INVOICES' as DocumentCategory, label: 'Invoices & Receipts', icon: DocumentIcon, color: 'bg-green-100 text-green-800' }
+    {
+      key: 'PHOTOS' as DocumentCategory,
+      label: 'Progress Photos',
+      icon: DocumentIcon,
+      color: 'bg-orange-100 text-orange-800',
+    },
+    {
+      key: 'INSPECTIONS' as DocumentCategory,
+      label: 'Inspection Reports',
+      icon: DocumentTextIcon,
+      color: 'bg-red-100 text-red-800',
+    },
+    {
+      key: 'CHANGE_ORDERS' as DocumentCategory,
+      label: 'Change Orders',
+      icon: DocumentTextIcon,
+      color: 'bg-yellow-100 text-yellow-800',
+    },
+    {
+      key: 'INVOICES' as DocumentCategory,
+      label: 'Invoices & Receipts',
+      icon: DocumentIcon,
+      color: 'bg-green-100 text-green-800',
+    },
   ],
   COMPLETION: [
-    { key: 'WARRANTIES' as DocumentCategory, label: 'Warranties', icon: DocumentTextIcon, color: 'bg-blue-100 text-blue-800' },
-    { key: 'AS_BUILT' as DocumentCategory, label: 'As-Built Drawings', icon: DocumentIcon, color: 'bg-purple-100 text-purple-800' },
-    { key: 'MANUALS' as DocumentCategory, label: 'User Manuals', icon: DocumentTextIcon, color: 'bg-indigo-100 text-indigo-800' },
-    { key: 'CERTIFICATES' as DocumentCategory, label: 'Certificates', icon: DocumentTextIcon, color: 'bg-green-100 text-green-800' }
-  ]
+    {
+      key: 'WARRANTIES' as DocumentCategory,
+      label: 'Warranties',
+      icon: DocumentTextIcon,
+      color: 'bg-blue-100 text-blue-800',
+    },
+    {
+      key: 'AS_BUILT' as DocumentCategory,
+      label: 'As-Built Drawings',
+      icon: DocumentIcon,
+      color: 'bg-purple-100 text-purple-800',
+    },
+    {
+      key: 'MANUALS' as DocumentCategory,
+      label: 'User Manuals',
+      icon: DocumentTextIcon,
+      color: 'bg-indigo-100 text-indigo-800',
+    },
+    {
+      key: 'CERTIFICATES' as DocumentCategory,
+      label: 'Certificates',
+      icon: DocumentTextIcon,
+      color: 'bg-green-100 text-green-800',
+    },
+  ],
 }
 
 export function DocumentManager({ projectId, phase, compact = false }: DocumentManagerProps) {
@@ -85,7 +160,7 @@ export function DocumentManager({ projectId, phase, compact = false }: DocumentM
   const loadDocuments = async () => {
     try {
       setLoading(true)
-      
+
       // Mock data - in real implementation, this would come from API
       const mockDocuments: Document[] = [
         {
@@ -100,10 +175,10 @@ export function DocumentManager({ projectId, phase, compact = false }: DocumentM
           uploadedBy: 'John Architect',
           description: 'Updated architectural plans with client revisions',
           version: 2,
-          tags: ['plans', 'architecture', 'v2']
+          tags: ['plans', 'architecture', 'v2'],
         },
         {
-          id: '2', 
+          id: '2',
           filename: 'building-permit.pdf',
           originalName: 'Building Permit - City Council.pdf',
           fileType: 'application/pdf',
@@ -114,12 +189,12 @@ export function DocumentManager({ projectId, phase, compact = false }: DocumentM
           uploadedBy: 'Sarah Manager',
           description: 'Approved building permit from city council',
           version: 1,
-          tags: ['permit', 'approved', 'city']
+          tags: ['permit', 'approved', 'city'],
         },
         {
           id: '3',
           filename: 'progress-week-3.jpg',
-          originalName: 'Progress Photos Week 3.jpg', 
+          originalName: 'Progress Photos Week 3.jpg',
           fileType: 'image/jpeg',
           fileSize: 1200000,
           category: 'PHOTOS',
@@ -128,14 +203,12 @@ export function DocumentManager({ projectId, phase, compact = false }: DocumentM
           uploadedBy: 'Mike Builder',
           description: 'Foundation completion photos',
           version: 1,
-          tags: ['progress', 'foundation', 'week3']
-        }
+          tags: ['progress', 'foundation', 'week3'],
+        },
       ]
 
       // Filter by phase if specified
-      const filteredDocs = phase ? 
-        mockDocuments.filter(doc => doc.phase === phase) : 
-        mockDocuments
+      const filteredDocs = phase ? mockDocuments.filter(doc => doc.phase === phase) : mockDocuments
 
       setDocuments(filteredDocs)
     } catch (error) {
@@ -163,12 +236,12 @@ export function DocumentManager({ projectId, phase, compact = false }: DocumentM
           uploadDate: new Date(),
           uploadedBy: 'Current User',
           version: 1,
-          tags: []
+          tags: [],
         }
 
         setDocuments(prev => [...prev, newDoc])
       }
-      
+
       alert('Files uploaded successfully!')
     } catch (error) {
       console.error('Upload failed:', error)
@@ -196,11 +269,12 @@ export function DocumentManager({ projectId, phase, compact = false }: DocumentM
 
   const filteredDocuments = documents.filter(doc => {
     const matchesCategory = selectedCategory === 'ALL' || doc.category === selectedCategory
-    const matchesSearch = searchQuery === '' || 
+    const matchesSearch =
+      searchQuery === '' ||
       doc.originalName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       doc.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       doc.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
-    
+
     return matchesCategory && matchesSearch
   })
 
@@ -217,11 +291,17 @@ export function DocumentManager({ projectId, phase, compact = false }: DocumentM
       const found = phaseCategories.find(cat => cat.key === category)
       if (found) return found
     }
-    return { key: category, label: category, icon: DocumentIcon, color: 'bg-gray-100 text-gray-800' }
+    return {
+      key: category,
+      label: category,
+      icon: DocumentIcon,
+      color: 'bg-gray-100 text-gray-800',
+    }
   }
 
-  const availableCategories = phase ? documentCategories[phase] : 
-    Object.values(documentCategories).flat()
+  const availableCategories = phase
+    ? documentCategories[phase]
+    : Object.values(documentCategories).flat()
 
   if (loading) {
     return (
@@ -237,9 +317,7 @@ export function DocumentManager({ projectId, phase, compact = false }: DocumentM
         <Card.Header>
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold text-gray-900">Documents</h3>
-            <Badge className="bg-blue-100 text-blue-800">
-              {documents.length} files
-            </Badge>
+            <Badge className="bg-blue-100 text-blue-800">{documents.length} files</Badge>
           </div>
         </Card.Header>
         <Card.Body>
@@ -247,9 +325,12 @@ export function DocumentManager({ projectId, phase, compact = false }: DocumentM
             {documents.slice(0, 3).map(doc => {
               const categoryInfo = getCategoryInfo(doc.category)
               const Icon = categoryInfo.icon
-              
+
               return (
-                <div key={doc.id} className="flex items-center space-x-3 p-2 hover:bg-gray-50 rounded">
+                <div
+                  key={doc.id}
+                  className="flex items-center space-x-3 p-2 hover:bg-gray-50 rounded"
+                >
                   <Icon className="h-4 w-4 text-gray-400" />
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium text-gray-900 truncate">
@@ -265,29 +346,33 @@ export function DocumentManager({ projectId, phase, compact = false }: DocumentM
                 </div>
               )
             })}
-            
+
             {documents.length > 3 && (
               <div className="text-center pt-2">
-                <button 
-                  onClick={() => window.location.href = `/documents${phase ? `?tab=${phase.toLowerCase()}` : ''}${projectId ? `&projectId=${projectId}` : ''}`}
+                <button
+                  onClick={() =>
+                    (window.location.href = `/documents${phase ? `?tab=${phase.toLowerCase()}` : ''}${projectId ? `&projectId=${projectId}` : ''}`)
+                  }
                   className="text-blue-600 hover:text-blue-700 text-sm font-medium"
                 >
                   View all {documents.length} documents →
                 </button>
               </div>
             )}
-            
+
             {documents.length <= 3 && documents.length > 0 && (
               <div className="text-center pt-2">
-                <button 
-                  onClick={() => window.location.href = `/documents${phase ? `?tab=${phase.toLowerCase()}` : ''}${projectId ? `&projectId=${projectId}` : ''}`}
+                <button
+                  onClick={() =>
+                    (window.location.href = `/documents${phase ? `?tab=${phase.toLowerCase()}` : ''}${projectId ? `&projectId=${projectId}` : ''}`)
+                  }
                   className="text-blue-600 hover:text-blue-700 text-sm font-medium"
                 >
                   Manage documents →
                 </button>
               </div>
             )}
-            
+
             {documents.length === 0 && (
               <div className="text-center py-4">
                 <DocumentIcon className="h-8 w-8 text-gray-400 mx-auto mb-2" />
@@ -304,26 +389,25 @@ export function DocumentManager({ projectId, phase, compact = false }: DocumentM
     <div className="space-y-6">
       {/* Upload Area */}
       <Card>
-        <Card.Body 
+        <Card.Body
           className={`p-8 border-2 border-dashed transition-colors ${
-            dragOver 
-              ? 'border-blue-400 bg-blue-50' 
-              : 'border-gray-300 hover:border-gray-400'
+            dragOver ? 'border-blue-400 bg-blue-50' : 'border-gray-300 hover:border-gray-400'
           }`}
           onDrop={handleDrop}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
         >
           <div className="text-center">
-            <CloudArrowUpIcon className={`mx-auto h-12 w-12 ${dragOver ? 'text-blue-500' : 'text-gray-400'}`} />
+            <CloudArrowUpIcon
+              className={`mx-auto h-12 w-12 ${dragOver ? 'text-blue-500' : 'text-gray-400'}`}
+            />
             <h3 className="mt-4 text-lg font-medium text-gray-900">
               {dragOver ? 'Drop files here' : 'Upload Documents'}
             </h3>
             <p className="mt-2 text-gray-500">
-              {dragOver 
+              {dragOver
                 ? 'Release to upload files'
-                : 'Drag and drop files here, or click to select files'
-              }
+                : 'Drag and drop files here, or click to select files'}
             </p>
             <div className="mt-4">
               <input
@@ -331,7 +415,7 @@ export function DocumentManager({ projectId, phase, compact = false }: DocumentM
                 type="file"
                 multiple
                 className="hidden"
-                onChange={(e) => e.target.files && handleFileUpload(e.target.files)}
+                onChange={e => e.target.files && handleFileUpload(e.target.files)}
                 accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif,.xls,.xlsx"
               />
               {!dragOver && (
@@ -361,18 +445,18 @@ export function DocumentManager({ projectId, phase, compact = false }: DocumentM
               type="text"
               placeholder="Search documents..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={e => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
         </div>
-        
+
         <div className="flex space-x-2">
           <button
             onClick={() => setSelectedCategory('ALL')}
             className={`px-3 py-2 text-sm font-medium rounded-md ${
-              selectedCategory === 'ALL' 
-                ? 'bg-blue-100 text-blue-800' 
+              selectedCategory === 'ALL'
+                ? 'bg-blue-100 text-blue-800'
                 : 'text-gray-500 hover:text-gray-700'
             }`}
           >
@@ -442,7 +526,7 @@ export function DocumentManager({ projectId, phase, compact = false }: DocumentM
                   {filteredDocuments.map(doc => {
                     const categoryInfo = getCategoryInfo(doc.category)
                     const Icon = categoryInfo.icon
-                    
+
                     return (
                       <tr key={doc.id} className="hover:bg-gray-50">
                         <td className="px-6 py-4 whitespace-nowrap">
@@ -461,9 +545,7 @@ export function DocumentManager({ projectId, phase, compact = false }: DocumentM
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <Badge className={categoryInfo.color}>
-                            {categoryInfo.label}
-                          </Badge>
+                          <Badge className={categoryInfo.color}>{categoryInfo.label}</Badge>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {formatFileSize(doc.fileSize)}

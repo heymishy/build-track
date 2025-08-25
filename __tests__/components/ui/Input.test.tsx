@@ -24,7 +24,7 @@ describe('Input Component', () => {
     render(<Input label="Test" error="This field is required" />)
     const input = screen.getByLabelText('Test')
     const errorMessage = screen.getByText('This field is required')
-    
+
     expect(input).toHaveClass('border-red-300')
     expect(errorMessage).toBeInTheDocument()
     expect(errorMessage).toHaveClass('text-red-600')
@@ -46,10 +46,10 @@ describe('Input Component', () => {
   it('renders left icon correctly', () => {
     const LeftIcon = () => <span data-testid="left-icon">📧</span>
     render(<Input leftIcon={<LeftIcon />} />)
-    
+
     const icon = screen.getByTestId('left-icon')
     const input = screen.getByRole('textbox')
-    
+
     expect(icon).toBeInTheDocument()
     expect(input).toHaveClass('pl-10')
   })
@@ -57,10 +57,10 @@ describe('Input Component', () => {
   it('renders right icon correctly', () => {
     const RightIcon = () => <span data-testid="right-icon">🔍</span>
     render(<Input rightIcon={<RightIcon />} />)
-    
+
     const icon = screen.getByTestId('right-icon')
     const input = screen.getByRole('textbox')
-    
+
     expect(icon).toBeInTheDocument()
     expect(input).toHaveClass('pr-10')
   })
@@ -74,10 +74,10 @@ describe('Input Component', () => {
   it('handles input events correctly', () => {
     const handleChange = jest.fn()
     render(<Input onChange={handleChange} />)
-    
+
     const input = screen.getByRole('textbox')
     fireEvent.change(input, { target: { value: 'test input' } })
-    
+
     expect(handleChange).toHaveBeenCalledTimes(1)
   })
 
@@ -94,10 +94,10 @@ describe('Input Component', () => {
         <Input label="Second Input" />
       </div>
     )
-    
+
     const firstInput = screen.getByLabelText('First Input')
     const secondInput = screen.getByLabelText('Second Input')
-    
+
     expect(firstInput.id).not.toBe(secondInput.id)
     expect(firstInput.id).toMatch(/^input-/)
     expect(secondInput.id).toMatch(/^input-/)
@@ -110,13 +110,8 @@ describe('Input Component', () => {
   })
 
   it('prioritizes error over helper text', () => {
-    render(
-      <Input
-        helperText="Helper text"
-        error="Error message"
-      />
-    )
-    
+    render(<Input helperText="Helper text" error="Error message" />)
+
     expect(screen.getByText('Error message')).toBeInTheDocument()
     expect(screen.queryByText('Helper text')).not.toBeInTheDocument()
   })

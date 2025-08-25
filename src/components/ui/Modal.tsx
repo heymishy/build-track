@@ -22,10 +22,10 @@ interface ModalProps {
 
 const sizeClasses = {
   sm: 'max-w-md',
-  md: 'max-w-lg', 
+  md: 'max-w-lg',
   lg: 'max-w-2xl',
   xl: 'max-w-4xl',
-  full: 'max-w-7xl'
+  full: 'max-w-7xl',
 }
 
 export function Modal({
@@ -37,7 +37,7 @@ export function Modal({
   showCloseButton = true,
   closeOnBackdrop = true,
   children,
-  footer
+  footer,
 }: ModalProps) {
   // Prevent body scroll when modal is open
   useEffect(() => {
@@ -46,19 +46,15 @@ export function Modal({
     } else {
       document.body.style.overflow = 'unset'
     }
-    
+
     return () => {
       document.body.style.overflow = 'unset'
     }
   }, [isOpen])
-  
+
   return (
     <Transition appear show={isOpen} as={Fragment}>
-      <Dialog
-        as="div"
-        className="relative z-50"
-        onClose={closeOnBackdrop ? onClose : () => {}}
-      >
+      <Dialog as="div" className="relative z-50" onClose={closeOnBackdrop ? onClose : () => {}}>
         <Transition.Child
           as={Fragment}
           enter="ease-out duration-300"
@@ -106,7 +102,7 @@ export function Modal({
                         </Dialog.Description>
                       )}
                     </div>
-                    
+
                     {showCloseButton && (
                       <button
                         type="button"
@@ -119,12 +115,10 @@ export function Modal({
                     )}
                   </div>
                 )}
-                
+
                 {/* Body */}
-                <div className="px-6 py-4">
-                  {children}
-                </div>
-                
+                <div className="px-6 py-4">{children}</div>
+
                 {/* Footer */}
                 {footer && (
                   <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 rounded-b-2xl">

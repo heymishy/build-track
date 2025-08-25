@@ -4,18 +4,18 @@
  */
 
 import { createContext, useContext, useReducer, Dispatch, ReactNode } from 'react'
-import type { 
-  EntityState, 
-  LoadingState, 
-  CacheState, 
-  BaseEntity, 
+import type {
+  EntityState,
+  LoadingState,
+  CacheState,
+  BaseEntity,
   ApiResponse,
-  PaginationParams 
+  PaginationParams,
 } from '@/types'
 
 // ==================== Generic State Actions ====================
 
-export type StateAction<T = any> = 
+export type StateAction<T = any> =
   | { type: 'SET_LOADING'; payload: boolean }
   | { type: 'SET_ERROR'; payload: string | null }
   | { type: 'SET_ENTITIES'; payload: T[] }
@@ -32,23 +32,20 @@ export type StateAction<T = any> =
 // ==================== Generic State Reducer ====================
 
 export function createEntityReducer<T extends BaseEntity>() {
-  return function entityReducer(
-    state: EntityState<T>, 
-    action: StateAction<T>
-  ): EntityState<T> {
+  return function entityReducer(state: EntityState<T>, action: StateAction<T>): EntityState<T> {
     switch (action.type) {
       case 'SET_LOADING':
         return {
           ...state,
           isLoading: action.payload,
-          error: action.payload ? state.error : null
+          error: action.payload ? state.error : null,
         }
 
       case 'SET_ERROR':
         return {
           ...state,
           isLoading: false,
-          error: action.payload
+          error: action.payload,
         }
 
       case 'SET_ENTITIES':
@@ -57,25 +54,23 @@ export function createEntityReducer<T extends BaseEntity>() {
           entities: action.payload,
           isLoading: false,
           error: null,
-          lastUpdated: new Date()
+          lastUpdated: new Date(),
         }
 
       case 'ADD_ENTITY':
         return {
           ...state,
           entities: [...state.entities, action.payload],
-          lastUpdated: new Date()
+          lastUpdated: new Date(),
         }
 
       case 'UPDATE_ENTITY':
         return {
           ...state,
           entities: state.entities.map(entity =>
-            entity.id === action.payload.id
-              ? { ...entity, ...action.payload.updates }
-              : entity
+            entity.id === action.payload.id ? { ...entity, ...action.payload.updates } : entity
           ),
-          lastUpdated: new Date()
+          lastUpdated: new Date(),
         }
 
       case 'REMOVE_ENTITY':
@@ -83,27 +78,27 @@ export function createEntityReducer<T extends BaseEntity>() {
           ...state,
           entities: state.entities.filter(entity => entity.id !== action.payload),
           selectedId: state.selectedId === action.payload ? null : state.selectedId,
-          lastUpdated: new Date()
+          lastUpdated: new Date(),
         }
 
       case 'SET_SELECTED':
         return {
           ...state,
-          selectedId: action.payload
+          selectedId: action.payload,
         }
 
       case 'SET_FILTERS':
         return {
           ...state,
-          filters: action.payload
+          filters: action.payload,
         }
 
       case 'SET_PAGINATION':
         return {
           ...state,
-          pagination: state.pagination 
+          pagination: state.pagination
             ? { ...state.pagination, ...action.payload }
-            : action.payload as EntityState<T>['pagination']
+            : (action.payload as EntityState<T>['pagination']),
         }
 
       case 'RESET_STATE':
@@ -128,19 +123,22 @@ export function createInitialEntityState<T extends BaseEntity>(): EntityState<T>
       page: 1,
       limit: 20,
       total: 0,
-      hasMore: false
-    }
+      hasMore: false,
+    },
   }
 }
 
 // ==================== Generic Context Factory ====================
 
 export function createEntityContext<T extends BaseEntity>(name: string) {
-  const Context = createContext<{
-    state: EntityState<T>
-    dispatch: Dispatch<StateAction<T>>
-    actions: EntityActions<T>
-  } | undefined>(undefined)
+  const Context = createContext<
+    | {
+        state: EntityState<T>
+        dispatch: Dispatch<StateAction<T>>
+        actions: EntityActions<T>
+      }
+    | undefined
+  >(undefined)
 
   const useContext = () => {
     const context = useContext(Context)
@@ -163,20 +161,20 @@ export interface EntityActions<T extends BaseEntity> {
   addEntity: (entity: T) => void
   updateEntity: (id: string, updates: Partial<T>) => void
   removeEntity: (id: string) => void
-  
+
   // Selection
   selectEntity: (id: string | null) => void
   getSelected: () => T | null
-  
+
   // Filtering & Pagination
   setFilters: (filters: any) => void
   setPagination: (pagination: Partial<EntityState<T>['pagination']>) => void
-  
+
   // Utilities
   resetState: () => void
   findById: (id: string) => T | undefined
   findMany: (predicate: (entity: T) => boolean) => T[]
-  
+
   // API Helpers
   handleApiResponse: (response: ApiResponse<T | T[]>) => void
   withLoadingState: <R>(operation: () => Promise<R>) => Promise<R>
@@ -259,13 +257,13 @@ export function createEntityActions<T extends BaseEntity>(
         dispatch({ type: 'SET_LOADING', payload: false })
         return result
       } catch (error) {
-        dispatch({ 
-          type: 'SET_ERROR', 
-          payload: error instanceof Error ? error.message : 'Operation failed' 
+        dispatch({
+          type: 'SET_ERROR',
+          payload: error instanceof Error ? error.message : 'Operation failed',
         })
         throw error
       }
-    }
+    },
   }
 }
 
@@ -278,24 +276,24 @@ export class StateCache {
   set<T>(key: string, data: T, ttl?: number): void {
     const now = Date.now()
     const expiresAt = now + (ttl || this.defaultTTL)
-    
+
     this.cache.set(key, {
       data,
       timestamp: now,
-      expiresAt
+      expiresAt,
     })
   }
 
   get<T>(key: string): T | null {
     const cached = this.cache.get(key)
-    
+
     if (!cached) return null
-    
+
     if (Date.now() > cached.expiresAt) {
       this.cache.delete(key)
       return null
     }
-    
+
     return cached.data as T
   }
 
@@ -325,7 +323,7 @@ export class StateCache {
     return {
       size: this.cache.size,
       keys: Array.from(this.cache.keys()),
-      memory: JSON.stringify(Array.from(this.cache.values())).length
+      memory: JSON.stringify(Array.from(this.cache.values())).length,
     }
   }
 }
@@ -356,7 +354,7 @@ export class ApiClient {
   }
 
   private async request<T>(
-    endpoint: string, 
+    endpoint: string,
     options: RequestInit = {},
     cacheKey?: string,
     cacheTTL?: number
@@ -389,7 +387,7 @@ export class ApiClient {
       const result: ApiResponse<T> = {
         success: response.ok,
         data: response.ok ? data.data || data : undefined,
-        error: response.ok ? undefined : data.error || 'Request failed'
+        error: response.ok ? undefined : data.error || 'Request failed',
       }
 
       // Cache successful GET requests
@@ -402,7 +400,7 @@ export class ApiClient {
       clearTimeout(timeoutId)
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Network error'
+        error: error instanceof Error ? error.message : 'Network error',
       }
     }
   }
@@ -527,10 +525,10 @@ export function handleStateError(error: unknown): StateError {
   if (error instanceof StateError) {
     return error
   }
-  
+
   if (error instanceof Error) {
     return new StateError(error.message, 'UNKNOWN_ERROR')
   }
-  
+
   return new StateError('An unknown error occurred', 'UNKNOWN_ERROR')
 }

@@ -11,7 +11,7 @@ import { AppLayout } from '@/components/layout/AppLayout'
 import { ProjectSelector } from '@/components/projects/ProjectSelector'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
-import { 
+import {
   ChartBarIcon,
   TrendingUpIcon,
   TrendingDownIcon,
@@ -21,7 +21,7 @@ import {
   ExclamationTriangleIcon,
   ArrowPathIcon,
   CalendarIcon,
-  UserGroupIcon
+  UserGroupIcon,
 } from '@heroicons/react/24/outline'
 
 interface Project {
@@ -82,7 +82,7 @@ export default function AnalyticsPage() {
   const fetchProjects = async () => {
     try {
       const response = await fetch('/api/projects', {
-        credentials: 'include'
+        credentials: 'include',
       })
 
       if (!response.ok) {
@@ -91,12 +91,11 @@ export default function AnalyticsPage() {
 
       const data = await response.json()
       setProjects(data.projects || [])
-      
+
       // Auto-select first project if none selected
       if (!selectedProject && data.projects?.length > 0) {
         setSelectedProject(data.projects[0])
       }
-
     } catch (err) {
       console.error('Error fetching projects:', err)
       setError('Failed to load projects')
@@ -106,12 +105,12 @@ export default function AnalyticsPage() {
   const fetchAnalytics = async (projectId?: string) => {
     try {
       setLoading(true)
-      const endpoint = projectId 
+      const endpoint = projectId
         ? `/api/projects/${projectId}/analytics?timeRange=${timeRange}`
         : `/api/analytics?timeRange=${timeRange}`
-      
+
       const response = await fetch(endpoint, {
-        credentials: 'include'
+        credentials: 'include',
       })
 
       if (!response.ok) {
@@ -122,7 +121,6 @@ export default function AnalyticsPage() {
 
       const data = await response.json()
       setAnalyticsData(data)
-
     } catch (err) {
       console.error('Error fetching analytics:', err)
       // Fallback to mock data if API not available
@@ -135,7 +133,7 @@ export default function AnalyticsPage() {
   const generateMockAnalytics = (): AnalyticsData => {
     const totalBudget = projects.reduce((sum, p) => sum + Number(p.totalBudget), 0)
     const totalSpent = totalBudget * 0.65 // 65% spent
-    
+
     return {
       overview: {
         totalProjects: projects.length,
@@ -144,7 +142,7 @@ export default function AnalyticsPage() {
         totalBudget,
         totalSpent,
         budgetVariance: (totalSpent - totalBudget) / totalBudget,
-        currency: 'NZD'
+        currency: 'NZD',
       },
       projectHealth: projects.slice(0, 5).map((p, i) => ({
         id: p.id,
@@ -152,27 +150,29 @@ export default function AnalyticsPage() {
         status: p.status,
         budgetUsed: Math.random() * 0.8 + 0.1,
         timelineStatus: ['on-track', 'delayed', 'ahead'][i % 3] as any,
-        healthScore: Math.random() * 40 + 60 // 60-100
+        healthScore: Math.random() * 40 + 60, // 60-100
       })),
       financialSummary: {
         monthlySpending: Array.from({ length: 6 }, (_, i) => ({
-          month: new Date(Date.now() - i * 30 * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', { month: 'short' }),
+          month: new Date(Date.now() - i * 30 * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', {
+            month: 'short',
+          }),
           spent: Math.random() * 50000 + 10000,
-          budgeted: Math.random() * 60000 + 15000
+          budgeted: Math.random() * 60000 + 15000,
         })).reverse(),
         categoryBreakdown: [
           { category: 'Materials', amount: totalSpent * 0.4, percentage: 40 },
           { category: 'Labor', amount: totalSpent * 0.35, percentage: 35 },
           { category: 'Equipment', amount: totalSpent * 0.15, percentage: 15 },
-          { category: 'Other', amount: totalSpent * 0.1, percentage: 10 }
-        ]
+          { category: 'Other', amount: totalSpent * 0.1, percentage: 10 },
+        ],
       },
       milestoneStats: {
         totalMilestones: 25,
         completedMilestones: 18,
         overdueMilestones: 3,
-        upcomingMilestones: 4
-      }
+        upcomingMilestones: 4,
+      },
     }
   }
 
@@ -262,12 +262,12 @@ export default function AnalyticsPage() {
             <h1 className="text-2xl font-bold text-gray-900">Analytics</h1>
             <p className="text-gray-600">Project performance and financial insights</p>
           </div>
-          
+
           <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-3 sm:space-y-0 sm:space-x-4">
             {/* Time Range Selector */}
             <select
               value={timeRange}
-              onChange={(e) => setTimeRange(e.target.value as any)}
+              onChange={e => setTimeRange(e.target.value as any)}
               className="rounded-md border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500"
               data-testid="time-range-selector"
             >
@@ -295,7 +295,10 @@ export default function AnalyticsPage() {
               <div>
                 <dt className="text-sm font-medium text-gray-500">Total Budget</dt>
                 <dd className="text-2xl font-bold text-gray-900">
-                  {formatCurrency(analyticsData.overview.totalBudget, analyticsData.overview.currency)}
+                  {formatCurrency(
+                    analyticsData.overview.totalBudget,
+                    analyticsData.overview.currency
+                  )}
                 </dd>
               </div>
               <CurrencyDollarIcon className="h-8 w-8 text-blue-600" />
@@ -307,7 +310,10 @@ export default function AnalyticsPage() {
               <div>
                 <dt className="text-sm font-medium text-gray-500">Total Spent</dt>
                 <dd className="text-2xl font-bold text-gray-900">
-                  {formatCurrency(analyticsData.overview.totalSpent, analyticsData.overview.currency)}
+                  {formatCurrency(
+                    analyticsData.overview.totalSpent,
+                    analyticsData.overview.currency
+                  )}
                 </dd>
               </div>
               <ChartBarIcon className="h-8 w-8 text-green-600" />
@@ -318,23 +324,29 @@ export default function AnalyticsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <dt className="text-sm font-medium text-gray-500">Budget Variance</dt>
-                <dd className={`text-2xl font-bold flex items-center ${
-                  analyticsData.overview.budgetVariance >= 0 ? 'text-red-600' : 'text-green-600'
-                }`}>
-                  {analyticsData.overview.budgetVariance >= 0 ? 
-                    <TrendingUpIcon className="h-5 w-5 mr-1" /> :
+                <dd
+                  className={`text-2xl font-bold flex items-center ${
+                    analyticsData.overview.budgetVariance >= 0 ? 'text-red-600' : 'text-green-600'
+                  }`}
+                >
+                  {analyticsData.overview.budgetVariance >= 0 ? (
+                    <TrendingUpIcon className="h-5 w-5 mr-1" />
+                  ) : (
                     <TrendingDownIcon className="h-5 w-5 mr-1" />
-                  }
+                  )}
                   {formatPercentage(analyticsData.overview.budgetVariance)}
                 </dd>
               </div>
-              <div className={`h-8 w-8 rounded-full flex items-center justify-center ${
-                analyticsData.overview.budgetVariance >= 0 ? 'bg-red-100' : 'bg-green-100'
-              }`}>
-                {analyticsData.overview.budgetVariance >= 0 ? 
-                  <TrendingUpIcon className="h-5 w-5 text-red-600" /> :
+              <div
+                className={`h-8 w-8 rounded-full flex items-center justify-center ${
+                  analyticsData.overview.budgetVariance >= 0 ? 'bg-red-100' : 'bg-green-100'
+                }`}
+              >
+                {analyticsData.overview.budgetVariance >= 0 ? (
+                  <TrendingUpIcon className="h-5 w-5 text-red-600" />
+                ) : (
                   <TrendingDownIcon className="h-5 w-5 text-green-600" />
-                }
+                )}
               </div>
             </div>
           </Card>
@@ -363,7 +375,7 @@ export default function AnalyticsPage() {
               <h2 className="text-lg font-medium text-gray-900">Project Health</h2>
             </div>
             <div className="p-6 space-y-4">
-              {analyticsData.projectHealth.map((project) => (
+              {analyticsData.projectHealth.map(project => (
                 <div key={project.id} className="flex items-center justify-between">
                   <div className="flex-1">
                     <h3 className="text-sm font-medium text-gray-900">{project.name}</h3>
@@ -380,7 +392,9 @@ export default function AnalyticsPage() {
                     </div>
                   </div>
                   <div className="ml-4 text-right">
-                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getHealthScoreColor(project.healthScore)}`}>
+                    <span
+                      className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getHealthScoreColor(project.healthScore)}`}
+                    >
                       {Math.round(project.healthScore)}
                     </span>
                   </div>
@@ -421,20 +435,25 @@ export default function AnalyticsPage() {
                   </dd>
                 </div>
               </div>
-              
+
               {/* Progress Bar */}
               <div className="mt-6">
                 <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
                   <span>Completion Rate</span>
                   <span>
-                    {Math.round((analyticsData.milestoneStats.completedMilestones / analyticsData.milestoneStats.totalMilestones) * 100)}%
+                    {Math.round(
+                      (analyticsData.milestoneStats.completedMilestones /
+                        analyticsData.milestoneStats.totalMilestones) *
+                        100
+                    )}
+                    %
                   </span>
                 </div>
                 <div className="bg-gray-200 rounded-full h-3">
                   <div
                     className="bg-gradient-to-r from-green-400 to-blue-500 h-3 rounded-full"
                     style={{
-                      width: `${(analyticsData.milestoneStats.completedMilestones / analyticsData.milestoneStats.totalMilestones) * 100}%`
+                      width: `${(analyticsData.milestoneStats.completedMilestones / analyticsData.milestoneStats.totalMilestones) * 100}%`,
                     }}
                   />
                 </div>
@@ -451,15 +470,12 @@ export default function AnalyticsPage() {
           <div className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {analyticsData.financialSummary.categoryBreakdown.map((category, index) => {
-                const colors = [
-                  'bg-blue-500',
-                  'bg-green-500', 
-                  'bg-yellow-500',
-                  'bg-purple-500'
-                ]
+                const colors = ['bg-blue-500', 'bg-green-500', 'bg-yellow-500', 'bg-purple-500']
                 return (
                   <div key={category.category} className="text-center">
-                    <div className={`w-16 h-16 ${colors[index]} rounded-full mx-auto mb-2 flex items-center justify-center`}>
+                    <div
+                      className={`w-16 h-16 ${colors[index]} rounded-full mx-auto mb-2 flex items-center justify-center`}
+                    >
                       <span className="text-white font-bold text-lg">{category.percentage}%</span>
                     </div>
                     <h3 className="font-medium text-gray-900">{category.category}</h3>
@@ -483,7 +499,7 @@ export default function AnalyticsPage() {
                 Create some projects to start seeing analytics data.
               </p>
               <div className="mt-6">
-                <Button onClick={() => window.location.href = '/projects'}>
+                <Button onClick={() => (window.location.href = '/projects')}>
                   <DocumentTextIcon className="h-4 w-4 mr-2" />
                   Create Project
                 </Button>

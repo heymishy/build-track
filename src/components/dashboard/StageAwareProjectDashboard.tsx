@@ -19,7 +19,11 @@ import { CreateProjectModal } from '@/components/projects/CreateProjectModal'
 import { EditProjectModal } from '@/components/projects/EditProjectModal'
 import { StageNavigation } from '@/components/layout/StageNavigation'
 import { StageTabNavigation } from '@/components/layout/StageTabNavigation'
-import { StageIndicator, FloatingStageIndicator, BreadcrumbStageIndicator } from '@/components/layout/StageIndicator'
+import {
+  StageIndicator,
+  FloatingStageIndicator,
+  BreadcrumbStageIndicator,
+} from '@/components/layout/StageIndicator'
 import { PlanningStage } from '@/components/stages/PlanningStage'
 import { ConstructionStage } from '@/components/stages/ConstructionStage'
 import { CompletionStage } from '@/components/stages/CompletionStage'
@@ -95,12 +99,18 @@ export function StageAwareProjectDashboard() {
 
   const getStatusVariant = (status: string): 'gray' | 'blue' | 'yellow' | 'green' | 'red' => {
     switch (status) {
-      case 'PLANNING': return 'blue'
-      case 'IN_PROGRESS': return 'yellow'
-      case 'ON_HOLD': return 'gray'
-      case 'COMPLETED': return 'green'
-      case 'CANCELLED': return 'red'
-      default: return 'gray'
+      case 'PLANNING':
+        return 'blue'
+      case 'IN_PROGRESS':
+        return 'yellow'
+      case 'ON_HOLD':
+        return 'gray'
+      case 'COMPLETED':
+        return 'green'
+      case 'CANCELLED':
+        return 'red'
+      default:
+        return 'gray'
     }
   }
 
@@ -132,12 +142,10 @@ export function StageAwareProjectDashboard() {
           ...selectedProject,
           status: newStatus,
           // Update dates based on stage
-          ...(newStatus === 'IN_PROGRESS' && !selectedProject.startDate 
+          ...(newStatus === 'IN_PROGRESS' && !selectedProject.startDate
             ? { startDate: new Date().toISOString() }
             : {}),
-          ...(newStatus === 'COMPLETED' 
-            ? { actualEndDate: new Date().toISOString() }
-            : {}),
+          ...(newStatus === 'COMPLETED' ? { actualEndDate: new Date().toISOString() } : {}),
         }),
       })
 
@@ -158,10 +166,8 @@ export function StageAwareProjectDashboard() {
         // Update local state
         const updatedProject = { ...selectedProject, status: newStatus }
         setSelectedProject(updatedProject)
-        setProjects(projects.map(p => 
-          p.id === selectedProject.id ? updatedProject : p
-        ))
-        
+        setProjects(projects.map(p => (p.id === selectedProject.id ? updatedProject : p)))
+
         // Reset to overview tab for new stage
         setActiveTab('overview')
       }
@@ -227,7 +233,7 @@ export function StageAwareProjectDashboard() {
 
   const getTabCounts = () => {
     if (!selectedProject?.stats) return {}
-    
+
     return {
       estimates: selectedProject.stats.totalTrades || 0,
       milestones: selectedProject.stats.totalMilestones || 0,
@@ -266,7 +272,7 @@ export function StageAwareProjectDashboard() {
     <div className="space-y-6">
       {/* Floating Stage Indicator */}
       {selectedProject && (
-        <FloatingStageIndicator 
+        <FloatingStageIndicator
           currentStage={selectedProject.status}
           projectName={selectedProject.name}
         />
@@ -285,10 +291,7 @@ export function StageAwareProjectDashboard() {
             </div>
           )}
         </div>
-        <Button 
-          onClick={() => setCreateModalOpen(true)}
-          className="bg-blue-600 hover:bg-blue-700"
-        >
+        <Button onClick={() => setCreateModalOpen(true)} className="bg-blue-600 hover:bg-blue-700">
           <PlusIcon className="w-5 h-5 mr-2" />
           New Project
         </Button>
@@ -303,7 +306,7 @@ export function StageAwareProjectDashboard() {
                 <h3 className="font-medium text-gray-900">Projects</h3>
                 <span className="text-sm text-gray-500">{projects.length}</span>
               </div>
-              
+
               {projects.length === 0 ? (
                 <div className="text-center py-6">
                   <BuildingOfficeIcon className="mx-auto h-8 w-8 text-gray-400" />
@@ -319,15 +322,16 @@ export function StageAwareProjectDashboard() {
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {projects.map((project) => (
+                  {projects.map(project => (
                     <div
                       key={project.id}
                       onClick={() => setSelectedProject(project)}
                       className={`
                         p-3 rounded-lg cursor-pointer border transition-all
-                        ${selectedProject?.id === project.id
-                          ? 'bg-blue-50 border-blue-200'
-                          : 'hover:bg-gray-50 border-transparent'
+                        ${
+                          selectedProject?.id === project.id
+                            ? 'bg-blue-50 border-blue-200'
+                            : 'hover:bg-gray-50 border-transparent'
                         }
                       `}
                     >
@@ -361,7 +365,7 @@ export function StageAwareProjectDashboard() {
           {selectedProject ? (
             <div className="space-y-6">
               {/* Current Stage Indicator */}
-              <StageIndicator 
+              <StageIndicator
                 currentStage={selectedProject.status}
                 projectName={selectedProject.name}
                 showDescription={true}
@@ -371,19 +375,13 @@ export function StageAwareProjectDashboard() {
               <Card className="p-6">
                 <div className="flex items-start justify-between mb-4">
                   <div>
-                    <h2 className="text-xl font-bold text-gray-900">
-                      {selectedProject.name}
-                    </h2>
+                    <h2 className="text-xl font-bold text-gray-900">{selectedProject.name}</h2>
                     {selectedProject.description && (
                       <p className="text-gray-600 mt-1">{selectedProject.description}</p>
                     )}
                   </div>
                   <div className="flex items-center space-x-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setEditModalOpen(true)}
-                    >
+                    <Button variant="outline" size="sm" onClick={() => setEditModalOpen(true)}>
                       <PencilIcon className="w-4 h-4 mr-1" />
                       Edit
                     </Button>
@@ -479,7 +477,7 @@ export function StageAwareProjectDashboard() {
       <CreateProjectModal
         isOpen={createModalOpen}
         onClose={() => setCreateModalOpen(false)}
-        onProjectCreated={(newProject) => {
+        onProjectCreated={newProject => {
           setProjects([...projects, newProject])
           setSelectedProject(newProject)
           setCreateModalOpen(false)
@@ -491,10 +489,8 @@ export function StageAwareProjectDashboard() {
           isOpen={editModalOpen}
           project={selectedProject}
           onClose={() => setEditModalOpen(false)}
-          onProjectUpdated={(updatedProject) => {
-            setProjects(projects.map(p => 
-              p.id === updatedProject.id ? updatedProject : p
-            ))
+          onProjectUpdated={updatedProject => {
+            setProjects(projects.map(p => (p.id === updatedProject.id ? updatedProject : p)))
             setSelectedProject(updatedProject)
             setEditModalOpen(false)
           }}

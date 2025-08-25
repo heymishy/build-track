@@ -24,10 +24,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!file) {
-      return NextResponse.json(
-        { success: false, error: 'File is required' },
-        { status: 400 }
-      )
+      return NextResponse.json({ success: false, error: 'File is required' }, { status: 400 })
     }
 
     // Validate file type and size
@@ -38,7 +35,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (file.size > 10 * 1024 * 1024) { // 10MB limit
+    if (file.size > 10 * 1024 * 1024) {
+      // 10MB limit
       return NextResponse.json(
         { success: false, error: 'File size must be less than 10MB' },
         { status: 400 }
@@ -48,8 +46,8 @@ export async function POST(request: NextRequest) {
     // Verify supplier access
     const supplier = await prisma.supplierAccess.findUnique({
       where: {
-        email: email.toLowerCase().trim()
-      }
+        email: email.toLowerCase().trim(),
+      },
     })
 
     if (!supplier || !supplier.isActive) {
@@ -62,7 +60,7 @@ export async function POST(request: NextRequest) {
     // Verify project exists if provided
     if (projectId) {
       const project = await prisma.project.findUnique({
-        where: { id: projectId }
+        where: { id: projectId },
       })
 
       if (!project) {
@@ -78,7 +76,7 @@ export async function POST(request: NextRequest) {
     const fileBuffer = await file.arrayBuffer()
     const fileName = file.name
     const fileSize = file.size
-    
+
     // TODO: Upload to actual storage and get URL
     // const fileUrl = await uploadToStorage(fileBuffer, fileName)
     const fileUrl = `/uploads/${Date.now()}-${fileName}` // Placeholder
@@ -93,8 +91,8 @@ export async function POST(request: NextRequest) {
         fileSize,
         supplierName: supplierName || supplier.name,
         notes: notes || null,
-        status: 'PENDING'
-      }
+        status: 'PENDING',
+      },
     })
 
     // TODO: In production, trigger notification to project managers
@@ -107,16 +105,12 @@ export async function POST(request: NextRequest) {
         id: invoiceUpload.id,
         fileName: invoiceUpload.fileName,
         uploadedAt: invoiceUpload.createdAt,
-        status: invoiceUpload.status
-      }
+        status: invoiceUpload.status,
+      },
     })
-
   } catch (error) {
     console.error('Portal upload API error:', error)
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 })
   }
 }
 
@@ -135,8 +129,8 @@ export async function GET(request: NextRequest) {
     // Verify supplier access
     const supplier = await prisma.supplierAccess.findUnique({
       where: {
-        email: email.toLowerCase().trim()
-      }
+        email: email.toLowerCase().trim(),
+      },
     })
 
     if (!supplier || !supplier.isActive) {
@@ -149,27 +143,23 @@ export async function GET(request: NextRequest) {
     // Get upload history for this supplier
     const uploads = await prisma.invoiceUpload.findMany({
       where: {
-        supplierEmail: supplier.email
+        supplierEmail: supplier.email,
       },
       include: {
         project: {
-          select: { id: true, name: true }
-        }
+          select: { id: true, name: true },
+        },
       },
       orderBy: { createdAt: 'desc' },
-      take: 20 // Limit to recent uploads
+      take: 20, // Limit to recent uploads
     })
 
     return NextResponse.json({
       success: true,
-      uploads
+      uploads,
     })
-
   } catch (error) {
     console.error('Portal upload history API error:', error)
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 })
   }
 }

@@ -8,26 +8,29 @@
 ## 🏗️ Multi-Tier Architecture
 
 ### Development Environment
+
 - **Database**: SQLite (`prisma/dev.db`) for rapid development
 - **Port**: 3006 (configured in package.json)
 - **Domain**: `http://localhost:3006`
 - **Features**: Hot reload, debug logging, Turbopack (experimental)
 
-### Production Environment  
+### Production Environment
+
 - **Platform**: Vercel deployment with Supabase PostgreSQL
 - **Database**: PostgreSQL via Supabase connection
 - **Domain**: `https://buildtrack.vercel.app` (configured in vercel.json)
 - **Features**: CDN, edge functions, auto-scaling, security headers
 
 ### Key Differences Between Tiers
-| Aspect | Development | Production |
-|--------|-------------|------------|
-| Database | SQLite file | PostgreSQL (Supabase) |
-| Performance | Fast iteration | Optimized for scale |
-| Logging | Verbose debug | Error tracking only |
-| Security | Relaxed CORS | Strict CSP headers |
-| File Storage | Local filesystem | Vercel Blob storage |
-| Environment | `.env.local` | Vercel env variables |
+
+| Aspect       | Development      | Production            |
+| ------------ | ---------------- | --------------------- |
+| Database     | SQLite file      | PostgreSQL (Supabase) |
+| Performance  | Fast iteration   | Optimized for scale   |
+| Logging      | Verbose debug    | Error tracking only   |
+| Security     | Relaxed CORS     | Strict CSP headers    |
+| File Storage | Local filesystem | Vercel Blob storage   |
+| Environment  | `.env.local`     | Vercel env variables  |
 
 ## 🚀 Quick Start Commands
 
@@ -40,7 +43,7 @@ npm run start           # Start production server locally
 
 # Code Quality (REQUIRED before commits)
 npm run lint            # ESLint checking
-npm run typecheck       # TypeScript validation  
+npm run typecheck       # TypeScript validation
 npm run format          # Prettier formatting
 npm run format:check    # Check formatting compliance
 
@@ -68,6 +71,7 @@ npm run deploy:vercel   # Deploy to Vercel production
 ## 📐 Architecture Overview
 
 ### App Router Structure
+
 ```
 src/
 ├── app/                      # Next.js 15 App Router
@@ -120,6 +124,7 @@ src/
 ## 🔐 Authentication & Security
 
 ### Multi-Layer Security
+
 - **JWT Tokens**: HTTP-only cookies with secure headers
 - **Role-Based Access**: ADMIN/USER/VIEWER with granular permissions
 - **API Protection**: `withAuth` middleware on all protected routes
@@ -128,22 +133,27 @@ src/
 - **CSP Headers**: Content Security Policy via vercel.json
 
 ### Protected Routes Pattern
+
 ```typescript
 import { withAuth } from '@/lib/middleware'
 
-export const GET = withAuth(async (request: NextRequest, user: AuthUser) => {
-  // Route automatically has user context and permission validation
-  return NextResponse.json(data)
-}, {
-  resource: 'projects',
-  action: 'read',
-  requireAuth: true
-})
+export const GET = withAuth(
+  async (request: NextRequest, user: AuthUser) => {
+    // Route automatically has user context and permission validation
+    return NextResponse.json(data)
+  },
+  {
+    resource: 'projects',
+    action: 'read',
+    requireAuth: true,
+  }
+)
 ```
 
 ## 🤖 AI-Powered Invoice Matching
 
 ### Smart Matching Architecture
+
 - **Primary**: Google Gemini 1.5 Flash for intelligent analysis
 - **Fallback**: Logic-based string similarity matching
 - **Override**: Manual user selection with persistent state
@@ -151,23 +161,27 @@ export const GET = withAuth(async (request: NextRequest, user: AuthUser) => {
 - **Cost Optimization**: Batch processing, ~$0.001 per request
 
 ### Critical Performance Issue & Solution
+
 **Problem**: Invoice matching tab triggers LLM on every open
 **Root Cause**: API route runs LLM matching on every GET request
 **Solution**: Implement result caching and conditional LLM execution
 
 ### API Endpoints
+
 - `GET /api/invoices/matching?projectId={id}` - Smart matching with caching
 - `POST /api/invoices/matching` - Apply selected matches
 - `POST /api/invoices/approve` - Batch invoice approval
 
 ### Key Files
+
 - `src/lib/simple-llm-matcher.ts` - AI matching service
-- `src/app/api/invoices/matching/route.ts` - Matching API endpoint  
+- `src/app/api/invoices/matching/route.ts` - Matching API endpoint
 - `src/components/invoices/InvoiceMatchingInterface.tsx` - Matching UI
 
 ## 🗄️ Database Schema
 
 ### Core Entities & Relationships
+
 ```mermaid
 erDiagram
     User ||--o{ ProjectUser : has
@@ -181,6 +195,7 @@ erDiagram
 ```
 
 ### Key Models
+
 - **Users**: Authentication, roles (ADMIN/USER/VIEWER)
 - **Projects**: Construction projects with budgets, timelines
 - **ProjectUsers**: Many-to-many with role assignments
@@ -193,12 +208,14 @@ erDiagram
 ## 🧪 Testing Strategy & Requirements
 
 ### Test Coverage Requirements
+
 - **Unit Tests**: 90%+ coverage for business logic
 - **Integration Tests**: All API endpoints tested
 - **E2E Tests**: Critical user journeys covered
 - **Performance Tests**: API response times < 200ms
 
 ### Pre-Commit Requirements
+
 ```bash
 # MANDATORY before any commit
 npm run typecheck    # Must pass without errors
@@ -207,7 +224,8 @@ npm run test        # All unit tests must pass
 npm run format:check # Code must be formatted
 ```
 
-### Pre-Deployment Requirements  
+### Pre-Deployment Requirements
+
 ```bash
 # MANDATORY before production deployment
 npm run test:all     # Complete test suite
@@ -216,28 +234,33 @@ npm run test:e2e:prod # E2E against production build
 ```
 
 ### Testing Tiers
+
 1. **Unit Tests** (`__tests__/`): Business logic, utilities, hooks
 2. **Integration Tests** (`__tests__/integration/`): API workflows
 3. **E2E Tests** (`tests/e2e/`): Complete user journeys
 4. **Production Tests**: Smoke tests against live environment
 
 ### Test Data Attributes
+
 Components must include `data-testid` attributes:
-- `data-testid="invoice-matching-interface"` 
+
+- `data-testid="invoice-matching-interface"`
 - `data-testid="project-selector"`
 - `data-testid="apply-matches-button"`
 
 ## 🔧 Development Workflow
 
 ### Change Management Process
+
 1. **Analysis**: Understand impact across all tiers
 2. **Planning**: Update specifications and documentation
-3. **Implementation**: Code with tier-specific considerations  
+3. **Implementation**: Code with tier-specific considerations
 4. **Testing**: Validate across development and production builds
 5. **Documentation**: Update CLAUDE.md, prod-spec.md, README.md
 6. **Deployment**: Staged rollout with monitoring
 
 ### Tier-Aware Development
+
 - **Database Changes**: Test SQLite → PostgreSQL compatibility
 - **Environment Variables**: Ensure dev/prod configuration alignment
 - **API Endpoints**: Validate CORS and security headers
@@ -245,14 +268,16 @@ Components must include `data-testid` attributes:
 - **Performance**: Profile both development and production builds
 
 ### Critical Considerations
+
 - **Database Provider Switch**: SQLite (dev) vs PostgreSQL (prod)
-- **File Storage Switch**: Local filesystem vs Vercel Blob  
+- **File Storage Switch**: Local filesystem vs Vercel Blob
 - **Security Context**: Relaxed dev vs strict production policies
 - **Performance Impact**: Development speed vs production optimization
 
 ## 📚 Documentation Standards
 
 ### Required Updates for Every Change
+
 1. **CLAUDE.md**: Architecture and development impact
 2. **prod-spec.md**: Feature specifications and requirements
 3. **README.md**: User-facing setup and usage instructions
@@ -260,8 +285,9 @@ Components must include `data-testid` attributes:
 5. **Test Documentation**: Test coverage and strategy updates
 
 ### Documentation Tiers
+
 - **CLAUDE.md**: Technical architecture and development guide
-- **prod-spec.md**: Product requirements and specifications  
+- **prod-spec.md**: Product requirements and specifications
 - **README.md**: Quick start and user documentation
 - **DEPLOYMENT.md**: Production deployment procedures
 - **TESTING_STRATEGY.md**: Comprehensive testing approaches
@@ -269,18 +295,21 @@ Components must include `data-testid` attributes:
 ## ⚡ Performance & Monitoring
 
 ### Performance Targets
+
 - **Page Load**: < 3s on 3G networks
-- **API Response**: < 200ms for standard operations  
+- **API Response**: < 200ms for standard operations
 - **LLM Processing**: < 30s for batch matching operations
 - **Database Queries**: < 100ms for standard operations
 
 ### Monitoring Stack
+
 - **Health Endpoint**: `/api/system/info` for system status
 - **Error Tracking**: Sentry integration (production)
 - **Performance**: Vercel Analytics and Core Web Vitals
 - **Database**: Query performance monitoring via Prisma
 
 ### Optimization Strategies
+
 - **Bundle Splitting**: Automatic code splitting via Next.js
 - **Image Optimization**: Next.js built-in optimization
 - **Database**: Proper indexing and connection pooling
@@ -289,6 +318,7 @@ Components must include `data-testid` attributes:
 ## 🚀 Deployment Configuration
 
 ### Vercel Configuration (`vercel.json`)
+
 - **Regions**: Sydney (syd1) for optimal NZ performance
 - **Functions**: 30s timeout, 1GB memory for LLM processing
 - **Security Headers**: Comprehensive security header configuration
@@ -296,6 +326,7 @@ Components must include `data-testid` attributes:
 - **Cron Jobs**: Daily cleanup tasks
 
 ### Environment Management
+
 - **Development**: `.env.local` for local configuration
 - **Production**: Vercel environment variables with secrets
 - **Staging**: Separate environment for pre-production testing
@@ -303,9 +334,11 @@ Components must include `data-testid` attributes:
 ## 🏢 Supplier Portal System
 
 ### Overview
+
 Email-based authentication portal allowing suppliers and subcontractors to upload invoices directly to projects without requiring full system accounts.
 
 ### Architecture
+
 - **Public Access**: `/portal` page accessible without authentication
 - **Email Validation**: Validates against approved supplier email list
 - **File Upload**: PDF-only uploads with 10MB size limit
@@ -313,17 +346,18 @@ Email-based authentication portal allowing suppliers and subcontractors to uploa
 - **Upload Tracking**: Complete audit trail for all submissions
 
 ### Database Schema
+
 ```typescript
 // Supplier access whitelist (admin-managed)
 model SupplierAccess {
   id          String       @id @default(cuid())
   email       String       @unique
   name        String       // Company/contractor name
-  type        SupplierType // SUPPLIER | SUBCONTRACTOR  
+  type        SupplierType // SUPPLIER | SUBCONTRACTOR
   isActive    Boolean      @default(true)
   createdBy   String       // Admin who added supplier
   createdAt   DateTime     @default(now())
-  
+
   invoiceUploads InvoiceUpload[]
 }
 
@@ -347,11 +381,13 @@ model InvoiceUpload {
 ### API Endpoints
 
 #### Public Portal APIs (No Authentication)
+
 - `POST /api/portal/validate` - Validate supplier email access
 - `POST /api/portal/upload` - Upload invoice file
 - `GET /api/portal/upload?email=...` - Get upload history
 
 #### Admin Management APIs (Authenticated)
+
 - `GET /api/suppliers` - List all suppliers
 - `POST /api/suppliers` - Add new supplier
 - `PATCH /api/suppliers/[id]` - Update supplier
@@ -361,6 +397,7 @@ model InvoiceUpload {
 - `POST /api/invoices/uploads` - Convert to full invoice
 
 ### Security Features
+
 - **Email Whitelist**: Only approved emails can access portal
 - **File Validation**: PDF-only, size limits, malware scanning
 - **Upload Tracking**: Complete audit trail with timestamps
@@ -368,19 +405,22 @@ model InvoiceUpload {
 - **Project Isolation**: Optional project assignment for security
 
 ### Admin Workflow
+
 1. **Supplier Management**: Add/remove suppliers via Settings → Supplier Portal
 2. **Upload Review**: Monitor uploads via admin interface
 3. **Processing**: Convert uploads to full invoices when ready
 4. **Project Assignment**: Link uploads to specific projects
 5. **Status Updates**: Mark as processed/rejected with notes
 
-### Supplier Workflow  
+### Supplier Workflow
+
 1. **Email Validation**: Enter approved email at `/portal`
 2. **File Upload**: Select PDF invoice, optional project/notes
 3. **Confirmation**: Receive upload confirmation with ID
 4. **Tracking**: View upload history and status updates
 
 ### Production Considerations
+
 - **File Storage**: Integrate with Vercel Blob or AWS S3
 - **Notifications**: Email alerts for new uploads
 - **Backup Strategy**: Secure file backup and recovery
@@ -388,6 +428,7 @@ model InvoiceUpload {
 - **Performance**: Optimize for mobile/field usage
 
 ### Integration Points
+
 - **Settings Page**: Supplier management interface
 - **Invoice Management**: View/process uploaded files
 - **Project Dashboard**: Show pending uploads per project
@@ -396,26 +437,31 @@ model InvoiceUpload {
 ## 🛠️ Common Issues & Solutions
 
 ### LLM Integration Issues
+
 - **Problem**: API runs LLM on every tab open
 - **Solution**: Implement result caching and conditional execution
 - **Prevention**: Cache results, check for existing matches
 
-### Database Migration Issues  
+### Database Migration Issues
+
 - **Problem**: SQLite → PostgreSQL compatibility
 - **Solution**: Test schema changes across both providers
 - **Prevention**: Use Prisma shadow database for validation
 
 ### Authentication Issues
+
 - **Problem**: JWT token validation across tiers
 - **Solution**: Consistent middleware configuration
 - **Prevention**: Validate auth flow in both environments
 
 ### File Upload Issues
+
 - **Problem**: Local filesystem vs Vercel Blob storage
 - **Solution**: Abstract file storage layer with environment detection
 - **Prevention**: Test file operations across both storage systems
 
 ### Supplier Portal Security
+
 - **Problem**: Email-only authentication for external suppliers
 - **Solution**: Validate email against whitelist, track all uploads
 - **Prevention**: Regular audit of supplier access, file validation
@@ -423,14 +469,16 @@ model InvoiceUpload {
 ## 📝 Change Validation Checklist
 
 ### For Every Code Change
+
 - [ ] **Functionality**: Works in both dev and production environments
 - [ ] **Tests**: Unit tests updated and passing
-- [ ] **Types**: TypeScript compilation successful  
+- [ ] **Types**: TypeScript compilation successful
 - [ ] **Lint**: ESLint rules followed
 - [ ] **Format**: Code properly formatted with Prettier
 - [ ] **Documentation**: Relevant docs updated
 
 ### For API Changes
+
 - [ ] **Authentication**: Proper middleware applied
 - [ ] **Validation**: Input validation with Zod schemas
 - [ ] **Error Handling**: Comprehensive error responses
@@ -438,12 +486,14 @@ model InvoiceUpload {
 - [ ] **Security**: CORS and security headers configured
 
 ### For Database Changes
+
 - [ ] **Schema**: Prisma schema updated
 - [ ] **Migration**: Compatible across SQLite and PostgreSQL
 - [ ] **Indexes**: Performance indexes added where needed
 - [ ] **Rollback**: Migration rollback strategy defined
 
-### For UI Changes  
+### For UI Changes
+
 - [ ] **Responsiveness**: Mobile and desktop compatibility
 - [ ] **Accessibility**: WCAG 2.1 AA compliance
 - [ ] **Performance**: Core Web Vitals maintained
@@ -452,12 +502,14 @@ model InvoiceUpload {
 ## 🎯 Next Steps & Priorities
 
 ### Immediate Issues
+
 1. **Fix LLM Caching**: Prevent unnecessary API calls on tab changes
 2. **Performance Optimization**: Implement result caching strategies
 3. **Test Coverage**: Achieve 90%+ coverage for critical paths
 4. **Documentation**: Ensure all specs reflect current architecture
 
 ### Architecture Improvements
+
 1. **Caching Layer**: Redis for session and API response caching
 2. **Background Jobs**: Queue system for LLM processing
 3. **Monitoring**: Enhanced observability and alerting

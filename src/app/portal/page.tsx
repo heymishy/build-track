@@ -49,13 +49,13 @@ export default function SupplierPortalPage() {
   const [supplier, setSupplier] = useState<Supplier | null>(null)
   const [projects, setProjects] = useState<Project[]>([])
   const [uploads, setUploads] = useState<Upload[]>([])
-  
+
   // Form state
   const [selectedProjectId, setSelectedProjectId] = useState('')
   const [supplierName, setSupplierName] = useState('')
   const [notes, setNotes] = useState('')
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
-  
+
   const [loading, setLoading] = useState(false)
   const [uploading, setUploading] = useState(false)
 
@@ -78,7 +78,7 @@ export default function SupplierPortalPage() {
         setSupplierName(data.supplier.name)
         setStep('upload')
         toast.success('Email validated successfully')
-        
+
         // Load upload history
         loadUploadHistory()
       } else {
@@ -107,7 +107,7 @@ export default function SupplierPortalPage() {
 
   const handleFileUpload = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!selectedFile) {
       toast.error('Please select a file to upload')
       return
@@ -120,11 +120,11 @@ export default function SupplierPortalPage() {
       formData.append('file', selectedFile)
       formData.append('email', email.trim())
       formData.append('supplierName', supplierName.trim())
-      
+
       if (selectedProjectId) {
         formData.append('projectId', selectedProjectId)
       }
-      
+
       if (notes.trim()) {
         formData.append('notes', notes.trim())
       }
@@ -138,15 +138,15 @@ export default function SupplierPortalPage() {
 
       if (data.success) {
         toast.success('Invoice uploaded successfully')
-        
+
         // Reset form
         setSelectedFile(null)
         setSelectedProjectId('')
         setNotes('')
-        
+
         // Reload upload history
         loadUploadHistory()
-        
+
         // Show history tab
         setStep('history')
       } else {
@@ -224,18 +224,14 @@ export default function SupplierPortalPage() {
                   type="email"
                   required
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={e => setEmail(e.target.value)}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="your.email@company.com"
                   disabled={loading}
                 />
               </div>
 
-              <Button
-                type="submit"
-                disabled={loading || !email.trim()}
-                className="w-full py-3"
-              >
+              <Button type="submit" disabled={loading || !email.trim()} className="w-full py-3">
                 {loading ? 'Validating...' : 'Continue'}
               </Button>
             </form>
@@ -253,11 +249,13 @@ export default function SupplierPortalPage() {
                     <h3 className="font-medium text-gray-900">{supplier.name}</h3>
                     <p className="text-sm text-gray-600">{supplier.email}</p>
                   </div>
-                  <Badge className={
-                    supplier.type === 'SUPPLIER'
-                      ? 'bg-blue-100 text-blue-800'
-                      : 'bg-purple-100 text-purple-800'
-                  }>
+                  <Badge
+                    className={
+                      supplier.type === 'SUPPLIER'
+                        ? 'bg-blue-100 text-blue-800'
+                        : 'bg-purple-100 text-purple-800'
+                    }
+                  >
                     {supplier.type === 'SUPPLIER' ? 'Supplier' : 'Subcontractor'}
                   </Badge>
                 </div>
@@ -284,7 +282,7 @@ export default function SupplierPortalPage() {
             {step === 'upload' && (
               <Card className="p-6">
                 <h2 className="text-lg font-semibold text-gray-900 mb-6">Upload Invoice</h2>
-                
+
                 <form onSubmit={handleFileUpload} className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
@@ -293,7 +291,7 @@ export default function SupplierPortalPage() {
                       </label>
                       <select
                         value={selectedProjectId}
-                        onChange={(e) => setSelectedProjectId(e.target.value)}
+                        onChange={e => setSelectedProjectId(e.target.value)}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       >
                         <option value="">Select a project...</option>
@@ -313,7 +311,7 @@ export default function SupplierPortalPage() {
                         type="text"
                         required
                         value={supplierName}
-                        onChange={(e) => setSupplierName(e.target.value)}
+                        onChange={e => setSupplierName(e.target.value)}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         placeholder="Company Name"
                       />
@@ -334,7 +332,7 @@ export default function SupplierPortalPage() {
                               type="file"
                               accept=".pdf"
                               className="sr-only"
-                              onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+                              onChange={e => setSelectedFile(e.target.files?.[0] || null)}
                             />
                           </label>
                           <p className="pl-1">or drag and drop</p>
@@ -355,7 +353,7 @@ export default function SupplierPortalPage() {
                     </label>
                     <textarea
                       value={notes}
-                      onChange={(e) => setNotes(e.target.value)}
+                      onChange={e => setNotes(e.target.value)}
                       rows={3}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       placeholder="Any additional notes about this invoice..."
@@ -363,11 +361,7 @@ export default function SupplierPortalPage() {
                   </div>
 
                   <div className="flex justify-end">
-                    <Button
-                      type="submit"
-                      disabled={uploading || !selectedFile}
-                      className="px-8"
-                    >
+                    <Button type="submit" disabled={uploading || !selectedFile} className="px-8">
                       {uploading ? 'Uploading...' : 'Upload Invoice'}
                     </Button>
                   </div>
@@ -401,14 +395,8 @@ export default function SupplierPortalPage() {
                             {getStatusIcon(upload.status)}
                             Status: {upload.status}
                           </div>
-                          {upload.project && (
-                            <div>
-                              Project: {upload.project.name}
-                            </div>
-                          )}
-                          <div>
-                            Uploaded: {new Date(upload.uploadedAt).toLocaleDateString()}
-                          </div>
+                          {upload.project && <div>Project: {upload.project.name}</div>}
+                          <div>Uploaded: {new Date(upload.uploadedAt).toLocaleDateString()}</div>
                         </div>
                       </div>
                     ))}

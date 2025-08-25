@@ -5,6 +5,7 @@ This guide covers deploying BuildTrack to production with security, performance,
 ## Pre-Deployment Checklist
 
 ### Environment Setup
+
 - [ ] Production database (PostgreSQL) provisioned
 - [ ] Environment variables configured
 - [ ] API keys and secrets secured
@@ -13,6 +14,7 @@ This guide covers deploying BuildTrack to production with security, performance,
 - [ ] CDN configured (optional)
 
 ### Security Checklist
+
 - [ ] JWT secrets generated and secured
 - [ ] Database credentials secured
 - [ ] API rate limiting configured
@@ -21,6 +23,7 @@ This guide covers deploying BuildTrack to production with security, performance,
 - [ ] Sensitive data logging removed
 
 ### Performance Checklist
+
 - [ ] Database indexes optimized
 - [ ] Image optimization enabled
 - [ ] Bundle size analyzed
@@ -31,6 +34,7 @@ This guide covers deploying BuildTrack to production with security, performance,
 ## Environment Variables
 
 ### Production Environment (.env.production)
+
 ```bash
 # Database
 DATABASE_URL="postgresql://user:password@host:5432/buildtrack_prod"
@@ -63,11 +67,13 @@ ENABLE_TRAINING="true"
 ### Vercel (Recommended)
 
 #### Quick Deploy
+
 1. Connect your GitHub repository to Vercel
 2. Configure environment variables in Vercel dashboard
 3. Deploy with automatic builds on push
 
 #### Manual Deploy
+
 ```bash
 # Install Vercel CLI
 npm i -g vercel
@@ -88,6 +94,7 @@ vercel --prod
 ### Docker Deployment
 
 #### Dockerfile
+
 ```dockerfile
 FROM node:18-alpine AS deps
 WORKDIR /app
@@ -122,6 +129,7 @@ CMD ["node", "server.js"]
 ```
 
 #### Docker Compose (with PostgreSQL)
+
 ```yaml
 version: '3.8'
 
@@ -129,7 +137,7 @@ services:
   app:
     build: .
     ports:
-      - "3000:3000"
+      - '3000:3000'
     environment:
       - DATABASE_URL=postgresql://postgres:password@db:5432/buildtrack
       - NEXTAUTH_SECRET=your-secret
@@ -144,7 +152,7 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=password
     ports:
-      - "5432:5432"
+      - '5432:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
@@ -153,6 +161,7 @@ volumes:
 ```
 
 ### Railway Deployment
+
 ```bash
 # Install Railway CLI
 npm install -g @railway/cli
@@ -166,6 +175,7 @@ railway up
 ## Database Migration
 
 ### PostgreSQL Setup
+
 ```sql
 -- Create production database
 CREATE DATABASE buildtrack_prod;
@@ -178,6 +188,7 @@ GRANT ALL PRIVILEGES ON DATABASE buildtrack_prod TO buildtrack_user;
 ```
 
 ### Run Migrations
+
 ```bash
 # Generate Prisma client
 npx prisma generate
@@ -192,6 +203,7 @@ npx prisma migrate deploy
 ## Performance Optimization
 
 ### Next.js Configuration
+
 ```javascript
 // next.config.js
 module.exports = {
@@ -200,10 +212,10 @@ module.exports = {
     domains: ['your-domain.com'],
     minimumCacheTTL: 86400, // 24 hours
   },
-  
+
   // Compression
   compress: true,
-  
+
   // Bundle analysis
   webpack: (config, { dev, isServer }) => {
     if (!dev && !isServer) {
@@ -217,7 +229,7 @@ module.exports = {
     }
     return config
   },
-  
+
   // Headers for security and performance
   async headers() {
     return [
@@ -244,6 +256,7 @@ module.exports = {
 ```
 
 ### Database Optimization
+
 ```sql
 -- Add indexes for performance
 CREATE INDEX idx_projects_owner_id ON "Project"("ownerId");
@@ -257,13 +270,16 @@ CREATE INDEX idx_line_items_trade_id ON "LineItem"("tradeId");
 ## Monitoring & Observability
 
 ### Health Check Endpoint
+
 The application includes a health check at `/api/system/info` that monitors:
+
 - Database connectivity
 - Memory usage
 - System uptime
 - Feature availability
 
 ### Logging Setup
+
 ```javascript
 // lib/logger.js
 import winston from 'winston'
@@ -286,6 +302,7 @@ export default logger
 ```
 
 ### Error Monitoring (Sentry)
+
 ```bash
 npm install @sentry/nextjs
 ```
@@ -303,6 +320,7 @@ Sentry.init({
 ## Security Configuration
 
 ### Content Security Policy
+
 ```javascript
 // next.config.js
 const securityHeaders = [
@@ -320,6 +338,7 @@ const securityHeaders = [
 ```
 
 ### API Rate Limiting
+
 ```javascript
 // lib/rate-limit.js
 import { Ratelimit } from '@upstash/ratelimit'
@@ -340,6 +359,7 @@ export async function rateLimitMiddleware(request) {
 ## Backup Strategy
 
 ### Database Backup
+
 ```bash
 # Daily backup script
 #!/bin/bash
@@ -350,6 +370,7 @@ aws s3 cp "backup-$(date +%Y%m%d).sql" s3://your-backup-bucket/
 ```
 
 ### Automated Backup
+
 ```yaml
 # .github/workflows/backup.yml
 name: Database Backup
@@ -369,6 +390,7 @@ jobs:
 ## Rollback Strategy
 
 ### Blue-Green Deployment
+
 1. Deploy to staging environment
 2. Run smoke tests
 3. Switch traffic to new version
@@ -376,6 +398,7 @@ jobs:
 5. Rollback if necessary
 
 ### Database Rollback
+
 ```bash
 # Create migration rollback
 npx prisma migrate diff --from-migrations ./prisma/migrations --to-schema-datamodel ./prisma/schema.prisma --script > rollback.sql
@@ -387,6 +410,7 @@ psql $DATABASE_URL < rollback.sql
 ## Post-Deployment Verification
 
 ### Smoke Tests
+
 ```bash
 # Run critical path tests
 npm run test:e2e:production
@@ -399,6 +423,7 @@ curl https://yourdomain.com/api/system/info
 ```
 
 ### Performance Monitoring
+
 - Check Core Web Vitals
 - Monitor response times
 - Track error rates
@@ -407,6 +432,7 @@ curl https://yourdomain.com/api/system/info
 ## Maintenance
 
 ### Regular Tasks
+
 - [ ] Monitor error logs weekly
 - [ ] Review performance metrics monthly
 - [ ] Update dependencies monthly
@@ -414,6 +440,7 @@ curl https://yourdomain.com/api/system/info
 - [ ] Database maintenance quarterly
 
 ### Scaling Considerations
+
 - Database read replicas for high traffic
 - CDN for global performance
 - Horizontal scaling with load balancers
@@ -424,6 +451,7 @@ curl https://yourdomain.com/api/system/info
 ### Common Issues
 
 #### Build Failures
+
 ```bash
 # Clear cache and rebuild
 rm -rf .next node_modules
@@ -433,18 +461,21 @@ npm run build
 ```
 
 #### Database Connection Issues
+
 - Check connection string format
 - Verify database server accessibility
 - Confirm user permissions
 - Check connection pooling limits
 
 #### Memory Issues
+
 - Increase function memory in vercel.json
 - Optimize database queries
 - Implement pagination for large datasets
 - Add proper cleanup in API routes
 
 ### Debug Mode
+
 ```bash
 # Enable debug logging
 export DEBUG=true
@@ -455,14 +486,17 @@ npm start
 ## Support
 
 ### Documentation
+
 - [Next.js Deployment](https://nextjs.org/docs/deployment)
 - [Prisma Production](https://www.prisma.io/docs/guides/deployment)
 - [Vercel Deployment](https://vercel.com/docs)
 
 ### Monitoring Dashboard
+
 Access monitoring at: `/api/system/info`
 
 ### Emergency Contacts
+
 - Primary: [Your contact information]
 - Secondary: [Backup contact]
 - Database Admin: [DBA contact]

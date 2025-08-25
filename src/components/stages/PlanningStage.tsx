@@ -1,12 +1,12 @@
 'use client'
 
 import React, { useState } from 'react'
-import { 
+import {
   PlusIcon,
   DocumentArrowUpIcon,
   UserPlusIcon,
   ClipboardDocumentListIcon,
-  CurrencyDollarIcon
+  CurrencyDollarIcon,
 } from '@heroicons/react/24/outline'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
@@ -37,26 +37,22 @@ export function PlanningStage({ project, activeTab }: PlanningStageProps) {
     switch (activeTab) {
       case 'overview':
         return <PlanningOverview project={project} />
-      
+
       case 'estimates':
         return <EstimateManager projectId={project.id} />
-      
+
       case 'documents':
         return <DocumentManager project={project} />
-      
+
       case 'client':
         return <ClientManagement project={project} />
-      
+
       default:
         return <PlanningOverview project={project} />
     }
   }
 
-  return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-      {renderTabContent()}
-    </div>
-  )
+  return <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">{renderTabContent()}</div>
 }
 
 function PlanningOverview({ project }: { project: Project }) {
@@ -66,29 +62,29 @@ function PlanningOverview({ project }: { project: Project }) {
       description: 'Build detailed cost estimates for trades and materials',
       icon: ClipboardDocumentListIcon,
       color: 'bg-blue-500',
-      action: () => console.log('Create estimate')
+      action: () => console.log('Create estimate'),
     },
     {
       title: 'Upload Documents',
       description: 'Add plans, permits, and contracts',
       icon: DocumentArrowUpIcon,
       color: 'bg-green-500',
-      action: () => console.log('Upload documents')
+      action: () => console.log('Upload documents'),
     },
     {
       title: 'Set Budget',
       description: 'Define project budget and financial parameters',
       icon: CurrencyDollarIcon,
       color: 'bg-purple-500',
-      action: () => console.log('Set budget')
+      action: () => console.log('Set budget'),
     },
     {
       title: 'Add Team Members',
       description: 'Invite clients and team members to project',
       icon: UserPlusIcon,
       color: 'bg-orange-500',
-      action: () => console.log('Add team')
-    }
+      action: () => console.log('Add team'),
+    },
   ]
 
   return (
@@ -97,9 +93,7 @@ function PlanningOverview({ project }: { project: Project }) {
       <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-6 border border-blue-200">
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">
-              Planning & Estimation
-            </h1>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">Planning & Estimation</h1>
             <p className="text-gray-600 mb-4">
               Set up your project foundation with estimates, documents, and team collaboration
             </p>
@@ -112,27 +106,25 @@ function PlanningOverview({ project }: { project: Project }) {
               </span>
             </div>
           </div>
-          <Button className="bg-blue-600 hover:bg-blue-700">
-            Ready for Construction
-          </Button>
+          <Button className="bg-blue-600 hover:bg-blue-700">Ready for Construction</Button>
         </div>
       </div>
 
       {/* Quick Actions Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {quickActions.map((action, index) => (
-          <Card key={index} className="p-6 hover:shadow-md transition-shadow cursor-pointer" onClick={action.action}>
+          <Card
+            key={index}
+            className="p-6 hover:shadow-md transition-shadow cursor-pointer"
+            onClick={action.action}
+          >
             <div className="flex items-start">
               <div className={`rounded-lg p-3 ${action.color}`}>
                 <action.icon className="w-6 h-6 text-white" />
               </div>
               <div className="ml-4">
-                <h3 className="text-lg font-medium text-gray-900 mb-1">
-                  {action.title}
-                </h3>
-                <p className="text-sm text-gray-500">
-                  {action.description}
-                </p>
+                <h3 className="text-lg font-medium text-gray-900 mb-1">{action.title}</h3>
+                <p className="text-sm text-gray-500">{action.description}</p>
               </div>
             </div>
           </Card>
@@ -218,7 +210,7 @@ function DocumentManager({ project }: { project: Project }) {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {documentCategories.map((category) => (
+        {documentCategories.map(category => (
           <Card key={category.name} className="p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-medium text-gray-900">{category.name}</h3>
@@ -238,9 +230,7 @@ function DocumentManager({ project }: { project: Project }) {
         <div className="text-center py-12">
           <DocumentArrowUpIcon className="mx-auto h-12 w-12 text-gray-400" />
           <h3 className="mt-2 text-sm font-medium text-gray-900">No documents</h3>
-          <p className="mt-1 text-sm text-gray-500">
-            Get started by uploading your first document
-          </p>
+          <p className="mt-1 text-sm text-gray-500">Get started by uploading your first document</p>
           <div className="mt-6">
             <Button>
               <DocumentArrowUpIcon className="w-5 h-5 mr-2" />

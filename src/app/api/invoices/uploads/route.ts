@@ -15,15 +15,15 @@ async function GET(request: NextRequest, user: AuthUser) {
     const projectId = searchParams.get('projectId')
 
     const where: any = {}
-    
+
     if (status && ['PENDING', 'PROCESSED', 'REJECTED'].includes(status)) {
       where.status = status
     }
-    
+
     if (supplierEmail) {
       where.supplierEmail = supplierEmail
     }
-    
+
     if (projectId) {
       where.projectId = projectId
     }
@@ -32,30 +32,26 @@ async function GET(request: NextRequest, user: AuthUser) {
       where,
       include: {
         supplier: {
-          select: { name: true, type: true }
+          select: { name: true, type: true },
         },
         project: {
-          select: { id: true, name: true }
+          select: { id: true, name: true },
         },
         invoice: {
-          select: { id: true, invoiceNumber: true, status: true }
-        }
+          select: { id: true, invoiceNumber: true, status: true },
+        },
       },
       orderBy: { createdAt: 'desc' },
-      take: 50 // Limit results
+      take: 50, // Limit results
     })
 
     return NextResponse.json({
       success: true,
-      uploads
+      uploads,
     })
-
   } catch (error) {
     console.error('Invoice uploads GET API error:', error)
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 })
   }
 }
 
@@ -65,17 +61,11 @@ async function PATCH(request: NextRequest, user: AuthUser) {
     const { uploadId, status, projectId, notes } = body
 
     if (!uploadId) {
-      return NextResponse.json(
-        { success: false, error: 'Upload ID is required' },
-        { status: 400 }
-      )
+      return NextResponse.json({ success: false, error: 'Upload ID is required' }, { status: 400 })
     }
 
     if (status && !['PENDING', 'PROCESSED', 'REJECTED'].includes(status)) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid status' },
-        { status: 400 }
-      )
+      return NextResponse.json({ success: false, error: 'Invalid status' }, { status: 400 })
     }
 
     const updateData: any = {}
@@ -92,25 +82,21 @@ async function PATCH(request: NextRequest, user: AuthUser) {
       data: updateData,
       include: {
         supplier: {
-          select: { name: true, type: true }
+          select: { name: true, type: true },
         },
         project: {
-          select: { id: true, name: true }
-        }
-      }
+          select: { id: true, name: true },
+        },
+      },
     })
 
     return NextResponse.json({
       success: true,
-      upload
+      upload,
     })
-
   } catch (error) {
     console.error('Invoice uploads PATCH API error:', error)
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 })
   }
 }
 
@@ -121,10 +107,7 @@ async function POST(request: NextRequest, user: AuthUser) {
     const { uploadId, invoiceData } = body
 
     if (!uploadId) {
-      return NextResponse.json(
-        { success: false, error: 'Upload ID is required' },
-        { status: 400 }
-      )
+      return NextResponse.json({ success: false, error: 'Upload ID is required' }, { status: 400 })
     }
 
     // Get the upload
@@ -132,15 +115,12 @@ async function POST(request: NextRequest, user: AuthUser) {
       where: { id: uploadId },
       include: {
         supplier: true,
-        project: true
-      }
+        project: true,
+      },
     })
 
     if (!upload) {
-      return NextResponse.json(
-        { success: false, error: 'Upload not found' },
-        { status: 404 }
-      )
+      return NextResponse.json({ success: false, error: 'Upload not found' }, { status: 404 })
     }
 
     if (!upload.project) {
@@ -164,8 +144,8 @@ async function POST(request: NextRequest, user: AuthUser) {
         gstAmount: invoiceData.gstAmount || 0,
         status: 'PENDING',
         pdfUrl: upload.fileUrl,
-        notes: upload.notes || invoiceData.notes || null
-      }
+        notes: upload.notes || invoiceData.notes || null,
+      },
     })
 
     // Update upload to mark as processed
@@ -174,22 +154,18 @@ async function POST(request: NextRequest, user: AuthUser) {
       data: {
         status: 'PROCESSED',
         processedAt: new Date(),
-        invoiceId: invoice.id
-      }
+        invoiceId: invoice.id,
+      },
     })
 
     return NextResponse.json({
       success: true,
       invoice,
-      message: 'Upload successfully converted to invoice'
+      message: 'Upload successfully converted to invoice',
     })
-
   } catch (error) {
     console.error('Invoice upload conversion error:', error)
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 })
   }
 }
 

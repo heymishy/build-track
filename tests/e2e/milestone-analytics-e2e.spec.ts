@@ -12,14 +12,14 @@ test.describe('Enhanced Milestone and Analytics Features E2E', () => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ 
-          user: { 
-            id: 'test-user', 
-            name: 'Test User', 
+        body: JSON.stringify({
+          user: {
+            id: 'test-user',
+            name: 'Test User',
             email: 'test@example.com',
-            role: 'ADMIN'
-          } 
-        })
+            role: 'ADMIN',
+          },
+        }),
       })
     })
 
@@ -30,16 +30,18 @@ test.describe('Enhanced Milestone and Analytics Features E2E', () => {
         contentType: 'application/json',
         body: JSON.stringify({
           success: true,
-          projects: [{
-            id: 'project-1',
-            name: 'Test Construction Project',
-            description: 'E2E test project',
-            budget: 100000,
-            status: 'ACTIVE',
-            startDate: '2024-01-01',
-            endDate: '2024-12-31'
-          }]
-        })
+          projects: [
+            {
+              id: 'project-1',
+              name: 'Test Construction Project',
+              description: 'E2E test project',
+              budget: 100000,
+              status: 'ACTIVE',
+              startDate: '2024-01-01',
+              endDate: '2024-12-31',
+            },
+          ],
+        }),
       })
     })
 
@@ -61,7 +63,7 @@ test.describe('Enhanced Milestone and Analytics Features E2E', () => {
                 progress: 100,
                 status: 'COMPLETED',
                 amount: 25000,
-                projectId: 'project-1'
+                projectId: 'project-1',
               },
               {
                 id: 'milestone-2',
@@ -72,10 +74,10 @@ test.describe('Enhanced Milestone and Analytics Features E2E', () => {
                 progress: 75,
                 status: 'IN_PROGRESS',
                 amount: 35000,
-                projectId: 'project-1'
-              }
-            ]
-          })
+                projectId: 'project-1',
+              },
+            ],
+          }),
         })
       } else if (request.method() === 'POST') {
         const body = await request.postDataJSON()
@@ -89,9 +91,9 @@ test.describe('Enhanced Milestone and Analytics Features E2E', () => {
               ...body,
               projectId: 'project-1',
               progress: 0,
-              status: 'PENDING'
-            }
-          })
+              status: 'PENDING',
+            },
+          }),
         })
       }
     })
@@ -105,8 +107,8 @@ test.describe('Enhanced Milestone and Analytics Features E2E', () => {
           contentType: 'application/json',
           body: JSON.stringify({
             success: true,
-            milestone: { id: 'milestone-2', ...body }
-          })
+            milestone: { id: 'milestone-2', ...body },
+          }),
         })
       }
     })
@@ -128,7 +130,7 @@ test.describe('Enhanced Milestone and Analytics Features E2E', () => {
               progressPercentage: 50,
               budgetUtilization: 45,
               remainingBudget: 55000,
-              projectedCompletion: '2024-11-15'
+              projectedCompletion: '2024-11-15',
             },
             trends: {
               spendingTrend: [
@@ -137,7 +139,7 @@ test.describe('Enhanced Milestone and Analytics Features E2E', () => {
                 { month: '2024-03', amount: 12000, cumulative: 25000 },
                 { month: '2024-04', amount: 7000, cumulative: 32000 },
                 { month: '2024-05', amount: 6000, cumulative: 38000 },
-                { month: '2024-06', amount: 7000, cumulative: 45000 }
+                { month: '2024-06', amount: 7000, cumulative: 45000 },
               ],
               budgetBurnRate: [
                 { month: '2024-01', projected: 8333, actual: 5000 },
@@ -145,26 +147,26 @@ test.describe('Enhanced Milestone and Analytics Features E2E', () => {
                 { month: '2024-03', projected: 25000, actual: 25000 },
                 { month: '2024-04', projected: 33333, actual: 32000 },
                 { month: '2024-05', projected: 41666, actual: 38000 },
-                { month: '2024-06', projected: 50000, actual: 45000 }
-              ]
+                { month: '2024-06', projected: 50000, actual: 45000 },
+              ],
             },
             alerts: [
               {
                 type: 'warning',
                 message: 'Budget utilization is approaching 50% threshold',
                 severity: 'medium',
-                timestamp: '2024-06-15T10:00:00Z'
-              }
+                timestamp: '2024-06-15T10:00:00Z',
+              },
             ],
             cashFlow: {
               projectedInflow: [
                 { month: '2024-07', amount: 15000 },
-                { month: '2024-08', amount: 20000 }
+                { month: '2024-08', amount: 20000 },
               ],
               projectedOutflow: [
                 { month: '2024-07', amount: 18000 },
-                { month: '2024-08', amount: 15000 }
-              ]
+                { month: '2024-08', amount: 15000 },
+              ],
             },
             kpis: {
               costPerformanceIndex: 1.12,
@@ -172,14 +174,14 @@ test.describe('Enhanced Milestone and Analytics Features E2E', () => {
               estimateAccuracy: 87.5,
               changeOrderImpact: 3.2,
               milestoneAdhesion: 75,
-              budgetVariance: -5000
+              budgetVariance: -5000,
             },
             trades: [
               { name: 'Foundation', budgeted: 25000, spent: 24000, variance: 1000 },
-              { name: 'Framing', budgeted: 35000, spent: 21000, variance: 14000 }
-            ]
-          }
-        })
+              { name: 'Framing', budgeted: 35000, spent: 21000, variance: 14000 },
+            ],
+          },
+        }),
       })
     })
 
@@ -207,7 +209,7 @@ test.describe('Enhanced Milestone and Analytics Features E2E', () => {
     await page.fill('[data-testid="milestone-amount-input"]', '15000')
 
     await page.click('[data-testid="save-milestone-btn"]')
-    
+
     // Verify milestone appears in list
     await expect(page.getByText('Electrical Complete')).toBeVisible()
     await expect(page.getByText('$15,000')).toBeVisible()
@@ -240,7 +242,7 @@ test.describe('Enhanced Milestone and Analytics Features E2E', () => {
     await page.selectOption('[data-testid="milestone-status-select"]', 'IN_PROGRESS')
 
     await page.click('[data-testid="save-changes-btn"]')
-    
+
     // Verify progress update
     await expect(page.getByText('90%')).toBeVisible()
 
@@ -260,7 +262,7 @@ test.describe('Enhanced Milestone and Analytics Features E2E', () => {
 
     // Mark milestone as complete using quick action
     await page.click('[data-testid="complete-milestone-btn"]:nth-child(2)')
-    
+
     // Verify milestone is marked complete
     await expect(page.getByText('COMPLETED')).toBeVisible({ timeout: 10000 })
 
@@ -313,7 +315,7 @@ test.describe('Enhanced Milestone and Analytics Features E2E', () => {
   test('should show responsive design on mobile viewport', async ({ page }) => {
     // Set mobile viewport
     await page.setViewportSize({ width: 375, height: 667 })
-    
+
     // Navigate to analytics
     await page.click('[data-testid="project-card"]:first-child')
     await page.click('[data-testid="analytics-tab"]')
@@ -322,7 +324,7 @@ test.describe('Enhanced Milestone and Analytics Features E2E', () => {
     // Verify mobile layout
     const container = page.locator('[data-testid="analytics-container"]')
     await expect(container).toBeVisible()
-    
+
     // Verify key metrics are still visible
     await expect(page.getByText('$100,000')).toBeVisible()
     await expect(page.getByText('Financial Overview')).toBeVisible()
@@ -343,7 +345,7 @@ test.describe('Enhanced Milestone and Analytics Features E2E', () => {
     // Should show error message or cached data
     const errorMessage = page.locator('[data-testid="analytics-error"]')
     const cachedData = page.locator('[data-testid="analytics-container"]')
-    
+
     // Either error message should be visible OR cached data should be shown
     await expect(errorMessage.or(cachedData)).toBeVisible()
   })
@@ -360,7 +362,7 @@ test.describe('Enhanced Milestone and Analytics Features E2E', () => {
       const downloadPromise = page.waitForEvent('download')
       await exportBtn.click()
       const download = await downloadPromise
-      
+
       // Verify download filename
       expect(download.suggestedFilename()).toContain('analytics')
       expect(download.suggestedFilename()).toContain('.csv')
@@ -376,8 +378,8 @@ test.describe('Enhanced Milestone and Analytics Features E2E', () => {
         contentType: 'application/json',
         body: JSON.stringify({
           success: true,
-          data: { overview: {}, trends: {}, kpis: {}, alerts: [], cashFlow: {}, trades: [] }
-        })
+          data: { overview: {}, trends: {}, kpis: {}, alerts: [], cashFlow: {}, trades: [] },
+        }),
       })
     })
 
@@ -387,10 +389,10 @@ test.describe('Enhanced Milestone and Analytics Features E2E', () => {
 
     // Verify loading state is shown
     await expect(page.getByTestId('analytics-loading')).toBeVisible()
-    
+
     // Wait for data to load
     await page.waitForLoadState('networkidle')
-    
+
     // Verify loading state is gone
     await expect(page.getByTestId('analytics-loading')).not.toBeVisible()
   })

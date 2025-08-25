@@ -1,14 +1,14 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { 
-  PlusIcon, 
-  ClockIcon, 
+import {
+  PlusIcon,
+  ClockIcon,
   CurrencyDollarIcon,
   UserIcon,
   CalendarIcon,
   ChartBarIcon,
-  DocumentTextIcon
+  DocumentTextIcon,
 } from '@heroicons/react/24/outline'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
@@ -74,18 +74,14 @@ export function LaborTrackingManager({ projectId }: LaborTrackingManagerProps) {
     const today = new Date()
     const startOfWeek = new Date(today)
     startOfWeek.setDate(today.getDate() - today.getDay() + 1) // Start of week (Monday)
-    
+
     const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1)
 
     switch (selectedPeriod) {
       case 'week':
-        return laborEntries.filter(entry => 
-          new Date(entry.workDate) >= startOfWeek
-        )
+        return laborEntries.filter(entry => new Date(entry.workDate) >= startOfWeek)
       case 'month':
-        return laborEntries.filter(entry => 
-          new Date(entry.workDate) >= startOfMonth
-        )
+        return laborEntries.filter(entry => new Date(entry.workDate) >= startOfMonth)
       default:
         return laborEntries
     }
@@ -97,7 +93,7 @@ export function LaborTrackingManager({ projectId }: LaborTrackingManagerProps) {
       subtotal: 0,
       gst: 0,
       total: 0,
-      byRole: {} as Record<LaborRole, { hours: number; amount: number }>
+      byRole: {} as Record<LaborRole, { hours: number; amount: number }>,
     }
 
     entries.forEach(entry => {
@@ -129,7 +125,7 @@ export function LaborTrackingManager({ projectId }: LaborTrackingManagerProps) {
     return new Date(dateString).toLocaleDateString('en-NZ', {
       weekday: 'short',
       day: 'numeric',
-      month: 'short'
+      month: 'short',
     })
   }
 
@@ -159,7 +155,7 @@ export function LaborTrackingManager({ projectId }: LaborTrackingManagerProps) {
         <div className="flex items-center space-x-3">
           <select
             value={selectedPeriod}
-            onChange={(e) => setSelectedPeriod(e.target.value)}
+            onChange={e => setSelectedPeriod(e.target.value)}
             className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
           >
             <option value="week">This Week</option>
@@ -185,9 +181,7 @@ export function LaborTrackingManager({ projectId }: LaborTrackingManagerProps) {
             </div>
             <div className="ml-4">
               <p className="text-sm text-gray-500">Total Hours</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {totals.totalHours.toFixed(1)}
-              </p>
+              <p className="text-2xl font-bold text-gray-900">{totals.totalHours.toFixed(1)}</p>
             </div>
           </div>
         </Card>
@@ -199,9 +193,7 @@ export function LaborTrackingManager({ projectId }: LaborTrackingManagerProps) {
             </div>
             <div className="ml-4">
               <p className="text-sm text-gray-500">Subtotal</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {formatCurrency(totals.subtotal)}
-              </p>
+              <p className="text-2xl font-bold text-gray-900">{formatCurrency(totals.subtotal)}</p>
             </div>
           </div>
         </Card>
@@ -213,9 +205,7 @@ export function LaborTrackingManager({ projectId }: LaborTrackingManagerProps) {
             </div>
             <div className="ml-4">
               <p className="text-sm text-gray-500">GST (15%)</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {formatCurrency(totals.gst)}
-              </p>
+              <p className="text-2xl font-bold text-gray-900">{formatCurrency(totals.gst)}</p>
             </div>
           </div>
         </Card>
@@ -227,9 +217,7 @@ export function LaborTrackingManager({ projectId }: LaborTrackingManagerProps) {
             </div>
             <div className="ml-4">
               <p className="text-sm text-gray-500">Total (inc GST)</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {formatCurrency(totals.total)}
-              </p>
+              <p className="text-2xl font-bold text-gray-900">{formatCurrency(totals.total)}</p>
             </div>
           </div>
         </Card>
@@ -245,7 +233,10 @@ export function LaborTrackingManager({ projectId }: LaborTrackingManagerProps) {
             const amount = roleData?.amount || 0
 
             return (
-              <div key={role} className="flex items-center justify-between py-3 border-b last:border-b-0">
+              <div
+                key={role}
+                className="flex items-center justify-between py-3 border-b last:border-b-0"
+              >
                 <div className="flex items-center">
                   <Badge className={config.color}>{config.label}</Badge>
                   <span className="ml-3 text-sm text-gray-500">
@@ -253,12 +244,8 @@ export function LaborTrackingManager({ projectId }: LaborTrackingManagerProps) {
                   </span>
                 </div>
                 <div className="text-right">
-                  <div className="font-medium text-gray-900">
-                    {hours.toFixed(1)} hrs
-                  </div>
-                  <div className="text-sm text-gray-500">
-                    {formatCurrency(amount)}
-                  </div>
+                  <div className="font-medium text-gray-900">{hours.toFixed(1)} hrs</div>
+                  <div className="text-sm text-gray-500">{formatCurrency(amount)}</div>
                 </div>
               </div>
             )
@@ -293,8 +280,11 @@ export function LaborTrackingManager({ projectId }: LaborTrackingManagerProps) {
           </div>
         ) : (
           <div className="space-y-3">
-            {filteredEntries.slice(0, 10).map((entry) => (
-              <div key={entry.id} className="flex items-center justify-between py-3 border-b last:border-b-0">
+            {filteredEntries.slice(0, 10).map(entry => (
+              <div
+                key={entry.id}
+                className="flex items-center justify-between py-3 border-b last:border-b-0"
+              >
                 <div className="flex items-center space-x-3">
                   <div className="flex-shrink-0">
                     <div className="p-2 bg-gray-100 rounded-lg">
@@ -306,9 +296,7 @@ export function LaborTrackingManager({ projectId }: LaborTrackingManagerProps) {
                       <Badge className={LABOR_ROLES[entry.workerRole].color} size="sm">
                         {LABOR_ROLES[entry.workerRole].label}
                       </Badge>
-                      <span className="text-sm text-gray-500">
-                        {formatDate(entry.workDate)}
-                      </span>
+                      <span className="text-sm text-gray-500">{formatDate(entry.workDate)}</span>
                     </div>
                     {entry.description && (
                       <p className="text-sm text-gray-600 mt-1">{entry.description}</p>
@@ -316,9 +304,7 @@ export function LaborTrackingManager({ projectId }: LaborTrackingManagerProps) {
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="font-medium text-gray-900">
-                    {entry.hoursWorked} hrs
-                  </div>
+                  <div className="font-medium text-gray-900">{entry.hoursWorked} hrs</div>
                   <div className="text-sm text-gray-500">
                     {formatCurrency(entry.hoursWorked * entry.hourlyRate)}
                   </div>
@@ -334,7 +320,7 @@ export function LaborTrackingManager({ projectId }: LaborTrackingManagerProps) {
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
         projectId={projectId}
-        onEntryCreated={(newEntry) => {
+        onEntryCreated={newEntry => {
           setLaborEntries([newEntry, ...laborEntries])
           setShowCreateModal(false)
         }}
@@ -348,7 +334,7 @@ function CreateLaborEntryModal({
   isOpen,
   onClose,
   projectId,
-  onEntryCreated
+  onEntryCreated,
 }: {
   isOpen: boolean
   onClose: () => void
@@ -359,7 +345,7 @@ function CreateLaborEntryModal({
     workDate: new Date().toISOString().split('T')[0],
     workerRole: 'BUILDER' as LaborRole,
     hoursWorked: '',
-    description: ''
+    description: '',
   })
   const [submitting, setSubmitting] = useState(false)
 
@@ -376,8 +362,8 @@ function CreateLaborEntryModal({
         body: JSON.stringify({
           ...formData,
           hoursWorked: parseFloat(formData.hoursWorked),
-          hourlyRate
-        })
+          hourlyRate,
+        }),
       })
 
       const data = await response.json()
@@ -387,7 +373,7 @@ function CreateLaborEntryModal({
           workDate: new Date().toISOString().split('T')[0],
           workerRole: 'BUILDER',
           hoursWorked: '',
-          description: ''
+          description: '',
         })
       }
     } catch (error) {
@@ -404,9 +390,7 @@ function CreateLaborEntryModal({
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Work Date
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Work Date</label>
             <input
               type="date"
               value={formData.workDate}
@@ -416,9 +400,7 @@ function CreateLaborEntryModal({
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Hours Worked
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Hours Worked</label>
             <input
               type="number"
               step="0.25"
@@ -434,12 +416,12 @@ function CreateLaborEntryModal({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Worker Role
-          </label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Worker Role</label>
           <select
             value={formData.workerRole}
-            onChange={e => setFormData(prev => ({ ...prev, workerRole: e.target.value as LaborRole }))}
+            onChange={e =>
+              setFormData(prev => ({ ...prev, workerRole: e.target.value as LaborRole }))
+            }
             className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
             required
           >
@@ -479,7 +461,9 @@ function CreateLaborEntryModal({
               {new Intl.NumberFormat('en-NZ', {
                 style: 'currency',
                 currency: 'NZD',
-              }).format((parseFloat(formData.hoursWorked) || 0) * LABOR_ROLES[formData.workerRole].baseRate)}
+              }).format(
+                (parseFloat(formData.hoursWorked) || 0) * LABOR_ROLES[formData.workerRole].baseRate
+              )}
             </span>
           </div>
           <div className="flex justify-between text-sm font-medium border-t pt-2 mt-2">
@@ -488,7 +472,11 @@ function CreateLaborEntryModal({
               {new Intl.NumberFormat('en-NZ', {
                 style: 'currency',
                 currency: 'NZD',
-              }).format((parseFloat(formData.hoursWorked) || 0) * LABOR_ROLES[formData.workerRole].baseRate * 1.15)}
+              }).format(
+                (parseFloat(formData.hoursWorked) || 0) *
+                  LABOR_ROLES[formData.workerRole].baseRate *
+                  1.15
+              )}
             </span>
           </div>
         </div>

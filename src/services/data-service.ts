@@ -3,12 +3,7 @@
  * Centralized API interactions with consistent error handling and caching
  */
 
-import { 
-  apiClient, 
-  QueryBuilder, 
-  globalCache, 
-  type StateCache 
-} from '@/lib/state-manager'
+import { apiClient, QueryBuilder, globalCache, type StateCache } from '@/lib/state-manager'
 import type {
   Project,
   ProjectFormData,
@@ -29,7 +24,7 @@ import type {
   PaginatedResponse,
   PaginationParams,
   ProjectAnalytics,
-  InvoiceAnalytics
+  InvoiceAnalytics,
 } from '@/types'
 
 // ==================== Base Service Class ====================
@@ -53,22 +48,17 @@ abstract class BaseService {
     cacheKey?: string,
     cacheTTL?: number
   ): Promise<ApiResponse<T>> {
-    return apiClient.request(
-      `${this.baseURL}${endpoint}`,
-      options,
-      cacheKey,
-      cacheTTL
-    )
+    return apiClient.request(`${this.baseURL}${endpoint}`, options, cacheKey, cacheTTL)
   }
 
   protected buildQuery(params: any = {}): string {
     const builder = QueryBuilder.create()
-    
+
     // Common pagination
     if (params.page) builder.paginate(params.page, params.limit || 20)
     if (params.sortBy) builder.sort(params.sortBy, params.sortOrder || 'desc')
     if (params.search) builder.search(params.search)
-    
+
     return builder.build()
   }
 }
@@ -114,43 +104,43 @@ class ProjectsService extends BaseService {
   async create(data: ProjectFormData): Promise<ApiResponse<Project>> {
     const response = await this.request<Project>('', {
       method: 'POST',
-      body: JSON.stringify(data)
+      body: JSON.stringify(data),
     })
-    
+
     // Clear list cache on successful creation
     if (response.success) {
       this.cache.clear(this.getCacheKey(''))
     }
-    
+
     return response
   }
 
   async update(id: string, data: Partial<ProjectFormData>): Promise<ApiResponse<Project>> {
     const response = await this.request<Project>(`/${id}`, {
       method: 'PUT',
-      body: JSON.stringify(data)
+      body: JSON.stringify(data),
     })
-    
+
     // Clear related caches
     if (response.success) {
       this.cache.clear(this.getCacheKey(''))
       this.cache.clear(this.getCacheKey(`/${id}`))
     }
-    
+
     return response
   }
 
   async delete(id: string): Promise<ApiResponse<void>> {
     const response = await this.request<void>(`/${id}`, {
-      method: 'DELETE'
+      method: 'DELETE',
     })
-    
+
     // Clear related caches
     if (response.success) {
       this.cache.clear(this.getCacheKey(''))
       this.cache.clear(this.getCacheKey(`/${id}`))
     }
-    
+
     return response
   }
 
@@ -195,39 +185,39 @@ class TradesService extends BaseService {
   async create(projectId: string, data: TradeFormData): Promise<ApiResponse<Trade>> {
     const response = await this.request<Trade>('', {
       method: 'POST',
-      body: JSON.stringify({ ...data, projectId })
+      body: JSON.stringify({ ...data, projectId }),
     })
-    
+
     if (response.success) {
       this.cache.clear(this.getCacheKey(`/project/${projectId}`))
     }
-    
+
     return response
   }
 
   async update(id: string, data: Partial<TradeFormData>): Promise<ApiResponse<Trade>> {
     const response = await this.request<Trade>(`/${id}`, {
       method: 'PUT',
-      body: JSON.stringify(data)
+      body: JSON.stringify(data),
     })
-    
+
     if (response.success) {
       // Clear project trades cache - would need projectId
       this.cache.clear() // Clear all for simplicity
     }
-    
+
     return response
   }
 
   async delete(id: string): Promise<ApiResponse<void>> {
     const response = await this.request<void>(`/${id}`, {
-      method: 'DELETE'
+      method: 'DELETE',
     })
-    
+
     if (response.success) {
       this.cache.clear() // Clear all caches
     }
-    
+
     return response
   }
 }
@@ -241,62 +231,59 @@ class LineItemsService extends BaseService {
 
   async getByTrade(tradeId: string): Promise<ApiResponse<LineItem[]>> {
     const cacheKey = this.getCacheKey(`/trade/${tradeId}`)
-    return this.request<LineItem[]>(
-      `/trade/${tradeId}`,
-      { method: 'GET' },
-      cacheKey,
-      3 * 60 * 1000
-    )
+    return this.request<LineItem[]>(`/trade/${tradeId}`, { method: 'GET' }, cacheKey, 3 * 60 * 1000)
   }
 
   async create(tradeId: string, data: LineItemFormData): Promise<ApiResponse<LineItem>> {
     const response = await this.request<LineItem>('', {
       method: 'POST',
-      body: JSON.stringify({ ...data, tradeId })
+      body: JSON.stringify({ ...data, tradeId }),
     })
-    
+
     if (response.success) {
       this.cache.clear(this.getCacheKey(`/trade/${tradeId}`))
     }
-    
+
     return response
   }
 
   async update(id: string, data: Partial<LineItemFormData>): Promise<ApiResponse<LineItem>> {
     const response = await this.request<LineItem>(`/${id}`, {
       method: 'PUT',
-      body: JSON.stringify(data)
+      body: JSON.stringify(data),
     })
-    
+
     if (response.success) {
       this.cache.clear() // Simplify cache clearing
     }
-    
+
     return response
   }
 
   async delete(id: string): Promise<ApiResponse<void>> {
     const response = await this.request<void>(`/${id}`, {
-      method: 'DELETE'
+      method: 'DELETE',
     })
-    
+
     if (response.success) {
       this.cache.clear()
     }
-    
+
     return response
   }
 
-  async bulkUpdate(updates: Array<{ id: string; data: Partial<LineItemFormData> }>): Promise<ApiResponse<LineItem[]>> {
+  async bulkUpdate(
+    updates: Array<{ id: string; data: Partial<LineItemFormData> }>
+  ): Promise<ApiResponse<LineItem[]>> {
     const response = await this.request<LineItem[]>('/bulk-update', {
       method: 'POST',
-      body: JSON.stringify({ updates })
+      body: JSON.stringify({ updates }),
     })
-    
+
     if (response.success) {
       this.cache.clear()
     }
-    
+
     return response
   }
 }
@@ -321,65 +308,60 @@ class InvoicesService extends BaseService {
       .build()
 
     const cacheKey = this.getCacheKey('', params)
-    return this.request<Invoice[]>(
-      query,
-      { method: 'GET' },
-      cacheKey,
-      1 * 60 * 1000
-    ) as Promise<PaginatedResponse<Invoice>>
+    return this.request<Invoice[]>(query, { method: 'GET' }, cacheKey, 1 * 60 * 1000) as Promise<
+      PaginatedResponse<Invoice>
+    >
   }
 
   async getById(id: string): Promise<ApiResponse<Invoice>> {
     const cacheKey = this.getCacheKey(`/${id}`)
-    return this.request<Invoice>(
-      `/${id}`,
-      { method: 'GET' },
-      cacheKey,
-      3 * 60 * 1000
-    )
+    return this.request<Invoice>(`/${id}`, { method: 'GET' }, cacheKey, 3 * 60 * 1000)
   }
 
   async create(data: InvoiceFormData): Promise<ApiResponse<Invoice>> {
     const response = await this.request<Invoice>('', {
       method: 'POST',
-      body: JSON.stringify(data)
+      body: JSON.stringify(data),
     })
-    
+
     if (response.success) {
       this.cache.clear(this.getCacheKey(''))
     }
-    
+
     return response
   }
 
   async update(id: string, data: Partial<InvoiceFormData>): Promise<ApiResponse<Invoice>> {
     const response = await this.request<Invoice>(`/${id}`, {
       method: 'PUT',
-      body: JSON.stringify(data)
+      body: JSON.stringify(data),
     })
-    
+
     if (response.success) {
       this.cache.clear(this.getCacheKey(''))
       this.cache.clear(this.getCacheKey(`/${id}`))
     }
-    
+
     return response
   }
 
   async delete(id: string): Promise<ApiResponse<void>> {
     const response = await this.request<void>(`/${id}`, {
-      method: 'DELETE'
+      method: 'DELETE',
     })
-    
+
     if (response.success) {
       this.cache.clear(this.getCacheKey(''))
       this.cache.clear(this.getCacheKey(`/${id}`))
     }
-    
+
     return response
   }
 
-  async uploadPDF(file: File, projectId?: string): Promise<ApiResponse<{ invoices: Invoice[]; processed: number }>> {
+  async uploadPDF(
+    file: File,
+    projectId?: string
+  ): Promise<ApiResponse<{ invoices: Invoice[]; processed: number }>> {
     const formData = new FormData()
     formData.append('file', file)
     if (projectId) {
@@ -388,11 +370,11 @@ class InvoicesService extends BaseService {
 
     const response = await fetch('/api/invoices/upload', {
       method: 'POST',
-      body: formData
+      body: formData,
     })
 
     const result = await response.json()
-    
+
     if (result.success) {
       this.cache.clear(this.getCacheKey(''))
     }
@@ -440,26 +422,26 @@ class MilestonesService extends BaseService {
   async create(projectId: string, data: MilestoneFormData): Promise<ApiResponse<Milestone>> {
     const response = await this.request<Milestone>('', {
       method: 'POST',
-      body: JSON.stringify({ ...data, projectId })
+      body: JSON.stringify({ ...data, projectId }),
     })
-    
+
     if (response.success) {
       this.cache.clear(this.getCacheKey(`/project/${projectId}`))
     }
-    
+
     return response
   }
 
   async update(id: string, data: Partial<MilestoneFormData>): Promise<ApiResponse<Milestone>> {
     const response = await this.request<Milestone>(`/${id}`, {
       method: 'PUT',
-      body: JSON.stringify(data)
+      body: JSON.stringify(data),
     })
-    
+
     if (response.success) {
       this.cache.clear()
     }
-    
+
     return response
   }
 
@@ -468,8 +450,8 @@ class MilestonesService extends BaseService {
   }
 
   async complete(id: string): Promise<ApiResponse<Milestone>> {
-    return this.update(id, { 
-      status: 'COMPLETED', 
+    return this.update(id, {
+      status: 'COMPLETED',
       percentComplete: 100,
       // actualDate would be set server-side
     })
@@ -477,13 +459,13 @@ class MilestonesService extends BaseService {
 
   async delete(id: string): Promise<ApiResponse<void>> {
     const response = await this.request<void>(`/${id}`, {
-      method: 'DELETE'
+      method: 'DELETE',
     })
-    
+
     if (response.success) {
       this.cache.clear()
     }
-    
+
     return response
   }
 }
@@ -497,42 +479,32 @@ class UsersService extends BaseService {
 
   async getProfile(): Promise<ApiResponse<UserProfile>> {
     const cacheKey = this.getCacheKey('/profile')
-    return this.request<UserProfile>(
-      '/profile',
-      { method: 'GET' },
-      cacheKey,
-      5 * 60 * 1000
-    )
+    return this.request<UserProfile>('/profile', { method: 'GET' }, cacheKey, 5 * 60 * 1000)
   }
 
   async updateProfile(data: Partial<User>): Promise<ApiResponse<User>> {
     const response = await this.request<User>('/profile', {
       method: 'PUT',
-      body: JSON.stringify(data)
+      body: JSON.stringify(data),
     })
-    
+
     if (response.success) {
       this.cache.clear(this.getCacheKey('/profile'))
     }
-    
+
     return response
   }
 
   async changePassword(currentPassword: string, newPassword: string): Promise<ApiResponse<void>> {
     return this.request<void>('/change-password', {
       method: 'POST',
-      body: JSON.stringify({ currentPassword, newPassword })
+      body: JSON.stringify({ currentPassword, newPassword }),
     })
   }
 
   async getByProject(projectId: string): Promise<ApiResponse<User[]>> {
     const cacheKey = this.getCacheKey(`/project/${projectId}`)
-    return this.request<User[]>(
-      `/project/${projectId}`,
-      { method: 'GET' },
-      cacheKey,
-      3 * 60 * 1000
-    )
+    return this.request<User[]>(`/project/${projectId}`, { method: 'GET' }, cacheKey, 3 * 60 * 1000)
   }
 }
 
@@ -569,7 +541,7 @@ export class DataService {
       try {
         const serviceInstance = this[service] as any
         const response = await serviceInstance.update(update.id, update.data)
-        
+
         if (response.success && response.data) {
           results.push(response.data)
         } else {
@@ -583,7 +555,7 @@ export class DataService {
     return {
       success: errors.length === 0,
       data: results,
-      error: errors.length > 0 ? errors.join('; ') : undefined
+      error: errors.length > 0 ? errors.join('; ') : undefined,
     }
   }
 
@@ -605,5 +577,5 @@ export type {
   LineItemsService,
   InvoicesService,
   MilestonesService,
-  UsersService
+  UsersService,
 }
