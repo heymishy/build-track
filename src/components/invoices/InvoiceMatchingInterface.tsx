@@ -550,8 +550,9 @@ export function InvoiceMatchingInterface({
                     <div className="flex items-center space-x-3">
                       <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
                         <SparklesIcon className="h-3 w-3 mr-1" />
-                        🚀 Enhanced AI Matching ({data.enhancedMetadata.unmatchedItemsCount || 0} items
-                        processed)
+                        🚀 Enhanced AI Matching ({data.enhancedMetadata.unmatchedItemsCount ||
+                          0}{' '}
+                        items processed)
                       </span>
                       {data.enhancedMetadata.qualityScore && (
                         <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
@@ -576,7 +577,9 @@ export function InvoiceMatchingInterface({
                   </span>
 
                   {data.enhancedMetadata.cost && (
-                    <span className="text-gray-500">Cost: ${data.enhancedMetadata.cost.toFixed(4)}</span>
+                    <span className="text-gray-500">
+                      Cost: ${data.enhancedMetadata.cost.toFixed(4)}
+                    </span>
                   )}
 
                   {data.enhancedMetadata.batchEfficiency && (
@@ -749,10 +752,14 @@ export function InvoiceMatchingInterface({
           <div className="flex items-start space-x-3">
             <SparklesIcon className="h-5 w-5 text-purple-600 flex-shrink-0 mt-0.5" />
             <div className="flex-1">
-              <h4 className="text-sm font-medium text-purple-800">🚀 Enhanced AI Matching Successful</h4>
+              <h4 className="text-sm font-medium text-purple-800">
+                🚀 Enhanced AI Matching Successful
+              </h4>
               <p className="mt-1 text-sm text-purple-700">
-                Enhanced matching with ML patterns found {data.summary.matchingRate}% auto-matchable items using advanced AI
-                analysis. {data.enhancedMetadata?.patternsLearned > 0 && `Learned ${data.enhancedMetadata.patternsLearned} new patterns for future improvements.`}
+                Enhanced matching with ML patterns found {data.summary.matchingRate}% auto-matchable
+                items using advanced AI analysis.{' '}
+                {data.enhancedMetadata?.patternsLearned > 0 &&
+                  `Learned ${data.enhancedMetadata.patternsLearned} new patterns for future improvements.`}
               </p>
 
               {/* Enhanced AI Metrics */}
@@ -861,8 +868,8 @@ export function InvoiceMatchingInterface({
                 Enhanced AI Matching Temporarily Unavailable
               </h4>
               <p className="mt-1 text-sm text-yellow-700">
-                We're using our backup logic-based matching system. Enhanced features like pattern learning
-                and batch processing are not available, but basic matching will still work.
+                We're using our backup logic-based matching system. Enhanced features like pattern
+                learning and batch processing are not available, but basic matching will still work.
               </p>
               {data.enhancedMetadata.error && (
                 <p className="mt-2 text-xs text-yellow-600">

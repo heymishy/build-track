@@ -84,7 +84,7 @@ export class EnhancedInvoiceMatchingService {
   ): Promise<BulkMatchingResult> {
     const opts = { ...this.DEFAULT_OPTIONS, ...options }
     const startTime = Date.now()
-    
+
     const metrics: ProcessingMetrics = {
       totalItems: invoices.reduce((sum, inv) => sum + inv.lineItems.length, 0),
       processedItems: 0,
@@ -103,22 +103,22 @@ export class EnhancedInvoiceMatchingService {
     try {
       // Step 1: Prepare and prioritize items
       const allLineItems = this.prepareLineItems(invoices, opts)
-      
+
       // Step 2: Try pattern matching first (fastest)
       const patternResults = await this.applyPatternMatching(allLineItems, estimates, metrics)
-      
+
       // Step 3: Try cache for remaining items
       const cacheResults = await this.applyCachedMatching(
         allLineItems.filter(item => !patternResults.has(item.id)),
         estimates,
         metrics
       )
-      
+
       // Step 4: Process remaining items in batches with LLM
       const remainingItems = allLineItems.filter(
         item => !patternResults.has(item.id) && !cacheResults.has(item.id)
       )
-      
+
       const llmResults = await this.processBatchesWithLLM(
         remainingItems,
         estimates,
@@ -126,16 +126,16 @@ export class EnhancedInvoiceMatchingService {
         opts,
         metrics
       )
-      
+
       // Step 5: Combine all results
       const allMatches: LLMMatchResult[] = []
       const combinedResults = new Map([...patternResults, ...cacheResults, ...llmResults])
-      
+
       for (const item of allLineItems) {
         const match = combinedResults.get(item.id)
         if (match) {
           allMatches.push(match)
-          
+
           // Update metrics
           if (match.confidence >= 0.8) {
             metrics.highConfidenceMatches++
@@ -148,21 +148,22 @@ export class EnhancedInvoiceMatchingService {
           }
         }
       }
-      
+
       // Step 6: Learn from results if enabled
       if (opts.enablePatternLearning) {
         await this.learnFromMatches(allMatches, invoices, estimates)
       }
-      
+
       // Step 7: Generate insights and recommendations
       const recommendations = this.generateRecommendations(allMatches, metrics)
       const qualityScore = this.calculateQualityScore(allMatches, metrics)
-      
+
       // Final metrics
       metrics.processingTimeMs = Date.now() - startTime
-      metrics.averageConfidence = allMatches.length > 0 
-        ? allMatches.reduce((sum, m) => sum + m.confidence, 0) / allMatches.length 
-        : 0
+      metrics.averageConfidence =
+        allMatches.length > 0
+          ? allMatches.reduce((sum, m) => sum + m.confidence, 0) / allMatches.length
+          : 0
       metrics.processedItems = allMatches.length
 
       return {
@@ -176,10 +177,9 @@ export class EnhancedInvoiceMatchingService {
         recommendations,
         qualityScore,
       }
-      
     } catch (error) {
       console.error('Bulk matching failed:', error)
-      
+
       return {
         success: false,
         matches: [],
@@ -198,7 +198,7 @@ export class EnhancedInvoiceMatchingService {
    * Prepare and prioritize line items for processing
    */
   private prepareLineItems(invoices: Invoice[], options: BulkProcessingOptions) {
-    const allItems = invoices.flatMap(inv => 
+    const allItems = invoices.flatMap(inv =>
       inv.lineItems.map(item => ({
         ...item,
         supplierName: inv.supplierName,
@@ -220,20 +220,20 @@ export class EnhancedInvoiceMatchingService {
    */
   private calculateItemPriority(item: InvoiceLineItem, options: BulkProcessingOptions): number {
     let priority = 0
-    
+
     // Higher value items get higher priority
     priority += Math.log(item.totalPrice + 1) * 10
-    
+
     // Items with complex descriptions might need more attention
     if (item.description.length > 50) {
       priority += 5
     }
-    
+
     // Material items often easier to match
     if (item.category === 'MATERIAL') {
       priority += 3
     }
-    
+
     return priority
   }
 
@@ -246,15 +246,13 @@ export class EnhancedInvoiceMatchingService {
     metrics: ProcessingMetrics
   ): Promise<Map<string, LLMMatchResult>> {
     const results = new Map<string, LLMMatchResult>()
-    
+
     for (const item of items) {
       for (const [patternId, pattern] of this.patterns) {
         if (this.matchesPattern(item, pattern)) {
           // Find matching estimate
-          const estimate = estimates.find(est => 
-            this.matchesEstimatePattern(est, pattern)
-          )
-          
+          const estimate = estimates.find(est => this.matchesEstimatePattern(est, pattern))
+
           if (estimate) {
             results.set(item.id, {
               invoiceLineItemId: item.id,
@@ -263,18 +261,18 @@ export class EnhancedInvoiceMatchingService {
               reasoning: `Pattern match: ${pattern.invoiceDescriptionPattern} → ${pattern.estimateDescriptionPattern}`,
               matchType: pattern.confidence > 0.8 ? 'exact' : 'partial',
             })
-            
+
             // Update pattern usage
             pattern.usageCount++
             pattern.lastUsedAt = new Date()
-            
+
             metrics.patternMatches++
             break
           }
         }
       }
     }
-    
+
     return results
   }
 
@@ -284,15 +282,16 @@ export class EnhancedInvoiceMatchingService {
   private matchesPattern(item: any, pattern: MatchingPattern): boolean {
     const itemDesc = item.description.toLowerCase()
     const patternDesc = pattern.invoiceDescriptionPattern.toLowerCase()
-    
+
     // Simple pattern matching - could be enhanced with regex
     if (patternDesc.includes('*')) {
       const parts = patternDesc.split('*')
       return parts.every(part => part === '' || itemDesc.includes(part))
     }
-    
-    return itemDesc.includes(patternDesc) || 
-           this.calculateStringSimilarity(itemDesc, patternDesc) > 0.8
+
+    return (
+      itemDesc.includes(patternDesc) || this.calculateStringSimilarity(itemDesc, patternDesc) > 0.8
+    )
   }
 
   /**
@@ -301,13 +300,14 @@ export class EnhancedInvoiceMatchingService {
   private matchesEstimatePattern(estimate: EstimateLineItem, pattern: MatchingPattern): boolean {
     const estDesc = estimate.description.toLowerCase()
     const patternDesc = pattern.estimateDescriptionPattern.toLowerCase()
-    
+
     if (pattern.tradeName && estimate.tradeName !== pattern.tradeName) {
       return false
     }
-    
-    return estDesc.includes(patternDesc) || 
-           this.calculateStringSimilarity(estDesc, patternDesc) > 0.8
+
+    return (
+      estDesc.includes(patternDesc) || this.calculateStringSimilarity(estDesc, patternDesc) > 0.8
+    )
   }
 
   /**
@@ -319,11 +319,11 @@ export class EnhancedInvoiceMatchingService {
     metrics: ProcessingMetrics
   ): Promise<Map<string, LLMMatchResult>> {
     const results = new Map<string, LLMMatchResult>()
-    
+
     for (const item of items) {
       const cacheKey = this.generateCacheKey(item.description, item.totalPrice)
       const cached = this.cache.get(cacheKey)
-      
+
       if (cached) {
         // Verify the estimate still exists
         const estimate = estimates.find(est => est.id === cached.estimateLineItemId)
@@ -333,12 +333,12 @@ export class EnhancedInvoiceMatchingService {
             invoiceLineItemId: item.id,
             reasoning: `${cached.reasoning} (cached)`,
           })
-          
+
           metrics.cachehits++
         }
       }
     }
-    
+
     return results
   }
 
@@ -353,7 +353,7 @@ export class EnhancedInvoiceMatchingService {
     metrics: ProcessingMetrics
   ): Promise<Map<string, LLMMatchResult>> {
     const results = new Map<string, LLMMatchResult>()
-    
+
     if (items.length === 0) {
       return results
     }
@@ -361,7 +361,7 @@ export class EnhancedInvoiceMatchingService {
     // Process in batches
     const batchSize = options.batchSize || 50
     const batches: any[][] = []
-    
+
     for (let i = 0; i < items.length; i += batchSize) {
       batches.push(items.slice(i, i + batchSize))
     }
@@ -369,27 +369,27 @@ export class EnhancedInvoiceMatchingService {
     // Process batches with concurrency control
     const maxConcurrency = options.maxConcurrency || 3
     const semaphore = new Array(maxConcurrency).fill(null)
-    
+
     const processBatch = async (batch: any[]): Promise<void> => {
       try {
         // Create mock invoices for this batch
         const batchInvoices = this.createBatchInvoices(batch, originalInvoices)
-        
+
         // Use existing LLM matching service
         const { SimpleLLMMatchingService } = await import('./simple-llm-matcher')
         const llmService = new SimpleLLMMatchingService(this.userId)
-        
+
         const batchResult = await llmService.matchInvoicesToEstimates(
           batchInvoices,
           estimates,
           'bulk-processing'
         )
-        
+
         if (batchResult.success) {
           // Store results and update cache
           for (const match of batchResult.matches) {
             results.set(match.invoiceLineItemId, match)
-            
+
             // Cache successful matches
             if (match.confidence > 0.5 && match.estimateLineItemId) {
               const item = batch.find(b => b.id === match.invoiceLineItemId)
@@ -399,7 +399,7 @@ export class EnhancedInvoiceMatchingService {
               }
             }
           }
-          
+
           metrics.llmCalls++
           metrics.costEstimate += batchResult.cost || 0.01
         }
@@ -427,7 +427,7 @@ export class EnhancedInvoiceMatchingService {
     })
 
     await Promise.all(batchPromises)
-    
+
     return results
   }
 
@@ -436,13 +436,13 @@ export class EnhancedInvoiceMatchingService {
    */
   private createBatchInvoices(items: any[], originalInvoices: Invoice[]): Invoice[] {
     const invoiceGroups = new Map<string, any[]>()
-    
+
     // Group items by original invoice
     for (const item of items) {
-      const originalInvoice = originalInvoices.find(inv => 
+      const originalInvoice = originalInvoices.find(inv =>
         inv.lineItems.some(li => li.id === item.id)
       )
-      
+
       if (originalInvoice) {
         const key = originalInvoice.id
         if (!invoiceGroups.has(key)) {
@@ -455,7 +455,7 @@ export class EnhancedInvoiceMatchingService {
     // Create batch invoices
     return Array.from(invoiceGroups.entries()).map(([invoiceId, items]) => {
       const originalInvoice = originalInvoices.find(inv => inv.id === invoiceId)!
-      
+
       return {
         id: `batch-${invoiceId}`,
         invoiceNumber: originalInvoice.invoiceNumber,
@@ -473,17 +473,17 @@ export class EnhancedInvoiceMatchingService {
     invoices: Invoice[],
     estimates: EstimateLineItem[]
   ): Promise<void> {
-    const highConfidenceMatches = matches.filter(m => 
-      m.confidence > 0.8 && m.estimateLineItemId && m.matchType !== 'none'
+    const highConfidenceMatches = matches.filter(
+      m => m.confidence > 0.8 && m.estimateLineItemId && m.matchType !== 'none'
     )
 
     for (const match of highConfidenceMatches) {
       const invoiceItem = invoices
         .flatMap(inv => inv.lineItems)
         .find(item => item.id === match.invoiceLineItemId)
-        
+
       const estimateItem = estimates.find(est => est.id === match.estimateLineItemId)
-      const invoice = invoices.find(inv => 
+      const invoice = invoices.find(inv =>
         inv.lineItems.some(item => item.id === match.invoiceLineItemId)
       )
 
@@ -510,9 +510,9 @@ export class EnhancedInvoiceMatchingService {
     confidence: number
   }): Promise<void> {
     const patternKey = `${data.supplierName}:${data.invoiceDescription}:${data.estimateDescription}`
-    
+
     const existingPattern = this.patterns.get(patternKey)
-    
+
     if (existingPattern) {
       // Update existing pattern
       existingPattern.confidence = Math.max(existingPattern.confidence, data.confidence)
@@ -533,7 +533,7 @@ export class EnhancedInvoiceMatchingService {
         createdAt: new Date(),
         lastUsedAt: new Date(),
       }
-      
+
       this.patterns.set(patternKey, newPattern)
     }
 
@@ -567,7 +567,9 @@ export class EnhancedInvoiceMatchingService {
     }
 
     if (noMatchRate > 0.2) {
-      recommendations.push('Review unmatchable items - they may indicate missing estimates or new project scope')
+      recommendations.push(
+        'Review unmatchable items - they may indicate missing estimates or new project scope'
+      )
     }
 
     if (metrics.patternMatches / Math.max(metrics.totalItems, 1) < 0.1) {
@@ -580,7 +582,9 @@ export class EnhancedInvoiceMatchingService {
 
     const duplicateMatches = this.findDuplicateMatches(matches)
     if (duplicateMatches.length > 0) {
-      recommendations.push(`Found ${duplicateMatches.length} duplicate matches - review for accuracy`)
+      recommendations.push(
+        `Found ${duplicateMatches.length} duplicate matches - review for accuracy`
+      )
     }
 
     return recommendations
@@ -591,7 +595,7 @@ export class EnhancedInvoiceMatchingService {
    */
   private findDuplicateMatches(matches: LLMMatchResult[]): string[] {
     const estimateUsage = new Map<string, string[]>()
-    
+
     for (const match of matches) {
       if (match.estimateLineItemId && match.confidence > 0.5) {
         if (!estimateUsage.has(match.estimateLineItemId)) {
@@ -603,7 +607,10 @@ export class EnhancedInvoiceMatchingService {
 
     return Array.from(estimateUsage.entries())
       .filter(([_, invoiceIds]) => invoiceIds.length > 1)
-      .map(([estimateId, invoiceIds]) => `Estimate ${estimateId} matched to ${invoiceIds.length} invoices`)
+      .map(
+        ([estimateId, invoiceIds]) =>
+          `Estimate ${estimateId} matched to ${invoiceIds.length} invoices`
+      )
   }
 
   /**
@@ -623,18 +630,21 @@ export class EnhancedInvoiceMatchingService {
     const highConfidenceRate = metrics.highConfidenceMatches / metrics.totalItems
     const patternUsage = metrics.patternMatches / Math.max(metrics.totalItems, 1)
 
-    const qualityScore = 
-      (metrics.averageConfidence * weights.averageConfidence) +
-      (matchRate * weights.matchRate) +
-      (highConfidenceRate * weights.highConfidenceRate) +
-      (patternUsage * weights.patternUsage)
+    const qualityScore =
+      metrics.averageConfidence * weights.averageConfidence +
+      matchRate * weights.matchRate +
+      highConfidenceRate * weights.highConfidenceRate +
+      patternUsage * weights.patternUsage
 
     return Math.round(qualityScore * 100)
   }
 
   // Utility methods
   private generateCacheKey(description: string, price: number): string {
-    const normalizedDesc = description.toLowerCase().replace(/[^\w\s]/g, '').trim()
+    const normalizedDesc = description
+      .toLowerCase()
+      .replace(/[^\w\s]/g, '')
+      .trim()
     const priceRange = Math.floor(price / 100) * 100 // Round to nearest $100
     return `${normalizedDesc}:${priceRange}`
   }

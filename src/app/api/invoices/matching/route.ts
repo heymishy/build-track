@@ -7,7 +7,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withAuth, AuthUser } from '@/lib/middleware'
 import { prisma } from '@/lib/prisma'
-import { SimpleLLMMatchingService } from '@/lib/simple-llm-matcher'
 import { EnhancedInvoiceMatchingService } from '@/lib/enhanced-invoice-matcher'
 
 interface InvoiceLineItemMatch {
@@ -152,7 +151,7 @@ async function GET(request: NextRequest, user: AuthUser) {
           enableCache: true,
           concurrency: 3,
           qualityThreshold: 0.7,
-          timeoutMs: 30000
+          timeoutMs: 30000,
         }
       )
     } else {
@@ -228,7 +227,8 @@ async function GET(request: NextRequest, user: AuthUser) {
 
     // Add enhanced processing metadata
     const enhancedMetadata = {
-      usedEnhancedMatching: batchResult.success && !batchResult.fallbackUsed && unmatchedItems.length > 0,
+      usedEnhancedMatching:
+        batchResult.success && !batchResult.fallbackUsed && unmatchedItems.length > 0,
       fallbackUsed: batchResult.fallbackUsed,
       processingTime: batchResult.processingTime,
       cost: batchResult.cost,
@@ -240,7 +240,7 @@ async function GET(request: NextRequest, user: AuthUser) {
       cacheUtilization: batchResult.metrics?.cacheHits || 0,
       avgConfidence: batchResult.metrics?.averageConfidence || 0,
       qualityScore: batchResult.metrics?.qualityScore || 0,
-      batchEfficiency: batchResult.metrics?.batchEfficiency || 0
+      batchEfficiency: batchResult.metrics?.batchEfficiency || 0,
     }
 
     return NextResponse.json({
