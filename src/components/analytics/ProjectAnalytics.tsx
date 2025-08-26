@@ -176,11 +176,11 @@ const generateFallbackAnalytics = () => ({
   ],
 })
 
-export function ProjectAnalytics({ 
-  className = '', 
-  projectId, 
-  project, 
-  timeRange = '90d' 
+export function ProjectAnalytics({
+  className = '',
+  projectId,
+  project,
+  timeRange = '90d',
 }: ProjectAnalyticsProps) {
   const [data, setData] = useState<AnalyticsData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -197,7 +197,7 @@ export function ProjectAnalytics({
 
       // Use projectId from props or URL parameter
       const targetProjectId = projectId || project?.id
-      
+
       if (!targetProjectId) {
         setError('No project specified')
         return
@@ -225,8 +225,10 @@ export function ProjectAnalytics({
         }
       } else {
         // Production environment - use real API
-        const response = await fetch(`/api/projects/${targetProjectId}/analytics?timeRange=${timeRange}`)
-        
+        const response = await fetch(
+          `/api/projects/${targetProjectId}/analytics?timeRange=${timeRange}`
+        )
+
         if (!response.ok) {
           if (response.status === 404) {
             setError('Project not found')
@@ -239,7 +241,7 @@ export function ProjectAnalytics({
         }
 
         const result = await response.json()
-        
+
         if (result.success && result.data) {
           setData(result.data)
         } else {
@@ -257,51 +259,61 @@ export function ProjectAnalytics({
   // Convert legacy test format to new API format for backward compatibility
   const convertLegacyFormat = (legacyData: any): AnalyticsData => {
     return {
-      trends: legacyData.trends?.spendingTrend?.map((trend: any, index: number) => ({
-        date: trend.month,
-        estimated: legacyData.trends.budgetBurnRate?.[index]?.projected || 0,
-        actual: trend.amount,
-        variance: trend.amount - (legacyData.trends.budgetBurnRate?.[index]?.projected || 0),
-        invoiceCount: 1,
-        cumulative: {
+      trends:
+        legacyData.trends?.spendingTrend?.map((trend: any, index: number) => ({
+          date: trend.month,
           estimated: legacyData.trends.budgetBurnRate?.[index]?.projected || 0,
-          actual: trend.cumulative,
-          variance: trend.cumulative - (legacyData.trends.budgetBurnRate?.[index]?.projected || 0)
-        }
-      })) || [],
-      cashFlow: legacyData.cashFlow?.projectedInflow?.map((inflow: any, index: number) => ({
-        date: inflow.month,
-        projected: inflow.amount,
-        committed: legacyData.cashFlow.projectedOutflow?.[index]?.amount || 0,
-        remaining: inflow.amount - (legacyData.cashFlow.projectedOutflow?.[index]?.amount || 0),
-        milestonePayments: inflow.amount
-      })) || [],
-      tradePerformance: legacyData.trades?.map((trade: any) => ({
-        id: trade.name.toLowerCase().replace(/\s+/g, '-'),
-        name: trade.name,
-        estimatedTotal: trade.budgeted,
-        actualSpent: trade.spent,
-        variance: trade.variance,
-        variancePercent: trade.budgeted > 0 ? ((trade.spent - trade.budgeted) / trade.budgeted) * 100 : 0,
-        efficiency: trade.budgeted > 0 ? (trade.budgeted / Math.max(trade.spent, 1)) * 100 : 100,
-        riskLevel: Math.abs(trade.variance) > trade.budgeted * 0.2 ? 'high' : 'low',
-        trend: trade.variance > 0 ? 'improving' : 'stable'
-      })) || [],
-      alerts: legacyData.alerts?.map((alert: any, index: number) => ({
-        id: `alert-${index}`,
-        type: alert.type === 'warning' ? 'budget_overrun' : 'payment_due',
-        severity: alert.severity,
-        title: alert.message,
-        description: alert.message,
-        date: alert.timestamp,
-        actionRequired: alert.severity === 'high'
-      })) || [],
+          actual: trend.amount,
+          variance: trend.amount - (legacyData.trends.budgetBurnRate?.[index]?.projected || 0),
+          invoiceCount: 1,
+          cumulative: {
+            estimated: legacyData.trends.budgetBurnRate?.[index]?.projected || 0,
+            actual: trend.cumulative,
+            variance:
+              trend.cumulative - (legacyData.trends.budgetBurnRate?.[index]?.projected || 0),
+          },
+        })) || [],
+      cashFlow:
+        legacyData.cashFlow?.projectedInflow?.map((inflow: any, index: number) => ({
+          date: inflow.month,
+          projected: inflow.amount,
+          committed: legacyData.cashFlow.projectedOutflow?.[index]?.amount || 0,
+          remaining: inflow.amount - (legacyData.cashFlow.projectedOutflow?.[index]?.amount || 0),
+          milestonePayments: inflow.amount,
+        })) || [],
+      tradePerformance:
+        legacyData.trades?.map((trade: any) => ({
+          id: trade.name.toLowerCase().replace(/\s+/g, '-'),
+          name: trade.name,
+          estimatedTotal: trade.budgeted,
+          actualSpent: trade.spent,
+          variance: trade.variance,
+          variancePercent:
+            trade.budgeted > 0 ? ((trade.spent - trade.budgeted) / trade.budgeted) * 100 : 0,
+          efficiency: trade.budgeted > 0 ? (trade.budgeted / Math.max(trade.spent, 1)) * 100 : 100,
+          riskLevel: Math.abs(trade.variance) > trade.budgeted * 0.2 ? 'high' : 'low',
+          trend: trade.variance > 0 ? 'improving' : 'stable',
+        })) || [],
+      alerts:
+        legacyData.alerts?.map((alert: any, index: number) => ({
+          id: `alert-${index}`,
+          type: alert.type === 'warning' ? 'budget_overrun' : 'payment_due',
+          severity: alert.severity,
+          title: alert.message,
+          description: alert.message,
+          date: alert.timestamp,
+          actionRequired: alert.severity === 'high',
+        })) || [],
       kpis: {
         profitMargin: legacyData.kpis?.budgetVariance || 0,
-        costEfficiency: legacyData.kpis?.costPerformanceIndex ? legacyData.kpis.costPerformanceIndex * 100 : 100,
-        scheduleVariance: legacyData.kpis?.schedulePerformanceIndex ? (legacyData.kpis.schedulePerformanceIndex - 1) * 100 : 0,
+        costEfficiency: legacyData.kpis?.costPerformanceIndex
+          ? legacyData.kpis.costPerformanceIndex * 100
+          : 100,
+        scheduleVariance: legacyData.kpis?.schedulePerformanceIndex
+          ? (legacyData.kpis.schedulePerformanceIndex - 1) * 100
+          : 0,
         budgetUtilization: legacyData.overview?.budgetUtilization || 0,
-        riskScore: legacyData.kpis?.estimateAccuracy ? 100 - legacyData.kpis.estimateAccuracy : 0
+        riskScore: legacyData.kpis?.estimateAccuracy ? 100 - legacyData.kpis.estimateAccuracy : 0,
       },
       summary: {
         totalBudget: legacyData.overview?.totalBudget || 0,
@@ -309,14 +321,14 @@ export function ProjectAnalytics({
         projectedFinal: (legacyData.overview?.totalSpent || 0) * 1.1,
         remainingBudget: legacyData.overview?.remainingBudget || 0,
         averageVariance: 10,
-        completionPercent: legacyData.overview?.progressPercentage || 0
+        completionPercent: legacyData.overview?.progressPercentage || 0,
       },
       project: {
         id: 'test-project',
         name: 'Test Project',
         currency: 'NZD',
-        status: 'IN_PROGRESS'
-      }
+        status: 'IN_PROGRESS',
+      },
     }
   }
 
@@ -409,17 +421,14 @@ export function ProjectAnalytics({
   }
 
   return (
-    <div
-      className={`space-y-6 ${className}`}
-      data-testid="analytics-container"
-    >
+    <div className={`space-y-6 ${className}`} data-testid="analytics-container">
       {/* Header with Time Range Selector */}
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-medium text-gray-900">Advanced Project Analytics</h2>
         <div className="flex items-center space-x-4">
           <select
             value={timeRange}
-            onChange={(e) => {
+            onChange={e => {
               const newTimeRange = e.target.value as '30d' | '90d' | '6m' | '1y'
               // Note: In a real implementation, this would be passed as a prop or managed by parent
             }}
@@ -466,7 +475,9 @@ export function ProjectAnalytics({
               <div className="text-sm text-gray-600">Projected Final Cost</div>
             </div>
             <div className="text-center">
-              <div className={`text-2xl font-bold ${data.summary.remainingBudget >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              <div
+                className={`text-2xl font-bold ${data.summary.remainingBudget >= 0 ? 'text-green-600' : 'text-red-600'}`}
+              >
                 {formatCurrency(Math.abs(data.summary.remainingBudget), data.project.currency)}
               </div>
               <div className="text-sm text-gray-600">
@@ -510,7 +521,9 @@ export function ProjectAnalytics({
               <div className="text-sm text-gray-600">Completion %</div>
             </div>
             <div className="text-center" role="status">
-              <div className={`text-2xl font-bold ${data.kpis.riskScore > 20 ? 'text-red-600' : data.kpis.riskScore > 10 ? 'text-yellow-600' : 'text-green-600'}`}>
+              <div
+                className={`text-2xl font-bold ${data.kpis.riskScore > 20 ? 'text-red-600' : data.kpis.riskScore > 10 ? 'text-yellow-600' : 'text-green-600'}`}
+              >
                 {Math.round(data.kpis.riskScore)}
               </div>
               <div className="text-sm text-gray-600">Risk Score</div>
@@ -531,34 +544,47 @@ export function ProjectAnalytics({
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-4 py-2 text-left text-sm font-medium text-gray-900">Trade</th>
-                  <th className="px-4 py-2 text-right text-sm font-medium text-gray-900">Budgeted</th>
+                  <th className="px-4 py-2 text-right text-sm font-medium text-gray-900">
+                    Budgeted
+                  </th>
                   <th className="px-4 py-2 text-right text-sm font-medium text-gray-900">Actual</th>
-                  <th className="px-4 py-2 text-right text-sm font-medium text-gray-900">Variance</th>
+                  <th className="px-4 py-2 text-right text-sm font-medium text-gray-900">
+                    Variance
+                  </th>
                   <th className="px-4 py-2 text-center text-sm font-medium text-gray-900">Risk</th>
                   <th className="px-4 py-2 text-center text-sm font-medium text-gray-900">Trend</th>
-                  <th className="px-4 py-2 text-right text-sm font-medium text-gray-900">Efficiency</th>
+                  <th className="px-4 py-2 text-right text-sm font-medium text-gray-900">
+                    Efficiency
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {data.tradePerformance.map((trade) => (
+                {data.tradePerformance.map(trade => (
                   <tr key={trade.id}>
                     <td className="px-4 py-2 font-medium">{trade.name}</td>
-                    <td className="px-4 py-2 text-right">{formatCurrency(trade.estimatedTotal, data.project.currency)}</td>
-                    <td className="px-4 py-2 text-right">{formatCurrency(trade.actualSpent, data.project.currency)}</td>
-                    <td className={`px-4 py-2 text-right font-medium ${trade.variance > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                      {trade.variance > 0 ? '+' : ''}{formatCurrency(trade.variance, data.project.currency)}
+                    <td className="px-4 py-2 text-right">
+                      {formatCurrency(trade.estimatedTotal, data.project.currency)}
+                    </td>
+                    <td className="px-4 py-2 text-right">
+                      {formatCurrency(trade.actualSpent, data.project.currency)}
+                    </td>
+                    <td
+                      className={`px-4 py-2 text-right font-medium ${trade.variance > 0 ? 'text-red-600' : 'text-green-600'}`}
+                    >
+                      {trade.variance > 0 ? '+' : ''}
+                      {formatCurrency(trade.variance, data.project.currency)}
                       <div className="text-xs text-gray-500">
                         ({formatPercentage(Math.abs(trade.variancePercent))})
                       </div>
                     </td>
                     <td className="px-4 py-2 text-center">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getRiskColor(trade.riskLevel)} bg-opacity-10`}>
+                      <span
+                        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getRiskColor(trade.riskLevel)} bg-opacity-10`}
+                      >
                         {trade.riskLevel.toUpperCase()}
                       </span>
                     </td>
-                    <td className="px-4 py-2 text-center">
-                      {getTrendIcon(trade.trend)}
-                    </td>
+                    <td className="px-4 py-2 text-center">{getTrendIcon(trade.trend)}</td>
                     <td className="px-4 py-2 text-right font-medium">
                       {formatPercentage(trade.efficiency)}
                     </td>
@@ -579,12 +605,22 @@ export function ProjectAnalytics({
           </h3>
           <div className="space-y-4">
             {data.trends.map((trend, index) => (
-              <div key={index} className="grid grid-cols-5 gap-4 items-center py-2 border-b border-gray-100">
+              <div
+                key={index}
+                className="grid grid-cols-5 gap-4 items-center py-2 border-b border-gray-100"
+              >
                 <div className="font-medium">{trend.date}</div>
-                <div className="text-right">{formatCurrency(trend.estimated, data.project.currency)}</div>
-                <div className="text-right font-medium">{formatCurrency(trend.actual, data.project.currency)}</div>
-                <div className={`text-right font-medium ${trend.variance > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                  {trend.variance > 0 ? '+' : ''}{formatCurrency(trend.variance, data.project.currency)}
+                <div className="text-right">
+                  {formatCurrency(trend.estimated, data.project.currency)}
+                </div>
+                <div className="text-right font-medium">
+                  {formatCurrency(trend.actual, data.project.currency)}
+                </div>
+                <div
+                  className={`text-right font-medium ${trend.variance > 0 ? 'text-red-600' : 'text-green-600'}`}
+                >
+                  {trend.variance > 0 ? '+' : ''}
+                  {formatCurrency(trend.variance, data.project.currency)}
                 </div>
                 <div className="text-center">
                   <span className="text-sm text-gray-600">{trend.invoiceCount} invoices</span>
@@ -594,7 +630,17 @@ export function ProjectAnalytics({
           </div>
           <div className="mt-4 pt-4 border-t border-gray-200">
             <div className="text-sm text-gray-600">
-              Last period cumulative: {formatCurrency(data.trends[data.trends.length - 1]?.cumulative.actual || 0, data.project.currency)} actual vs {formatCurrency(data.trends[data.trends.length - 1]?.cumulative.estimated || 0, data.project.currency)} estimated
+              Last period cumulative:{' '}
+              {formatCurrency(
+                data.trends[data.trends.length - 1]?.cumulative.actual || 0,
+                data.project.currency
+              )}{' '}
+              actual vs{' '}
+              {formatCurrency(
+                data.trends[data.trends.length - 1]?.cumulative.estimated || 0,
+                data.project.currency
+              )}{' '}
+              estimated
             </div>
           </div>
         </div>
@@ -609,11 +655,20 @@ export function ProjectAnalytics({
           </h3>
           <div className="space-y-4">
             {data.cashFlow.map((flow, index) => (
-              <div key={index} className="grid grid-cols-4 gap-4 items-center py-2 border-b border-gray-100">
+              <div
+                key={index}
+                className="grid grid-cols-4 gap-4 items-center py-2 border-b border-gray-100"
+              >
                 <div className="font-medium">{flow.date}</div>
-                <div className="text-right text-green-600">{formatCurrency(flow.projected, data.project.currency)}</div>
-                <div className="text-right text-red-600">{formatCurrency(flow.committed, data.project.currency)}</div>
-                <div className={`text-right font-medium ${flow.remaining >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                <div className="text-right text-green-600">
+                  {formatCurrency(flow.projected, data.project.currency)}
+                </div>
+                <div className="text-right text-red-600">
+                  {formatCurrency(flow.committed, data.project.currency)}
+                </div>
+                <div
+                  className={`text-right font-medium ${flow.remaining >= 0 ? 'text-green-600' : 'text-red-600'}`}
+                >
                   {formatCurrency(Math.abs(flow.remaining), data.project.currency)}
                 </div>
               </div>
@@ -639,14 +694,16 @@ export function ProjectAnalytics({
               Critical Alerts & Recommendations
             </h3>
             <div className="space-y-4">
-              {data.alerts.map((alert) => (
+              {data.alerts.map(alert => (
                 <div
                   key={alert.id}
                   className={`flex items-start p-4 border rounded-lg ${getSeverityColor(alert.severity)}`}
                   data-testid={`alert-${alert.type}`}
                 >
                   <div className="flex-shrink-0">
-                    {alert.severity === 'critical' && <ExclamationTriangleIcon className="h-5 w-5" />}
+                    {alert.severity === 'critical' && (
+                      <ExclamationTriangleIcon className="h-5 w-5" />
+                    )}
                     {alert.severity === 'high' && <ExclamationCircleIcon className="h-5 w-5" />}
                     {alert.severity === 'medium' && <ClockIcon className="h-5 w-5" />}
                     {alert.severity === 'low' && <ShieldCheckIcon className="h-5 w-5" />}

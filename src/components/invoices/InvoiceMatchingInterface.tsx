@@ -45,14 +45,19 @@ interface InvoiceMatchingData {
     totalHighConfidenceMatches: number
     matchingRate: number
   }
-  llmMetadata?: {
-    usedLLM: boolean
+  enhancedMetadata?: {
+    usedEnhancedMatching: boolean
     fallbackUsed: boolean
     processingTime: number
     cost?: number
     error?: string
     cacheHit?: boolean
     unmatchedItemsCount?: number
+    patternsLearned?: number
+    cacheUtilization?: number
+    avgConfidence?: number
+    qualityScore?: number
+    batchEfficiency?: number
   }
 }
 
@@ -534,35 +539,53 @@ export function InvoiceMatchingInterface({
                 {data.summary.totalInvoices} invoices • {formatCurrency(data.summary.totalAmount)}{' '}
                 total • {data.summary.matchingRate}% auto-matchable
               </p>
-              {data.llmMetadata && (
+              {data.enhancedMetadata && (
                 <div className="flex items-center space-x-4 text-xs">
-                  {data.llmMetadata.cacheHit ? (
+                  {data.enhancedMetadata.cacheHit ? (
                     <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
                       <CheckCircleIcon className="h-3 w-3 mr-1" />
-                      All Items Already Matched - No AI Processing Needed
+                      All Items Already Matched - No Enhanced Processing Needed
                     </span>
-                  ) : data.llmMetadata.usedLLM ? (
-                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
-                      <SparklesIcon className="h-3 w-3 mr-1" />
-                      AI-Powered Matching ({data.llmMetadata.unmatchedItemsCount || 0} items
-                      processed)
-                    </span>
-                  ) : data.llmMetadata.fallbackUsed ? (
+                  ) : data.enhancedMetadata.usedEnhancedMatching ? (
+                    <div className="flex items-center space-x-3">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
+                        <SparklesIcon className="h-3 w-3 mr-1" />
+                        🚀 Enhanced AI Matching ({data.enhancedMetadata.unmatchedItemsCount || 0} items
+                        processed)
+                      </span>
+                      {data.enhancedMetadata.qualityScore && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                          Quality: {Math.round(data.enhancedMetadata.qualityScore * 100)}%
+                        </span>
+                      )}
+                      {data.enhancedMetadata.patternsLearned > 0 && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                          📚 {data.enhancedMetadata.patternsLearned} patterns learned
+                        </span>
+                      )}
+                    </div>
+                  ) : data.enhancedMetadata.fallbackUsed ? (
                     <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
                       <ExclamationTriangleIcon className="h-3 w-3 mr-1" />
-                      AI Unavailable - Using Logic Fallback
+                      Enhanced AI Unavailable - Using Fallback
                     </span>
                   ) : null}
 
                   <span className="text-gray-500">
-                    Processed in {data.llmMetadata.processingTime}ms
+                    Processed in {data.enhancedMetadata.processingTime}ms
                   </span>
 
-                  {data.llmMetadata.cost && (
-                    <span className="text-gray-500">Cost: ${data.llmMetadata.cost.toFixed(4)}</span>
+                  {data.enhancedMetadata.cost && (
+                    <span className="text-gray-500">Cost: ${data.enhancedMetadata.cost.toFixed(4)}</span>
                   )}
 
-                  {data.llmMetadata.error && (
+                  {data.enhancedMetadata.batchEfficiency && (
+                    <span className="text-gray-500">
+                      Efficiency: {Math.round(data.enhancedMetadata.batchEfficiency * 100)}%
+                    </span>
+                  )}
+
+                  {data.enhancedMetadata.error && (
                     <button
                       onClick={() => setShowLLMDetails(true)}
                       className="text-red-600 hover:text-red-700 underline"
@@ -610,7 +633,7 @@ export function InvoiceMatchingInterface({
                 <CheckCircleIcon className="h-4 w-4 mr-2" />
                 Successfully Applied {justAppliedCount} Match{justAppliedCount !== 1 ? 'es' : ''}!
               </div>
-            ) : data.llmMetadata?.cacheHit ? (
+            ) : data.enhancedMetadata?.cacheHit ? (
               // All matches are already saved
               <div className="inline-flex items-center px-4 py-2 border border-green-300 text-sm font-medium rounded-md text-green-700 bg-green-50">
                 <CheckCircleIcon className="h-4 w-4 mr-2" />
@@ -720,23 +743,52 @@ export function InvoiceMatchingInterface({
         </div>
       </div>
 
-      {/* AI Status Notices */}
-      {data?.llmMetadata?.usedLLM && data.summary.matchingRate > 70 && (
+      {/* Enhanced AI Status Notices */}
+      {data?.enhancedMetadata?.usedEnhancedMatching && data.summary.matchingRate > 70 && (
         <div className="mx-6 mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
           <div className="flex items-start space-x-3">
-            <SparklesIcon className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+            <SparklesIcon className="h-5 w-5 text-purple-600 flex-shrink-0 mt-0.5" />
             <div className="flex-1">
-              <h4 className="text-sm font-medium text-green-800">AI Matching Successful</h4>
-              <p className="mt-1 text-sm text-green-700">
-                Smart matching found {data.summary.matchingRate}% auto-matchable items using AI
-                analysis. Review the suggestions below and apply matches as needed.
+              <h4 className="text-sm font-medium text-purple-800">🚀 Enhanced AI Matching Successful</h4>
+              <p className="mt-1 text-sm text-purple-700">
+                Enhanced matching with ML patterns found {data.summary.matchingRate}% auto-matchable items using advanced AI
+                analysis. {data.enhancedMetadata?.patternsLearned > 0 && `Learned ${data.enhancedMetadata.patternsLearned} new patterns for future improvements.`}
               </p>
 
-              {/* AI Suggestions Summary */}
-              <div className="mt-3 bg-white rounded-lg p-3 border border-green-200">
-                <h5 className="text-xs font-semibold text-green-800 mb-2">
-                  📊 AI Analysis Summary:
+              {/* Enhanced AI Metrics */}
+              <div className="mt-3 bg-white rounded-lg p-3 border border-purple-200">
+                <h5 className="text-xs font-semibold text-purple-800 mb-2">
+                  🤖 Enhanced AI Analysis Summary:
                 </h5>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-xs mb-3">
+                  {data.enhancedMetadata?.qualityScore && (
+                    <div className="bg-green-50 p-2 rounded">
+                      <span className="text-green-600 font-medium">
+                        {Math.round(data.enhancedMetadata.qualityScore * 100)}%
+                      </span>
+                      <br />
+                      <span className="text-gray-600">Quality Score</span>
+                    </div>
+                  )}
+                  {data.enhancedMetadata?.avgConfidence && (
+                    <div className="bg-blue-50 p-2 rounded">
+                      <span className="text-blue-600 font-medium">
+                        {Math.round(data.enhancedMetadata.avgConfidence * 100)}%
+                      </span>
+                      <br />
+                      <span className="text-gray-600">Avg Confidence</span>
+                    </div>
+                  )}
+                  {data.enhancedMetadata?.batchEfficiency && (
+                    <div className="bg-purple-50 p-2 rounded">
+                      <span className="text-purple-600 font-medium">
+                        {Math.round(data.enhancedMetadata.batchEfficiency * 100)}%
+                      </span>
+                      <br />
+                      <span className="text-gray-600">Batch Efficiency</span>
+                    </div>
+                  )}
+                </div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
                   <div>
                     <span className="text-green-600 font-medium">
@@ -800,21 +852,21 @@ export function InvoiceMatchingInterface({
         </div>
       )}
 
-      {data?.llmMetadata?.fallbackUsed && (
+      {data?.enhancedMetadata?.fallbackUsed && (
         <div className="mx-6 mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
           <div className="flex items-start space-x-3">
             <ExclamationTriangleIcon className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" />
             <div>
               <h4 className="text-sm font-medium text-yellow-800">
-                AI Matching Temporarily Unavailable
+                Enhanced AI Matching Temporarily Unavailable
               </h4>
               <p className="mt-1 text-sm text-yellow-700">
-                We're using our backup logic-based matching system. Matches may be less accurate
-                than usual. You can still manually review and override any suggestions below.
+                We're using our backup logic-based matching system. Enhanced features like pattern learning
+                and batch processing are not available, but basic matching will still work.
               </p>
-              {data.llmMetadata.error && (
+              {data.enhancedMetadata.error && (
                 <p className="mt-2 text-xs text-yellow-600">
-                  Technical details: {data.llmMetadata.error}
+                  Technical details: {data.enhancedMetadata.error}
                 </p>
               )}
             </div>

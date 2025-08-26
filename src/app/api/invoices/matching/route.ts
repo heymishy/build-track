@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { withAuth, AuthUser } from '@/lib/middleware'
 import { prisma } from '@/lib/prisma'
 import { SimpleLLMMatchingService } from '@/lib/simple-llm-matcher'
+import { EnhancedInvoiceMatchingService } from '@/lib/enhanced-invoice-matcher'
 
 interface InvoiceLineItemMatch {
   invoiceLineItemId: string
@@ -140,12 +141,19 @@ async function GET(request: NextRequest, user: AuthUser) {
         tradeName: item.trade.name,
       }))
 
-      // Use LLM matching service with fallbacks
-      const llmMatchingService = new SimpleLLMMatchingService(user.id)
-      batchResult = await llmMatchingService.matchInvoicesToEstimates(
+      // Use enhanced matching service with bulk processing and ML patterns
+      const enhancedMatchingService = new EnhancedInvoiceMatchingService(user.id)
+      batchResult = await enhancedMatchingService.bulkMatchInvoices(
         invoicesForMatching,
         estimatesForMatching,
-        projectId
+        projectId,
+        {
+          enablePatternLearning: true,
+          enableCache: true,
+          concurrency: 3,
+          qualityThreshold: 0.7,
+          timeoutMs: 30000
+        }
       )
     } else {
       console.log('All items already matched, skipping LLM processing')
@@ -218,15 +226,21 @@ async function GET(request: NextRequest, user: AuthUser) {
       .flatMap(result => result.matches)
       .filter(match => match.confidence >= 0.7).length
 
-    // Add LLM processing metadata
-    const llmMetadata = {
-      usedLLM: batchResult.success && !batchResult.fallbackUsed && unmatchedItems.length > 0,
+    // Add enhanced processing metadata
+    const enhancedMetadata = {
+      usedEnhancedMatching: batchResult.success && !batchResult.fallbackUsed && unmatchedItems.length > 0,
       fallbackUsed: batchResult.fallbackUsed,
       processingTime: batchResult.processingTime,
       cost: batchResult.cost,
       error: batchResult.error,
-      cacheHit: unmatchedItems.length === 0, // Indicate when no LLM processing was needed
+      cacheHit: unmatchedItems.length === 0,
       unmatchedItemsCount: unmatchedItems.length,
+      // Enhanced metadata
+      patternsLearned: batchResult.metrics?.patternsLearned || 0,
+      cacheUtilization: batchResult.metrics?.cacheHits || 0,
+      avgConfidence: batchResult.metrics?.averageConfidence || 0,
+      qualityScore: batchResult.metrics?.qualityScore || 0,
+      batchEfficiency: batchResult.metrics?.batchEfficiency || 0
     }
 
     return NextResponse.json({
@@ -263,7 +277,7 @@ async function GET(request: NextRequest, user: AuthUser) {
               ? Math.round((totalHighConfidenceMatches / totalLineItems) * 100)
               : 0,
         },
-        llmMetadata,
+        enhancedMetadata,
       },
     })
   } catch (error) {
