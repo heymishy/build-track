@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import {
@@ -28,46 +28,48 @@ interface MilestoneTrackerProps {
 }
 
 export function MilestoneTracker({ projectId, compact = false }: MilestoneTrackerProps) {
-  // Mock data - in real implementation, this would come from API
-  const milestones: Milestone[] = [
-    {
-      id: '1',
-      title: 'Foundation Complete',
-      description: 'Foundation poured and cured',
-      paymentAmount: 50000,
-      dueDate: new Date('2024-09-15'),
-      completionDate: new Date('2024-09-12'),
-      status: 'COMPLETED',
-      percentComplete: 100,
-    },
-    {
-      id: '2',
-      title: 'Framing Complete',
-      description: 'All structural framing finished',
-      paymentAmount: 75000,
-      dueDate: new Date('2024-10-01'),
-      status: 'IN_PROGRESS',
-      percentComplete: 80,
-    },
-    {
-      id: '3',
-      title: 'Electrical Rough-in',
-      description: 'Electrical wiring rough-in complete',
-      paymentAmount: 25000,
-      dueDate: new Date('2024-10-15'),
-      status: 'PENDING',
-      percentComplete: 0,
-    },
-    {
-      id: '4',
-      title: 'Plumbing Rough-in',
-      description: 'Plumbing rough-in complete',
-      paymentAmount: 30000,
-      dueDate: new Date('2024-10-20'),
-      status: 'PENDING',
-      percentComplete: 0,
-    },
-  ]
+  const [milestones, setMilestones] = useState<Milestone[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const fetchMilestones = async () => {
+      if (!projectId) {
+        setLoading(false)
+        return
+      }
+
+      try {
+        const response = await fetch(`/api/projects/${projectId}/milestones`)
+        if (response.ok) {
+          const data = await response.json()
+          if (data.success && data.milestones) {
+            // Map API milestones to component interface
+            const mappedMilestones = data.milestones.map((m: any) => ({
+              id: m.id,
+              title: m.name,
+              description: m.description || '',
+              paymentAmount: m.paymentAmount,
+              dueDate: new Date(m.targetDate),
+              completionDate: m.actualDate ? new Date(m.actualDate) : undefined,
+              status: m.status,
+              percentComplete: m.percentComplete,
+            }))
+            setMilestones(mappedMilestones)
+          }
+        } else {
+          setError('Failed to load milestones')
+        }
+      } catch (err) {
+        setError('Error loading milestones')
+        console.error('Error fetching milestones:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchMilestones()
+  }, [projectId])
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -121,6 +123,56 @@ export function MilestoneTracker({ projectId, compact = false }: MilestoneTracke
     }
   }, [milestones])
 
+  // Loading state
+  if (loading) {
+    return (
+      <Card>
+        <Card.Header>
+          <h3 className="text-lg font-semibold text-gray-900">Milestone Progress</h3>
+        </Card.Header>
+        <Card.Body>
+          <div className="animate-pulse space-y-4">
+            <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+            <div className="h-2 bg-gray-200 rounded w-full"></div>
+            <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+          </div>
+        </Card.Body>
+      </Card>
+    )
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <Card>
+        <Card.Header>
+          <h3 className="text-lg font-semibold text-gray-900">Milestone Progress</h3>
+        </Card.Header>
+        <Card.Body>
+          <div className="text-center py-4">
+            <p className="text-red-600 text-sm">{error}</p>
+          </div>
+        </Card.Body>
+      </Card>
+    )
+  }
+
+  // No milestones state
+  if (milestones.length === 0) {
+    return (
+      <Card>
+        <Card.Header>
+          <h3 className="text-lg font-semibold text-gray-900">Milestone Progress</h3>
+        </Card.Header>
+        <Card.Body>
+          <div className="text-center py-4">
+            <p className="text-gray-500 text-sm">No milestones defined for this project</p>
+          </div>
+        </Card.Body>
+      </Card>
+    )
+  }
+
   if (compact) {
     return (
       <Card>
@@ -153,7 +205,13 @@ export function MilestoneTracker({ projectId, compact = false }: MilestoneTracke
               <div className="flex items-center justify-between text-sm mb-1">
                 <span className="text-gray-600">Milestone Payments</span>
                 <span className="font-medium">
-                  ${stats.completedValue.toLocaleString()} / ${stats.totalValue.toLocaleString()}
+                  {new Intl.NumberFormat('en-NZ', { style: 'currency', currency: 'NZD' }).format(
+                    stats.completedValue
+                  )}{' '}
+                  /{' '}
+                  {new Intl.NumberFormat('en-NZ', { style: 'currency', currency: 'NZD' }).format(
+                    stats.totalValue
+                  )}
                 </span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-1">

@@ -1,6 +1,7 @@
 'use client'
 
 import React from 'react'
+import { useRouter } from 'next/navigation'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import {
@@ -54,6 +55,7 @@ const statusConfig = {
 }
 
 export function ProjectList({ projects, emptyMessage = 'No projects found' }: ProjectListProps) {
+  const router = useRouter()
   if (projects.length === 0) {
     return (
       <div className="text-center py-12">
@@ -88,7 +90,10 @@ export function ProjectList({ projects, emptyMessage = 'No projects found' }: Pr
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-gray-500">Budget:</span>
                   <span className="font-medium text-gray-900">
-                    ${project.totalBudget?.toLocaleString() || 0} {project.currency || 'NZD'}
+                    {new Intl.NumberFormat('en-NZ', {
+                      style: 'currency',
+                      currency: project.currency || 'NZD',
+                    }).format(project.totalBudget || 0)}
                   </span>
                 </div>
 
@@ -101,7 +106,10 @@ export function ProjectList({ projects, emptyMessage = 'No projects found' }: Pr
               </div>
 
               <div className="mt-4 pt-4 border-t border-gray-200">
-                <button className="text-blue-600 hover:text-blue-700 text-sm font-medium">
+                <button
+                  onClick={() => router.push(`/dashboard?projectId=${project.id}`)}
+                  className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                >
                   View Details →
                 </button>
               </div>

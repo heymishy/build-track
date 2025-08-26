@@ -32,13 +32,19 @@ describe('LoginForm', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
+    const { useAuth } = require('@/hooks/useAuth')
+    useAuth.mockReturnValue({
+      login: mockLogin,
+      isLoading: false,
+      error: null,
+    })
   })
 
   it('should render login form elements', () => {
     render(<LoginForm onSuccess={jest.fn()} />)
 
     expect(screen.getByLabelText(/email/i)).toBeInTheDocument()
-    expect(screen.getByLabelText(/password/i)).toBeInTheDocument()
+    expect(screen.getByLabelText('Password')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /sign in/i })).toBeInTheDocument()
   })
 
@@ -74,12 +80,20 @@ describe('LoginForm', () => {
 
     render(<LoginForm onSuccess={mockOnSuccess} />)
 
-    const emailInput = screen.getByLabelText(/email/i)
-    const passwordInput = screen.getByLabelText(/password/i)
+    const emailInput = screen.getByRole('textbox', { name: /email/i })
+    const passwordInput = screen.getByLabelText('Password')
     const submitButton = screen.getByRole('button', { name: /sign in/i })
 
+    // Fill form fields
     await user.type(emailInput, 'test@example.com')
     await user.type(passwordInput, 'password123')
+
+    // Wait a moment for form to update
+    await waitFor(() => {
+      expect(emailInput).toHaveValue('test@example.com')
+      expect(passwordInput).toHaveValue('password123')
+    })
+
     await user.click(submitButton)
 
     await waitFor(() => {
@@ -97,12 +111,19 @@ describe('LoginForm', () => {
 
     render(<LoginForm onSuccess={jest.fn()} />)
 
-    const emailInput = screen.getByLabelText(/email/i)
-    const passwordInput = screen.getByLabelText(/password/i)
+    const emailInput = screen.getByRole('textbox', { name: /email/i })
+    const passwordInput = screen.getByLabelText('Password')
     const submitButton = screen.getByRole('button', { name: /sign in/i })
 
     await user.type(emailInput, 'test@example.com')
     await user.type(passwordInput, 'wrongpassword')
+
+    // Wait for form to be filled
+    await waitFor(() => {
+      expect(emailInput).toHaveValue('test@example.com')
+      expect(passwordInput).toHaveValue('wrongpassword')
+    })
+
     await user.click(submitButton)
 
     await waitFor(() => {
@@ -122,7 +143,7 @@ describe('LoginForm', () => {
     render(<LoginForm onSuccess={jest.fn()} />)
 
     const emailInput = screen.getByLabelText(/email/i)
-    const passwordInput = screen.getByLabelText(/password/i)
+    const passwordInput = screen.getByLabelText('Password')
     const submitButton = screen.getByRole('button', { name: /signing in/i })
 
     expect(emailInput).toBeDisabled()
@@ -139,7 +160,7 @@ describe('LoginForm', () => {
   it('should toggle password visibility', async () => {
     render(<LoginForm onSuccess={jest.fn()} />)
 
-    const passwordInput = screen.getByDisplayValue('') // Get the actual input, not label
+    const passwordInput = screen.getByLabelText('Password')
     const toggleButton = screen.getByRole('button', { name: /show password/i })
 
     // Initially password should be hidden
@@ -147,10 +168,14 @@ describe('LoginForm', () => {
 
     // Click to show password
     await user.click(toggleButton)
-    expect(passwordInput).toHaveAttribute('type', 'text')
+    await waitFor(() => {
+      expect(passwordInput).toHaveAttribute('type', 'text')
+    })
 
     // Click to hide password again
     await user.click(toggleButton)
-    expect(passwordInput).toHaveAttribute('type', 'password')
+    await waitFor(() => {
+      expect(passwordInput).toHaveAttribute('type', 'password')
+    })
   })
 })

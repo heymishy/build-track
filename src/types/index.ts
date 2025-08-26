@@ -525,6 +525,10 @@ export interface ApiEndpoints {
 
 // ==================== Export Groups ====================
 
+// Re-export from other modules
+export type { ParsedInvoice } from '@/lib/pdf-parser'
+export type { StateAction } from '@/lib/state-manager'
+
 // Core entities
 export type CoreEntity = User | Project | Trade | LineItem | Milestone | Invoice
 

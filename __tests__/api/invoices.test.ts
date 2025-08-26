@@ -31,8 +31,8 @@ Amount: $15,000.00
 Tax: $1,500.00
 Total: $16,500.00`
 
-    mockExtractTextFromPDF.mockResolvedValue(mockText)
-    mockParseInvoiceFromText.mockReturnValue({
+    mockExtractTextFromPDF.mockResolvedValue([mockText])
+    mockParseInvoiceFromText.mockResolvedValue({
       invoiceNumber: 'INV-2024-001',
       date: '2024-01-15',
       vendorName: 'ABC Construction Ltd',
@@ -149,8 +149,8 @@ Total: $16,500.00`
   it('should handle text extraction with no parseable invoice data', async () => {
     const mockText = 'This is just some random text with no invoice information'
 
-    mockExtractTextFromPDF.mockResolvedValue(mockText)
-    mockParseInvoiceFromText.mockReturnValue({
+    mockExtractTextFromPDF.mockResolvedValue([mockText])
+    mockParseInvoiceFromText.mockResolvedValue({
       invoiceNumber: null,
       date: null,
       vendorName: null,

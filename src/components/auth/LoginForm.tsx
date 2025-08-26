@@ -75,6 +75,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
         <div className="mt-1 relative">
           <input
             {...register('password')}
+            id="password"
             type={showPassword ? 'text' : 'password'}
             autoComplete="current-password"
             disabled={isDisabled}

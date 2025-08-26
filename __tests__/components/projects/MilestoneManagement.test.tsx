@@ -27,7 +27,7 @@ const mockProject = {
   id: 'project-1',
   name: 'Test Construction Project',
   description: 'A test project',
-  status: 'ACTIVE' as const,
+  status: 'IN_PROGRESS' as const,
   budget: 100000,
   startDate: '2024-01-01',
   endDate: '2024-12-31',
@@ -43,9 +43,10 @@ const mockMilestones = [
     description: 'Complete foundation work',
     targetDate: '2024-03-15',
     actualDate: '2024-03-10',
-    progress: 100,
+    percentComplete: 100,
     status: 'COMPLETED' as const,
-    amount: 25000,
+    paymentAmount: 25000,
+    sortOrder: 1,
     projectId: 'project-1',
     createdAt: '2024-01-01T00:00:00Z',
     updatedAt: '2024-03-10T00:00:00Z',
@@ -56,9 +57,10 @@ const mockMilestones = [
     description: 'Complete framing work',
     targetDate: '2024-06-15',
     actualDate: null,
-    progress: 75,
+    percentComplete: 75,
     status: 'IN_PROGRESS' as const,
-    amount: 35000,
+    paymentAmount: 35000,
+    sortOrder: 2,
     projectId: 'project-1',
     createdAt: '2024-01-01T00:00:00Z',
     updatedAt: '2024-06-01T00:00:00Z',
@@ -69,9 +71,10 @@ const mockMilestones = [
     description: 'Final inspection and approval',
     targetDate: '2024-08-15',
     actualDate: null,
-    progress: 0,
+    percentComplete: 0,
     status: 'PENDING' as const,
-    amount: 5000,
+    paymentAmount: 5000,
+    sortOrder: 3,
     projectId: 'project-1',
     createdAt: '2024-01-01T00:00:00Z',
     updatedAt: '2024-01-01T00:00:00Z',
@@ -84,7 +87,17 @@ describe('MilestoneManagement', () => {
     ;(useAuth as jest.Mock).mockReturnValue({ user: mockUser })
     ;(global.fetch as jest.Mock).mockResolvedValue({
       ok: true,
-      json: async () => ({ milestones: mockMilestones }),
+      json: async () => ({
+        success: true,
+        milestones: mockMilestones,
+        summary: {
+          totalMilestones: mockMilestones.length,
+          completedMilestones: 1,
+          totalPaymentAmount: 55000,
+          completedPaymentAmount: 25000,
+          overallProgress: 45.45,
+        },
+      }),
     })
   })
 
@@ -92,7 +105,10 @@ describe('MilestoneManagement', () => {
     it('should render milestone management component', async () => {
       render(<MilestoneManagement project={mockProject} />)
 
-      expect(screen.getByText('Project Milestones')).toBeInTheDocument()
+      await waitFor(() => {
+        expect(screen.getByText('Construction Milestones')).toBeInTheDocument()
+      })
+
       expect(screen.getByRole('button', { name: /add milestone/i })).toBeInTheDocument()
 
       await waitFor(() => {
@@ -106,13 +122,13 @@ describe('MilestoneManagement', () => {
       render(<MilestoneManagement project={mockProject} />)
 
       await waitFor(() => {
-        // Check for progress indicators
+        // Check for progress indicators - only IN_PROGRESS milestones with percentComplete > 0 show progress bars
         const progressBars = screen.getAllByRole('progressbar')
-        expect(progressBars).toHaveLength(3)
+        expect(progressBars).toHaveLength(1) // Only Framing Complete (75%, IN_PROGRESS) shows a progress bar
 
-        // Check for status badges
+        // Check for status badges (status text has underscores replaced with spaces)
         expect(screen.getByText('COMPLETED')).toBeInTheDocument()
-        expect(screen.getByText('IN_PROGRESS')).toBeInTheDocument()
+        expect(screen.getByText('IN PROGRESS')).toBeInTheDocument()
         expect(screen.getByText('PENDING')).toBeInTheDocument()
       })
     })

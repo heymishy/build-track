@@ -7,6 +7,7 @@ import SettingsPage from '@/app/settings/page'
 import { AuthProvider } from '@/contexts/AuthContext'
 import { SettingsManager } from '@/lib/settings'
 import type { AppSettings } from '@/types'
+import { Currency } from '@/types'
 
 // Mock Next.js navigation hooks
 jest.mock('next/navigation', () => ({
@@ -51,7 +52,7 @@ const mockDefaultSettings: AppSettings = {
   user: {
     theme: 'system',
     language: 'en',
-    currency: 'USD',
+    currency: Currency.USD,
     dateFormat: 'MM/DD/YYYY',
     timezone: 'America/New_York',
     notifications: {
@@ -78,7 +79,6 @@ const mockDefaultSettings: AppSettings = {
     budgetAlertThreshold: 90,
   },
   system: {
-    apiBaseUrl: 'http://localhost:3000/api',
     maxFileSize: 10485760,
     supportedFileTypes: ['.pdf', '.png', '.jpg'],
     sessionTimeout: 3600,

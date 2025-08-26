@@ -5,6 +5,8 @@
 
 import { NextRequest } from 'next/server'
 import { PrismaClient } from '@prisma/client'
+import { POST, GET } from '@/app/api/projects/route'
+import { GET as GetProject, PUT, DELETE } from '@/app/api/projects/[id]/route'
 
 // Mock Prisma
 jest.mock('@prisma/client', () => ({
@@ -49,12 +51,7 @@ const mockUser = {
 describe('/api/projects', () => {
   beforeEach(() => {
     jest.clearAllMocks()
-    mockGetAuthUser.mockResolvedValue({
-      id: 'user-1',
-      email: 'test@example.com',
-      name: 'Test User',
-      role: 'ADMIN',
-    })
+    // Mock auth is handled by withAuth mock
   })
 
   describe('POST /api/projects', () => {
@@ -253,7 +250,8 @@ describe('/api/projects', () => {
           method: 'PUT',
           body: JSON.stringify(updateData),
         }),
-        { params: { id: 'project-1' } }
+        mockUser as any,
+        { params: Promise.resolve({ id: 'project-1' }) }
       )
       const data = await response.json()
 
@@ -273,7 +271,8 @@ describe('/api/projects', () => {
           method: 'PUT',
           body: JSON.stringify({ name: 'Hacked' }),
         }),
-        { params: { id: 'project-1' } }
+        mockUser as any,
+        { params: Promise.resolve({ id: 'project-1' }) }
       )
       const data = await response.json()
 
@@ -293,7 +292,8 @@ describe('/api/projects', () => {
 
       const response = await DELETE(
         new NextRequest('http://localhost:3000/api/projects/project-1'),
-        { params: { id: 'project-1' } }
+        mockUser as any,
+        { params: Promise.resolve({ id: 'project-1' }) }
       )
       const data = await response.json()
 

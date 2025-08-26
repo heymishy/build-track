@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { Card } from '@/components/ui/Card'
 import { usePhaseNavigation } from '@/components/navigation/PhaseBasedNavigation'
 import { StageAwareProjectDashboard } from '@/components/dashboard/StageAwareProjectDashboard'
@@ -41,6 +41,29 @@ export function PhaseBasedContent({
   // Use the phase navigation context if available
   const phaseContext = React.useContext(React.createContext(null))
   const filteredProjects = phaseContext?.filteredProjects || projects
+
+  // State for dashboard metrics
+  const [pendingInvoices, setPendingInvoices] = useState(0)
+
+  // Load dashboard metrics
+  useEffect(() => {
+    const loadDashboardMetrics = async () => {
+      try {
+        const response = await fetch('/api/invoices?status=PENDING')
+        if (response.ok) {
+          const data = await response.json()
+          setPendingInvoices(data.invoices?.length || 0)
+        }
+      } catch (error) {
+        console.error('Failed to load dashboard metrics:', error)
+        setPendingInvoices(0)
+      }
+    }
+
+    if (projects.length > 0) {
+      loadDashboardMetrics()
+    }
+  }, [projects])
 
   const renderPhaseContent = () => {
     switch (activeView) {
@@ -99,7 +122,10 @@ export function PhaseBasedContent({
                   </div>
                   <div className="bg-blue-50 p-4 rounded-lg">
                     <div className="text-2xl font-bold text-blue-600">
-                      ${projects.reduce((sum, p) => sum + (p.totalBudget || 0), 0).toLocaleString()}
+                      {new Intl.NumberFormat('en-NZ', {
+                        style: 'currency',
+                        currency: projects[0]?.currency || 'NZD',
+                      }).format(projects.reduce((sum, p) => sum + (p.totalBudget || 0), 0))}
                     </div>
                     <div className="text-sm text-blue-700">Total Estimated Value</div>
                   </div>
@@ -160,12 +186,15 @@ export function PhaseBasedContent({
                   </div>
                   <div className="bg-orange-50 p-4 rounded-lg">
                     <div className="text-2xl font-bold text-orange-600">
-                      ${projects.reduce((sum, p) => sum + (p.totalBudget || 0), 0).toLocaleString()}
+                      {new Intl.NumberFormat('en-NZ', {
+                        style: 'currency',
+                        currency: projects[0]?.currency || 'NZD',
+                      }).format(projects.reduce((sum, p) => sum + (p.totalBudget || 0), 0))}
                     </div>
                     <div className="text-sm text-orange-700">Active Project Value</div>
                   </div>
                   <div className="bg-orange-50 p-4 rounded-lg">
-                    <div className="text-2xl font-bold text-orange-600">0</div>
+                    <div className="text-2xl font-bold text-orange-600">{pendingInvoices}</div>
                     <div className="text-sm text-orange-700">Pending Invoices</div>
                   </div>
                 </div>

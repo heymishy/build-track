@@ -2,6 +2,7 @@
  * @jest-environment jsdom
  */
 import { render, screen, fireEvent } from '@testing-library/react'
+import { createRef } from 'react'
 import { Button } from '@/components/ui/Button'
 
 describe('Button Component', () => {
@@ -91,7 +92,7 @@ describe('Button Component', () => {
   })
 
   it('forwards ref correctly', () => {
-    const ref = jest.createRef<HTMLButtonElement>()
+    const ref = createRef<HTMLButtonElement>()
     render(<Button ref={ref}>Test</Button>)
     expect(ref.current).toBeInstanceOf(HTMLButtonElement)
   })

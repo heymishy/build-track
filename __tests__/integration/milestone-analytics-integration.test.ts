@@ -7,8 +7,8 @@ import { NextRequest } from 'next/server'
 import {
   GET as getMilestones,
   POST as createMilestone,
-  PUT as updateMilestone,
 } from '@/app/api/projects/[id]/milestones/route'
+import { PUT as updateMilestone } from '@/app/api/projects/[id]/milestones/[milestoneId]/route'
 import { GET as getAnalytics } from '@/app/api/projects/[id]/analytics/route'
 
 // Mock database operations
@@ -161,7 +161,7 @@ describe('Milestone and Analytics Integration', () => {
         'http://localhost:3000/api/projects/project-1/milestones',
         {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: new Headers({ 'Content-Type': 'application/json' }),
           body: JSON.stringify({
             name: 'Electrical Complete',
             description: 'Complete electrical work',
@@ -171,7 +171,9 @@ describe('Milestone and Analytics Integration', () => {
         }
       )
 
-      const createResponse = await createMilestone(createRequest, { params: { id: 'project-1' } })
+      const createResponse = await createMilestone(createRequest, {} as any, {
+        params: Promise.resolve({ id: 'project-1' }),
+      })
       const createResult = await createResponse.json()
 
       expect(createResult.success).toBe(true)
@@ -182,7 +184,7 @@ describe('Milestone and Analytics Integration', () => {
         'http://localhost:3000/api/projects/project-1/analytics'
       )
       const analyticsResponse = await getAnalytics(analyticsRequest, {
-        params: { id: 'project-1' },
+        params: Promise.resolve({ id: 'project-1' }),
       })
       const analyticsResult = await analyticsResponse.json()
 
@@ -208,15 +210,15 @@ describe('Milestone and Analytics Integration', () => {
         'http://localhost:3000/api/projects/project-1/milestones/milestone-2',
         {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
+          headers: new Headers({ 'Content-Type': 'application/json' }),
           body: JSON.stringify({
             progress: 90,
           }),
         }
       )
 
-      const updateResponse = await updateMilestone(updateRequest, {
-        params: { id: 'project-1', milestoneId: 'milestone-2' },
+      const updateResponse = await updateMilestone(updateRequest, {} as any, {
+        params: Promise.resolve({ id: 'project-1', milestoneId: 'milestone-2' }),
       })
       const updateResult = await updateResponse.json()
 
@@ -227,7 +229,7 @@ describe('Milestone and Analytics Integration', () => {
         'http://localhost:3000/api/projects/project-1/analytics'
       )
       const analyticsResponse = await getAnalytics(analyticsRequest, {
-        params: { id: 'project-1' },
+        params: Promise.resolve({ id: 'project-1' }),
       })
       const analyticsResult = await analyticsResponse.json()
 
@@ -256,7 +258,7 @@ describe('Milestone and Analytics Integration', () => {
         'http://localhost:3000/api/projects/project-1/milestones/milestone-2',
         {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
+          headers: new Headers({ 'Content-Type': 'application/json' }),
           body: JSON.stringify({
             progress: 100,
             status: 'COMPLETED',
@@ -265,8 +267,8 @@ describe('Milestone and Analytics Integration', () => {
         }
       )
 
-      const updateResponse = await updateMilestone(updateRequest, {
-        params: { id: 'project-1', milestoneId: 'milestone-2' },
+      const updateResponse = await updateMilestone(updateRequest, {} as any, {
+        params: Promise.resolve({ id: 'project-1', milestoneId: 'milestone-2' }),
       })
 
       expect(updateResponse.status).toBe(200)
@@ -276,7 +278,7 @@ describe('Milestone and Analytics Integration', () => {
         'http://localhost:3000/api/projects/project-1/analytics'
       )
       const analyticsResponse = await getAnalytics(analyticsRequest, {
-        params: { id: 'project-1' },
+        params: Promise.resolve({ id: 'project-1' }),
       })
       const analyticsResult = await analyticsResponse.json()
 
@@ -310,7 +312,7 @@ describe('Milestone and Analytics Integration', () => {
         'http://localhost:3000/api/projects/project-1/analytics'
       )
       const analyticsResponse = await getAnalytics(analyticsRequest, {
-        params: { id: 'project-1' },
+        params: Promise.resolve({ id: 'project-1' }),
       })
       const analyticsResult = await analyticsResponse.json()
 
@@ -333,7 +335,7 @@ describe('Milestone and Analytics Integration', () => {
         'http://localhost:3000/api/projects/project-1/analytics'
       )
       const analyticsResponse = await getAnalytics(analyticsRequest, {
-        params: { id: 'project-1' },
+        params: Promise.resolve({ id: 'project-1' }),
       })
       const analyticsResult = await analyticsResponse.json()
 
@@ -359,7 +361,7 @@ describe('Milestone and Analytics Integration', () => {
         'http://localhost:3000/api/projects/project-1/analytics'
       )
       const analyticsResponse = await getAnalytics(analyticsRequest, {
-        params: { id: 'project-1' },
+        params: Promise.resolve({ id: 'project-1' }),
       })
       const analyticsResult = await analyticsResponse.json()
 
@@ -381,7 +383,7 @@ describe('Milestone and Analytics Integration', () => {
         'http://localhost:3000/api/projects/project-1/milestones'
       )
       const milestonesResponse = await getMilestones(milestonesRequest, {
-        params: { id: 'project-1' },
+        params: Promise.resolve({ id: 'project-1' }),
       })
 
       // Load analytics
@@ -389,7 +391,7 @@ describe('Milestone and Analytics Integration', () => {
         'http://localhost:3000/api/projects/project-1/analytics'
       )
       const analyticsResponse = await getAnalytics(analyticsRequest, {
-        params: { id: 'project-1' },
+        params: Promise.resolve({ id: 'project-1' }),
       })
 
       const endTime = Date.now()

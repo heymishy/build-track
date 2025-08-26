@@ -13,15 +13,12 @@ import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import {
   ChartBarIcon,
-  TrendingUpIcon,
-  TrendingDownIcon,
+  ArrowTrendingUpIcon,
+  ArrowTrendingDownIcon,
   CurrencyDollarIcon,
-  ClockIcon,
   DocumentTextIcon,
   ExclamationTriangleIcon,
   ArrowPathIcon,
-  CalendarIcon,
-  UserGroupIcon,
 } from '@heroicons/react/24/outline'
 
 interface Project {
@@ -330,9 +327,9 @@ export default function AnalyticsPage() {
                   }`}
                 >
                   {analyticsData.overview.budgetVariance >= 0 ? (
-                    <TrendingUpIcon className="h-5 w-5 mr-1" />
+                    <ArrowTrendingUpIcon className="h-5 w-5 mr-1" />
                   ) : (
-                    <TrendingDownIcon className="h-5 w-5 mr-1" />
+                    <ArrowTrendingDownIcon className="h-5 w-5 mr-1" />
                   )}
                   {formatPercentage(analyticsData.overview.budgetVariance)}
                 </dd>
@@ -343,9 +340,9 @@ export default function AnalyticsPage() {
                 }`}
               >
                 {analyticsData.overview.budgetVariance >= 0 ? (
-                  <TrendingUpIcon className="h-5 w-5 text-red-600" />
+                  <ArrowTrendingUpIcon className="h-5 w-5 text-red-600" />
                 ) : (
-                  <TrendingDownIcon className="h-5 w-5 text-green-600" />
+                  <ArrowTrendingDownIcon className="h-5 w-5 text-green-600" />
                 )}
               </div>
             </div>

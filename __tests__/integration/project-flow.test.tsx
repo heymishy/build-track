@@ -7,6 +7,7 @@ import { ProjectDashboard } from '@/components/dashboard/ProjectDashboard'
 import { ProjectsProvider } from '@/contexts/ProjectsContext'
 import { AuthProvider } from '@/contexts/AuthContext'
 import type { Project } from '@/types'
+import { Currency, ProjectStatus } from '@/types'
 
 // Mock Next.js navigation hooks
 jest.mock('next/navigation', () => ({
@@ -72,8 +73,8 @@ describe('Project Management Integration Flow', () => {
       id: '1',
       name: 'Test Project 1',
       totalBudget: 50000,
-      currency: 'USD',
-      status: 'ACTIVE',
+      currency: Currency.USD,
+      status: ProjectStatus.IN_PROGRESS,
       startDate: new Date('2024-01-01'),
       endDate: new Date('2024-12-31'),
       createdAt: new Date('2024-01-01'),
@@ -83,8 +84,8 @@ describe('Project Management Integration Flow', () => {
       id: '2',
       name: 'Test Project 2',
       totalBudget: 75000,
-      currency: 'USD',
-      status: 'PLANNING',
+      currency: Currency.USD,
+      status: ProjectStatus.PLANNING,
       startDate: new Date('2024-02-01'),
       endDate: new Date('2024-11-30'),
       createdAt: new Date('2024-01-15'),
@@ -160,8 +161,8 @@ describe('Project Management Integration Flow', () => {
         id: '3',
         name: 'New Test Project',
         totalBudget: 100000,
-        currency: 'USD',
-        status: 'PLANNING',
+        currency: Currency.USD,
+        status: ProjectStatus.PLANNING,
         startDate: new Date('2024-03-01'),
         endDate: new Date('2024-12-31'),
         createdAt: new Date(),
@@ -203,8 +204,8 @@ describe('Project Management Integration Flow', () => {
         expect(mockCreateProject).toHaveBeenCalledWith({
           name: 'New Test Project',
           totalBudget: 100000,
-          currency: 'USD',
-          status: 'PLANNING',
+          currency: Currency.USD,
+          status: ProjectStatus.PLANNING,
         })
       })
 

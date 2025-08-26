@@ -6,6 +6,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { InvoiceManagement } from '@/components/invoices/InvoiceManagement'
 import { AuthProvider } from '@/contexts/AuthContext'
 import type { Invoice, ParsedInvoice } from '@/types'
+import { InvoiceStatus } from '@/types'
 
 // Mock Next.js navigation hooks
 jest.mock('next/navigation', () => ({
@@ -76,7 +77,7 @@ describe('Invoice Processing Integration Flow', () => {
       supplierName: 'ABC Supplies',
       totalAmount: 1250.0,
       currency: 'USD',
-      status: 'PENDING',
+      status: InvoiceStatus.PENDING,
       invoiceDate: new Date('2024-01-15'),
       dueDate: new Date('2024-02-15'),
       projectId: 'proj-1',
@@ -89,7 +90,7 @@ describe('Invoice Processing Integration Flow', () => {
       supplierName: 'XYZ Construction',
       totalAmount: 5000.0,
       currency: 'USD',
-      status: 'APPROVED',
+      status: InvoiceStatus.APPROVED,
       invoiceDate: new Date('2024-01-20'),
       dueDate: new Date('2024-02-20'),
       projectId: 'proj-1',
@@ -107,16 +108,26 @@ describe('Invoice Processing Integration Flow', () => {
     dueDate: new Date('2024-03-01'),
     lineItems: [
       {
+        id: 'line-1',
+        invoiceId: 'invoice-1',
         description: 'Construction Materials',
         quantity: 10,
         unitPrice: 150.0,
         totalPrice: 1500.0,
+        category: 'MATERIAL' as const,
+        createdAt: new Date(),
+        updatedAt: new Date(),
       },
       {
+        id: 'line-2',
+        invoiceId: 'invoice-1',
         description: 'Labor',
         quantity: 20,
         unitPrice: 50.0,
         totalPrice: 1000.0,
+        category: 'LABOR' as const,
+        createdAt: new Date(),
+        updatedAt: new Date(),
       },
     ],
     confidence: 0.95,
@@ -294,7 +305,7 @@ describe('Invoice Processing Integration Flow', () => {
         success: true,
         data: {
           ...mockInvoices[0],
-          status: 'APPROVED',
+          status: InvoiceStatus.APPROVED,
         },
       })
 

@@ -106,7 +106,7 @@ describe('useAuth Hook', () => {
             password: 'wrongpassword',
           })
         } catch (error) {
-          expect(error.message).toBe('Invalid credentials')
+          expect((error as Error).message).toBe('Invalid credentials')
         }
       })
 
@@ -210,7 +210,7 @@ describe('useAuth Hook', () => {
             password: 'password123',
           })
         } catch (error) {
-          expect(error.message).toBe('Email already exists')
+          expect((error as Error).message).toBe('Email already exists')
         }
       })
 
@@ -276,12 +276,16 @@ describe('useAuth Hook', () => {
         id: '1',
         email: 'test@example.com',
         name: 'Test User',
-        role: 'USER',
+        role: 'USER' as const,
+        createdAt: new Date(),
+        updatedAt: new Date(),
       }
 
       const updatedUser = {
         ...initialUser,
         name: 'Updated Name',
+        createdAt: new Date(),
+        updatedAt: new Date(),
       }
 
       // Set initial user

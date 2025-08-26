@@ -2,6 +2,7 @@
  * @jest-environment jsdom
  */
 import { render, screen, fireEvent } from '@testing-library/react'
+import { createRef } from 'react'
 import { Input } from '@/components/ui/Input'
 
 describe('Input Component', () => {
@@ -82,7 +83,7 @@ describe('Input Component', () => {
   })
 
   it('forwards ref correctly', () => {
-    const ref = jest.createRef<HTMLInputElement>()
+    const ref = createRef<HTMLInputElement>()
     render(<Input ref={ref} />)
     expect(ref.current).toBeInstanceOf(HTMLInputElement)
   })
