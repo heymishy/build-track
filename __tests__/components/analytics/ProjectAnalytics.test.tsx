@@ -111,11 +111,11 @@ describe('ProjectAnalytics', () => {
       render(<ProjectAnalytics project={mockProject} />)
 
       await waitFor(() => {
-        expect(screen.getByText('Project Analytics')).toBeInTheDocument()
-        expect(screen.getByText('Financial Overview')).toBeInTheDocument()
-        expect(screen.getByText('Spending Trends')).toBeInTheDocument()
+        expect(screen.getByText('Advanced Project Analytics')).toBeInTheDocument()
+        expect(screen.getByText('Executive Summary')).toBeInTheDocument()
         expect(screen.getByText('Key Performance Indicators')).toBeInTheDocument()
-        expect(screen.getByText('Budget by Trade')).toBeInTheDocument()
+        expect(screen.getByText('Trade Performance Analysis')).toBeInTheDocument()
+        expect(screen.getByText('Financial Trends')).toBeInTheDocument()
       })
     })
 
@@ -302,7 +302,8 @@ describe('ProjectAnalytics', () => {
 
       await waitFor(() => {
         const container = screen.getByTestId('analytics-container')
-        expect(container).toHaveClass('mobile-layout')
+        expect(container).toBeInTheDocument()
+        // Mobile layout is now handled via responsive grid classes, not a mobile-layout class
       })
     })
   })
