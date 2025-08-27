@@ -5,11 +5,11 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getDatabase } from '@/lib/db-pool'
-import { withAuth } from '@/lib/middleware'
+import { withAuth, AuthUser } from '@/lib/middleware'
 
-export const GET = withAuth(async (request: NextRequest, { params }: { params: { id: string } }) => {
+async function GET(request: NextRequest, user: AuthUser, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id: projectId } = params
+    const { id: projectId } = await params
     const { searchParams } = new URL(request.url)
     const phase = searchParams.get('phase')
 
@@ -55,4 +55,13 @@ export const GET = withAuth(async (request: NextRequest, { params }: { params: {
       error: error instanceof Error ? error.message : 'Failed to fetch documents',
     }, { status: 500 })
   }
+}
+
+// Apply authentication middleware
+const protectedGET = withAuth(GET, {
+  resource: 'projects',
+  action: 'read',
+  requireAuth: true,
 })
+
+export { protectedGET as GET }
