@@ -12,7 +12,7 @@ console.log('🗄️ BuildTrack Production Database Migration\n')
 if (!process.env.DATABASE_URL && !process.env.POSTGRES_PRISMA_URL) {
   console.error('❌ Error: No database URL found!')
   console.error('Make sure DATABASE_URL or POSTGRES_PRISMA_URL is set in your environment.')
-  console.error('If using Vercel PostgreSQL, make sure it\'s connected to your project.')
+  console.error("If using Vercel PostgreSQL, make sure it's connected to your project.")
   process.exit(1)
 }
 
@@ -25,21 +25,20 @@ try {
   // Generate Prisma client
   console.log('1. Generating Prisma client...')
   execSync('npx prisma generate', { stdio: 'inherit' })
-  
+
   // Push database schema
   console.log('\n2. Pushing database schema...')
-  execSync('npx prisma db push --accept-data-loss', { 
+  execSync('npx prisma db push --accept-data-loss', {
     stdio: 'inherit',
     env: {
       ...process.env,
-      DATABASE_URL: databaseUrl
-    }
+      DATABASE_URL: databaseUrl,
+    },
   })
-  
+
   console.log('\n✅ Database migration completed successfully!')
   console.log('\n🧪 Test your database connection:')
   console.log('   https://build-track-omega.vercel.app/api/health/database')
-  
 } catch (error) {
   console.error('\n❌ Migration failed:', error.message)
   console.error('\nTroubleshooting:')

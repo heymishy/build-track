@@ -87,7 +87,7 @@ export async function createUser(userData: CreateUserData): Promise<AuthResult> 
 
   try {
     const db = await getDatabase()
-    
+
     // Check if user already exists
     const existingUser = await db.user.findUnique({
       where: { email },
@@ -133,7 +133,7 @@ export async function createUser(userData: CreateUserData): Promise<AuthResult> 
 export async function authenticateUser(email: string, password: string): Promise<AuthResult> {
   try {
     const db = await getDatabase()
-    
+
     // Find user by email
     const user = await db.user.findUnique({
       where: { email },

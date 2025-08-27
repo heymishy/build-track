@@ -69,17 +69,22 @@ export async function POST(request: NextRequest) {
     }
   } catch (error) {
     console.error('Registration error:', error)
-    
+
     // Provide more detailed error information in development
-    const errorMessage = process.env.NODE_ENV === 'development' 
-      ? error instanceof Error ? error.message : 'Unknown error'
-      : 'Registration failed'
-      
+    const errorMessage =
+      process.env.NODE_ENV === 'development'
+        ? error instanceof Error
+          ? error.message
+          : 'Unknown error'
+        : 'Registration failed'
+
     return NextResponse.json(
       {
         success: false,
         error: errorMessage,
-        ...(process.env.NODE_ENV === 'development' && { stack: error instanceof Error ? error.stack : undefined })
+        ...(process.env.NODE_ENV === 'development' && {
+          stack: error instanceof Error ? error.stack : undefined,
+        }),
       },
       { status: 500 }
     )
