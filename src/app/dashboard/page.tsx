@@ -12,6 +12,7 @@ import {
 import { PhaseBasedContent } from '@/components/dashboard/PhaseBasedContent'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
+import { AppLayout } from '@/components/layout/AppLayout'
 
 function DashboardContent() {
   const { user, isAuthenticated } = useAuth()
@@ -177,94 +178,96 @@ function DashboardContent() {
   const filteredProjects = getFilteredProjects()
 
   return (
-    <PhaseNavigationProvider projects={projects}>
-      <div className="min-h-screen bg-gray-50">
-        {/* Upload Status Alert */}
-        {uploadStatus.type && (
-          <div
-            className={`mx-auto max-w-7xl px-6 py-4 ${
-              uploadStatus.type === 'success'
-                ? 'bg-green-50 text-green-700 border border-green-200'
-                : uploadStatus.type === 'error'
-                  ? 'bg-red-50 text-red-700 border border-red-200'
-                  : 'bg-blue-50 text-blue-700 border border-blue-200'
-            } rounded-md`}
-          >
-            <div className="flex items-center justify-between">
-              <span>{uploadStatus.message}</span>
-              <button
-                onClick={clearUploadStatus}
-                className="text-gray-400 hover:text-gray-600"
-                aria-label="Dismiss notification"
-              >
-                ×
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Phase-Based Navigation */}
-        <PhaseBasedNavigation
-          projects={projects}
-          activeView={activeView}
-          onViewChange={handleViewChange}
-          loading={loading}
-        />
-
-        {/* Main Content Area */}
-        <div className="max-w-7xl mx-auto px-6 py-6">
-          {/* Quick Upload Section */}
-          <Card className="mb-6">
-            <Card.Body
-              className={`p-8 text-center border-2 border-dashed rounded-lg transition-colors ${
-                isDragging ? 'border-blue-400 bg-blue-50' : 'border-gray-300 hover:border-gray-400'
-              }`}
-              onDrop={handleDrop}
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
+    <AppLayout>
+      <PhaseNavigationProvider projects={projects}>
+        <div className="min-h-screen bg-gray-50">
+          {/* Upload Status Alert */}
+          {uploadStatus.type && (
+            <div
+              className={`mx-auto max-w-7xl px-6 py-4 ${
+                uploadStatus.type === 'success'
+                  ? 'bg-green-50 text-green-700 border border-green-200'
+                  : uploadStatus.type === 'error'
+                    ? 'bg-red-50 text-red-700 border border-red-200'
+                    : 'bg-blue-50 text-blue-700 border border-blue-200'
+              } rounded-md`}
             >
-              <CameraIcon
-                className={`mx-auto h-12 w-12 mb-4 ${isDragging ? 'text-blue-500' : 'text-gray-400'}`}
-              />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                {isDragging ? 'Drop files here' : 'Quick Invoice Upload'}
-              </h3>
-              <p className="text-gray-500 mb-4">
-                {isDragging
-                  ? 'Release to upload PDF files'
-                  : 'Drag and drop PDF files here, or click to select files'}
-              </p>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".pdf,image/*"
-                multiple
-                onChange={handleFileUpload}
-                className="hidden"
-                data-testid="file-input"
-              />
-              {!isDragging && (
-                <Button
-                  onClick={handleFileSelect}
-                  className="inline-flex items-center"
-                  data-testid="upload-button"
+              <div className="flex items-center justify-between">
+                <span>{uploadStatus.message}</span>
+                <button
+                  onClick={clearUploadStatus}
+                  className="text-gray-400 hover:text-gray-600"
+                  aria-label="Dismiss notification"
                 >
-                  <CameraIcon className="h-4 w-4 mr-2" />
-                  Select Files
-                </Button>
-              )}
-            </Card.Body>
-          </Card>
+                  ×
+                </button>
+              </div>
+            </div>
+          )}
 
-          {/* Phase-Based Content */}
-          <PhaseBasedContent
+          {/* Phase-Based Navigation */}
+          <PhaseBasedNavigation
+            projects={projects}
             activeView={activeView}
-            projects={filteredProjects}
-            onProjectsChange={loadProjects}
+            onViewChange={handleViewChange}
+            loading={loading}
           />
+
+          {/* Main Content Area */}
+          <div className="max-w-7xl mx-auto px-6 py-6">
+            {/* Quick Upload Section */}
+            <Card className="mb-6">
+              <Card.Body
+                className={`p-8 text-center border-2 border-dashed rounded-lg transition-colors ${
+                  isDragging ? 'border-blue-400 bg-blue-50' : 'border-gray-300 hover:border-gray-400'
+                }`}
+                onDrop={handleDrop}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+              >
+                <CameraIcon
+                  className={`mx-auto h-12 w-12 mb-4 ${isDragging ? 'text-blue-500' : 'text-gray-400'}`}
+                />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  {isDragging ? 'Drop files here' : 'Quick Invoice Upload'}
+                </h3>
+                <p className="text-gray-500 mb-4">
+                  {isDragging
+                    ? 'Release to upload PDF files'
+                    : 'Drag and drop PDF files here, or click to select files'}
+                </p>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".pdf,image/*"
+                  multiple
+                  onChange={handleFileUpload}
+                  className="hidden"
+                  data-testid="file-input"
+                />
+                {!isDragging && (
+                  <Button
+                    onClick={handleFileSelect}
+                    className="inline-flex items-center"
+                    data-testid="upload-button"
+                  >
+                    <CameraIcon className="h-4 w-4 mr-2" />
+                    Select Files
+                  </Button>
+                )}
+              </Card.Body>
+            </Card>
+
+            {/* Phase-Based Content */}
+            <PhaseBasedContent
+              activeView={activeView}
+              projects={filteredProjects}
+              onProjectsChange={loadProjects}
+            />
+          </div>
         </div>
-      </div>
-    </PhaseNavigationProvider>
+      </PhaseNavigationProvider>
+    </AppLayout>
   )
 }
 
