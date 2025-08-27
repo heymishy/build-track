@@ -161,58 +161,47 @@ export function DocumentManager({ projectId, phase, compact = false }: DocumentM
     try {
       setLoading(true)
 
-      // Mock data - in real implementation, this would come from API
-      const mockDocuments: Document[] = [
-        {
-          id: '1',
-          filename: 'architectural-plans-v2.pdf',
-          originalName: 'Architectural Plans v2.pdf',
-          fileType: 'application/pdf',
-          fileSize: 2450000,
-          category: 'PLANS',
-          phase: 'PLANNING',
-          uploadDate: new Date('2024-08-15'),
-          uploadedBy: 'John Architect',
-          description: 'Updated architectural plans with client revisions',
-          version: 2,
-          tags: ['plans', 'architecture', 'v2'],
-        },
-        {
-          id: '2',
-          filename: 'building-permit.pdf',
-          originalName: 'Building Permit - City Council.pdf',
-          fileType: 'application/pdf',
-          fileSize: 890000,
-          category: 'PERMITS',
-          phase: 'PLANNING',
-          uploadDate: new Date('2024-08-20'),
-          uploadedBy: 'Sarah Manager',
-          description: 'Approved building permit from city council',
-          version: 1,
-          tags: ['permit', 'approved', 'city'],
-        },
-        {
-          id: '3',
-          filename: 'progress-week-3.jpg',
-          originalName: 'Progress Photos Week 3.jpg',
-          fileType: 'image/jpeg',
-          fileSize: 1200000,
-          category: 'PHOTOS',
-          phase: 'CONSTRUCTION',
-          uploadDate: new Date('2024-09-10'),
-          uploadedBy: 'Mike Builder',
-          description: 'Foundation completion photos',
-          version: 1,
-          tags: ['progress', 'foundation', 'week3'],
-        },
-      ]
+      // If no projectId, show empty state
+      if (!projectId) {
+        setDocuments([])
+        return
+      }
 
-      // Filter by phase if specified
-      const filteredDocs = phase ? mockDocuments.filter(doc => doc.phase === phase) : mockDocuments
+      // Fetch documents from API
+      const response = await fetch(`/api/projects/${projectId}/documents${phase ? `?phase=${phase}` : ''}`)
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch documents: ${response.status}`)
+      }
 
-      setDocuments(filteredDocs)
+      const result = await response.json()
+      
+      if (result.success) {
+        // Map database documents to component format
+        const documents = result.documents?.map((doc: any) => ({
+          id: doc.id,
+          filename: doc.fileName,
+          originalName: doc.name,
+          fileType: doc.fileType,
+          fileSize: doc.fileSize,
+          category: doc.category,
+          phase: doc.stage,
+          uploadDate: new Date(doc.createdAt),
+          uploadedBy: doc.uploader?.name || 'Unknown',
+          description: doc.description,
+          version: 1,
+          tags: [],
+          url: doc.fileUrl,
+        })) || []
+
+        setDocuments(documents)
+      } else {
+        console.error('API error:', result.error)
+        setDocuments([])
+      }
     } catch (error) {
       console.error('Failed to load documents:', error)
+      setDocuments([])
     } finally {
       setLoading(false)
     }
