@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "PORT=3006 next dev",
     "dev:turbo": "next dev --turbopack",
+    "postinstall": "prisma generate",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
