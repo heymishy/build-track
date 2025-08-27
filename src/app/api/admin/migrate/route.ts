@@ -40,9 +40,54 @@ export async function POST(request: NextRequest) {
     `
     console.log('Existing tables:', tables)
 
+    // If no tables exist, run the migration
+    if (Array.isArray(tables) && tables.length === 0) {
+      console.log('No tables found, running database migration...')
+      
+      // Import the database migration logic
+      const { execSync } = require('child_process')
+      
+      try {
+        // Run prisma db push to create all tables
+        console.log('Running prisma db push...')
+        execSync('npx prisma db push --accept-data-loss', { 
+          stdio: 'pipe',
+          env: process.env,
+          timeout: 30000 // 30 second timeout
+        })
+        
+        // Check tables again
+        const newTables = await prisma.$queryRaw`
+          SELECT table_name 
+          FROM information_schema.tables 
+          WHERE table_schema = 'public'
+        `
+        
+        console.log('Migration completed, new tables:', newTables)
+        
+        return NextResponse.json({
+          success: true,
+          message: 'Database migration completed successfully',
+          tables_before: tables,
+          tables_after: newTables,
+          test_query: result,
+        })
+        
+      } catch (migrationError) {
+        console.error('Migration failed:', migrationError)
+        return NextResponse.json({
+          success: false,
+          error: 'Database migration failed',
+          migration_error: migrationError instanceof Error ? migrationError.message : String(migrationError),
+          tables,
+          test_query: result,
+        }, { status: 500 })
+      }
+    }
+
     return NextResponse.json({
       success: true,
-      message: 'Database connection successful',
+      message: 'Database connection successful - tables already exist',
       tables,
       test_query: result,
     })
