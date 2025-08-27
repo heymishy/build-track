@@ -4,7 +4,7 @@
  */
 
 import { checkPermission, createAuthMiddleware, hasProjectAccess } from '@/lib/middleware'
-import { UserRole, ProjectRole } from '@/generated/prisma'
+import { UserRole, ProjectRole } from '@prisma/client'
 
 describe('Role-Based Access Control Middleware', () => {
   describe('checkPermission', () => {

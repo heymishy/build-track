@@ -3,7 +3,7 @@
  * Usage: node scripts/fix-project-ownership.js <projectId> <userId>
  */
 
-const { PrismaClient } = require('../src/generated/prisma')
+const { PrismaClient } = require('@prisma/client')
 
 const prisma = new PrismaClient()
 
