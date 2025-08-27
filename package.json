@@ -28,6 +28,8 @@
     "db:push": "npx prisma db push",
     "db:migrate": "npx prisma migrate deploy",
     "db:seed": "npx prisma db seed",
+    "setup:prod": "node scripts/setup-production.js",
+    "db:migrate:prod": "node scripts/db-migrate-prod.js",
     "deploy:vercel": "vercel --prod",
     "deploy:build": "npm run typecheck && npm run lint && npm run test && npm run build",
     "deploy:test": "npm run test:all",
