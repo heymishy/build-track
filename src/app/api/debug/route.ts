@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
 
   try {
     console.log('Debug: Starting database tests...')
-    
+
     // Test 1: Direct Prisma client
     console.log('Test 1: Direct Prisma client')
     try {
@@ -26,9 +26,9 @@ export async function GET(request: NextRequest) {
       console.log('Direct client success:', directResult)
       await directClient.$disconnect()
     } catch (directError) {
-      results.directClient = { 
-        success: false, 
-        error: directError instanceof Error ? directError.message : 'Unknown error' 
+      results.directClient = {
+        success: false,
+        error: directError instanceof Error ? directError.message : 'Unknown error',
       }
       console.error('Direct client error:', directError)
     }
@@ -41,9 +41,9 @@ export async function GET(request: NextRequest) {
       results.poolClient = { success: true, result: poolResult }
       console.log('Pool client success:', poolResult)
     } catch (poolError) {
-      results.poolClient = { 
-        success: false, 
-        error: poolError instanceof Error ? poolError.message : 'Unknown error' 
+      results.poolClient = {
+        success: false,
+        error: poolError instanceof Error ? poolError.message : 'Unknown error',
       }
       console.error('Pool client error:', poolError)
     }
@@ -56,9 +56,9 @@ export async function GET(request: NextRequest) {
       results.userTableTest = { success: true, userCount }
       console.log('User count:', userCount)
     } catch (userError) {
-      results.userTableTest = { 
-        success: false, 
-        error: userError instanceof Error ? userError.message : 'Unknown error' 
+      results.userTableTest = {
+        success: false,
+        error: userError instanceof Error ? userError.message : 'Unknown error',
       }
       console.error('User query error:', userError)
     }
@@ -67,23 +67,25 @@ export async function GET(request: NextRequest) {
     console.log('Test 4: User creation simulation')
     try {
       const poolClient = await getDatabase()
-      
+
       // Test if email already exists (should be safe to test)
       const testEmail = 'debug-test@example.com'
       const existingUser = await poolClient.user.findUnique({
         where: { email: testEmail },
       })
-      
-      results.createUserTest = { 
-        success: true, 
+
+      results.createUserTest = {
+        success: true,
         emailExists: !!existingUser,
-        message: existingUser ? 'Test email already exists in database' : 'Test email not found - creation would be possible'
+        message: existingUser
+          ? 'Test email already exists in database'
+          : 'Test email not found - creation would be possible',
       }
       console.log('User creation test success:', results.createUserTest)
     } catch (createUserError) {
-      results.createUserTest = { 
-        success: false, 
-        error: createUserError instanceof Error ? createUserError.message : 'Unknown error' 
+      results.createUserTest = {
+        success: false,
+        error: createUserError instanceof Error ? createUserError.message : 'Unknown error',
       }
       console.error('User creation test error:', createUserError)
     }
@@ -94,14 +96,16 @@ export async function GET(request: NextRequest) {
       timestamp: new Date().toISOString(),
       results,
     })
-
   } catch (error) {
     console.error('Debug endpoint error:', error)
-    return NextResponse.json({
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined,
-      results,
-    }, { status: 500 })
+    return NextResponse.json(
+      {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+        results,
+      },
+      { status: 500 }
+    )
   }
 }

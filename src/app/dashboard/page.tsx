@@ -101,9 +101,10 @@ function DashboardContent() {
         const result = await response.json()
 
         if (result.success) {
+          const processedCount = result.result?.totalInvoices || 1
           setUploadStatus({
             type: 'success',
-            message: `Successfully processed ${result.data.processed} invoice${result.data.processed === 1 ? '' : 's'} from ${file.name}`,
+            message: `Successfully processed ${processedCount} invoice${processedCount === 1 ? '' : 's'} from ${file.name}`,
           })
 
           // Reload projects after successful upload
