@@ -17,19 +17,12 @@ interface PWAInstallBannerProps {
   persistent?: boolean
 }
 
-export function PWAInstallBanner({ 
-  className = '', 
+export function PWAInstallBanner({
+  className = '',
   position = 'bottom',
-  persistent = false 
+  persistent = false,
 }: PWAInstallBannerProps) {
-  const {
-    isInstallable,
-    isInstalled,
-    isOnline,
-    install,
-    updateAvailable,
-    applyUpdate,
-  } = usePWA()
+  const { isInstallable, isInstalled, isOnline, install, updateAvailable, applyUpdate } = usePWA()
 
   const [isDismissed, setIsDismissed] = useState(false)
   const [isInstalling, setIsInstalling] = useState(false)
@@ -56,7 +49,7 @@ export function PWAInstallBanner({
 
   const handleInstall = async () => {
     setIsInstalling(true)
-    
+
     try {
       const success = await install()
       if (success) {
@@ -92,21 +85,21 @@ export function PWAInstallBanner({
   // Update available banner
   if (updateAvailable) {
     return (
-      <div className={`fixed left-0 right-0 z-50 ${position === 'top' ? 'top-0' : 'bottom-0'} ${className}`}>
+      <div
+        className={`fixed left-0 right-0 z-50 ${position === 'top' ? 'top-0' : 'bottom-0'} ${className}`}
+      >
         <div className="bg-blue-600 text-white px-4 py-3 shadow-lg">
           <div className="flex items-center justify-between max-w-7xl mx-auto">
             <div className="flex items-center space-x-3 flex-1 min-w-0">
               <SparklesIcon className="h-5 w-5 flex-shrink-0" />
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium">
-                  🚀 New version available!
-                </p>
+                <p className="text-sm font-medium">🚀 New version available!</p>
                 <p className="text-xs text-blue-100">
                   Update now to get the latest features and improvements
                 </p>
               </div>
             </div>
-            
+
             <div className="flex items-center space-x-2 ml-4">
               <button
                 onClick={handleUpdate}
@@ -131,15 +124,15 @@ export function PWAInstallBanner({
   // Success message
   if (showSuccess && isInstalled) {
     return (
-      <div className={`fixed left-0 right-0 z-50 ${position === 'top' ? 'top-0' : 'bottom-0'} ${className}`}>
+      <div
+        className={`fixed left-0 right-0 z-50 ${position === 'top' ? 'top-0' : 'bottom-0'} ${className}`}
+      >
         <div className="bg-green-600 text-white px-4 py-3 shadow-lg">
           <div className="flex items-center justify-between max-w-7xl mx-auto">
             <div className="flex items-center space-x-3">
               <CheckCircleIcon className="h-5 w-5" />
               <div>
-                <p className="text-sm font-medium">
-                  ✅ BuildTrack installed successfully!
-                </p>
+                <p className="text-sm font-medium">✅ BuildTrack installed successfully!</p>
                 <p className="text-xs text-green-100">
                   You can now use BuildTrack offline and access it from your home screen
                 </p>
@@ -153,7 +146,9 @@ export function PWAInstallBanner({
 
   // Installation banner
   return (
-    <div className={`fixed left-0 right-0 z-50 ${position === 'top' ? 'top-0' : 'bottom-0'} ${className}`}>
+    <div
+      className={`fixed left-0 right-0 z-50 ${position === 'top' ? 'top-0' : 'bottom-0'} ${className}`}
+    >
       <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-3 shadow-lg">
         <div className="flex items-center justify-between max-w-7xl mx-auto">
           <div className="flex items-center space-x-3 flex-1 min-w-0">
@@ -163,21 +158,20 @@ export function PWAInstallBanner({
                 <ExclamationTriangleIcon className="h-3 w-3 absolute -top-1 -right-1 text-yellow-300" />
               )}
             </div>
-            
+
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium flex items-center">
                 📱 Install BuildTrack App
                 <SparklesIcon className="h-4 w-4 ml-1 animate-pulse" />
               </p>
               <p className="text-xs text-blue-100 mt-0.5">
-                {isOnline 
-                  ? "Get faster access and work offline • Free installation"
-                  : "Install now for offline access and better performance"
-                }
+                {isOnline
+                  ? 'Get faster access and work offline • Free installation'
+                  : 'Install now for offline access and better performance'}
               </p>
             </div>
           </div>
-          
+
           <div className="flex items-center space-x-2 ml-4">
             <button
               onClick={handleInstall}
@@ -196,7 +190,7 @@ export function PWAInstallBanner({
                 </>
               )}
             </button>
-            
+
             {!persistent && (
               <button
                 onClick={handleDismiss}
@@ -208,7 +202,7 @@ export function PWAInstallBanner({
             )}
           </div>
         </div>
-        
+
         {/* Feature highlights */}
         <div className="mt-2 flex items-center justify-center space-x-6 text-xs text-blue-100">
           <div className="flex items-center space-x-1">
@@ -232,16 +226,16 @@ export function PWAInstallBanner({
 // Helper function to detect if device supports PWA installation
 export function isPWAInstallSupported(): boolean {
   if (typeof window === 'undefined') return false
-  
+
   // Check if service worker is supported
   if (!('serviceWorker' in navigator)) return false
-  
+
   // Check for common PWA installation support indicators
   const isChrome = /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor)
   const isFirefox = navigator.userAgent.indexOf('Firefox') > -1
   const isSafari = /Safari/.test(navigator.userAgent) && /Apple Computer/.test(navigator.vendor)
   const isEdge = navigator.userAgent.indexOf('Edg') > -1
-  
+
   // Most modern browsers support PWA installation
   return isChrome || isFirefox || isSafari || isEdge
 }
@@ -249,10 +243,10 @@ export function isPWAInstallSupported(): boolean {
 // Hook to check if app should show PWA features
 export function usePWASupport() {
   const [isSupported, setIsSupported] = useState(false)
-  
+
   useEffect(() => {
     setIsSupported(isPWAInstallSupported())
   }, [])
-  
+
   return isSupported
 }

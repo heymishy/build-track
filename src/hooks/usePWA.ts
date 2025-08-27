@@ -44,7 +44,7 @@ export function usePWA(): PWAState & PWAActions {
   const checkInstallStatus = useCallback(() => {
     if (typeof window === 'undefined') return
 
-    const isInstalled = 
+    const isInstalled =
       window.matchMedia('(display-mode: standalone)').matches ||
       (window.navigator as any).standalone ||
       document.referrer.includes('android-app://') ||
@@ -64,7 +64,7 @@ export function usePWA(): PWAState & PWAActions {
     try {
       const registration = await navigator.serviceWorker.register('/sw.js', {
         scope: '/',
-        updateViaCache: 'none'
+        updateViaCache: 'none',
       })
 
       console.log('Service Worker registered:', registration.scope)
@@ -83,18 +83,17 @@ export function usePWA(): PWAState & PWAActions {
       })
 
       // Handle messages from service worker
-      navigator.serviceWorker.addEventListener('message', (event) => {
+      navigator.serviceWorker.addEventListener('message', event => {
         if (event.data?.type === 'VERSION_INFO') {
           console.log('Service Worker version:', event.data.version)
         }
       })
 
-      setState(prev => ({ 
-        ...prev, 
+      setState(prev => ({
+        ...prev,
         swRegistration: registration,
-        isLoading: false 
+        isLoading: false,
       }))
-
     } catch (error) {
       console.error('Service Worker registration failed:', error)
       setState(prev => ({ ...prev, isLoading: false }))
@@ -111,14 +110,14 @@ export function usePWA(): PWAState & PWAActions {
     try {
       await state.installPrompt.prompt()
       const { outcome } = await state.installPrompt.userChoice
-      
+
       if (outcome === 'accepted') {
         console.log('PWA installation accepted')
-        setState(prev => ({ 
-          ...prev, 
+        setState(prev => ({
+          ...prev,
           isInstalled: true,
           isInstallable: false,
-          installPrompt: null 
+          installPrompt: null,
         }))
         return true
       } else {
@@ -151,7 +150,7 @@ export function usePWA(): PWAState & PWAActions {
     if (newWorker) {
       // Tell the new service worker to skip waiting
       newWorker.postMessage({ type: 'SKIP_WAITING' })
-      
+
       // Listen for controller change and reload
       navigator.serviceWorker.addEventListener('controllerchange', () => {
         window.location.reload()
@@ -167,15 +166,13 @@ export function usePWA(): PWAState & PWAActions {
 
     try {
       const cacheNames = await caches.keys()
-      await Promise.all(
-        cacheNames.map(cacheName => caches.delete(cacheName))
-      )
-      
+      await Promise.all(cacheNames.map(cacheName => caches.delete(cacheName)))
+
       // Also clear service worker cache
       if (state.swRegistration) {
         state.swRegistration.active?.postMessage({ type: 'CLEAR_CACHE' })
       }
-      
+
       console.log('All caches cleared')
     } catch (error) {
       console.error('Failed to clear cache:', error)
@@ -193,13 +190,13 @@ export function usePWA(): PWAState & PWAActions {
     const handleBeforeInstallPrompt = (event: Event) => {
       event.preventDefault()
       const installEvent = event as BeforeInstallPromptEvent
-      
+
       setState(prev => ({
         ...prev,
         isInstallable: true,
-        installPrompt: installEvent
+        installPrompt: installEvent,
       }))
-      
+
       console.log('PWA install prompt available')
     }
 
@@ -213,7 +210,7 @@ export function usePWA(): PWAState & PWAActions {
         ...prev,
         isInstalled: true,
         isInstallable: false,
-        installPrompt: null
+        installPrompt: null,
       }))
       console.log('PWA was installed')
     }

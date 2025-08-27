@@ -3,6 +3,7 @@
 This directory should contain the following PWA icon files:
 
 ## Required Icons
+
 - icon-72x72.png
 - icon-96x96.png
 - icon-128x128.png
@@ -14,12 +15,14 @@ This directory should contain the following PWA icon files:
 - icon-512x512.png
 
 ## Optional Icons
+
 - dashboard-icon.png (96x96)
-- invoice-icon.png (96x96) 
+- invoice-icon.png (96x96)
 - project-icon.png (96x96)
 - badge-72x72.png (for notifications)
 
 ## Design Guidelines
+
 - Use the BuildTrack brand colors: #2563eb (primary blue)
 - Ensure icons are clear and readable at small sizes
 - Use appropriate padding and safe areas
@@ -27,7 +30,9 @@ This directory should contain the following PWA icon files:
 - Icons should be square with proper corner radius for different platforms
 
 ## Generation Tools
+
 You can use tools like:
+
 - PWA Asset Generator: https://github.com/elegantapp/pwa-asset-generator
 - Favicon Generator: https://realfavicongenerator.net/
 - Adobe Illustrator or Figma for custom designs

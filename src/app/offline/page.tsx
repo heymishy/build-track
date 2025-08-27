@@ -49,7 +49,7 @@ export default function OfflinePage() {
 
   const handleRetry = () => {
     setRetryAttempts(prev => prev + 1)
-    
+
     // Try to reload the page
     if (navigator.onLine) {
       window.location.href = '/'
@@ -66,7 +66,7 @@ export default function OfflinePage() {
     // Clear offline data
     localStorage.removeItem('offline-pending-actions')
     setPendingActions(0)
-    
+
     // Clear service worker caches (this would typically be done through messaging)
     if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
       navigator.serviceWorker.controller.postMessage({ type: 'CLEAR_CACHE' })
@@ -100,14 +100,13 @@ export default function OfflinePage() {
           <div className="mb-6">
             {isOnline ? (
               <>
-                <h1 className="text-xl font-semibold text-green-800 mb-2">
-                  🌐 Back Online!
-                </h1>
+                <h1 className="text-xl font-semibold text-green-800 mb-2">🌐 Back Online!</h1>
                 <p className="text-green-600 mb-4">
-                  Your internet connection has been restored. You can now access all BuildTrack features.
+                  Your internet connection has been restored. You can now access all BuildTrack
+                  features.
                 </p>
                 <button
-                  onClick={() => window.location.href = '/'}
+                  onClick={() => (window.location.href = '/')}
                   className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
                 >
                   <ArrowPathIcon className="h-4 w-4 mr-2" />
@@ -116,11 +115,10 @@ export default function OfflinePage() {
               </>
             ) : (
               <>
-                <h1 className="text-xl font-semibold text-gray-800 mb-2">
-                  📱 You're Offline
-                </h1>
+                <h1 className="text-xl font-semibold text-gray-800 mb-2">📱 You're Offline</h1>
                 <p className="text-gray-600 mb-4">
-                  BuildTrack is working in offline mode. Some features may be limited, but you can still view cached data and make changes that will sync when you're back online.
+                  BuildTrack is working in offline mode. Some features may be limited, but you can
+                  still view cached data and make changes that will sync when you're back online.
                 </p>
               </>
             )}
@@ -183,7 +181,7 @@ export default function OfflinePage() {
                 </button>
 
                 <button
-                  onClick={() => window.location.href = '/'}
+                  onClick={() => (window.location.href = '/')}
                   className="w-full inline-flex items-center justify-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
                 >
                   Continue Offline

@@ -24,7 +24,7 @@ const mockTasks = [
     parentId: null,
     sortOrder: 1,
     createdAt: '2024-01-01T00:00:00Z',
-    updatedAt: '2024-01-15T00:00:00Z'
+    updatedAt: '2024-01-15T00:00:00Z',
   },
   {
     id: 'task-2',
@@ -42,7 +42,7 @@ const mockTasks = [
     parentId: null,
     sortOrder: 2,
     createdAt: '2024-01-01T00:00:00Z',
-    updatedAt: '2024-02-01T00:00:00Z'
+    updatedAt: '2024-02-01T00:00:00Z',
   },
   {
     id: 'task-3',
@@ -60,8 +60,8 @@ const mockTasks = [
     parentId: null,
     sortOrder: 3,
     createdAt: '2024-01-01T00:00:00Z',
-    updatedAt: '2024-01-01T00:00:00Z'
-  }
+    updatedAt: '2024-01-01T00:00:00Z',
+  },
 ]
 
 const mockOnTaskUpdate = jest.fn()
@@ -256,11 +256,7 @@ describe('GanttChart', () => {
   describe('Error Handling', () => {
     it('should handle empty task list gracefully', () => {
       render(
-        <GanttChart
-          tasks={[]}
-          onTaskUpdate={mockOnTaskUpdate}
-          onTaskClick={mockOnTaskClick}
-        />
+        <GanttChart tasks={[]} onTaskUpdate={mockOnTaskUpdate} onTaskClick={mockOnTaskClick} />
       )
 
       expect(screen.getByText(/no tasks to display/i)).toBeInTheDocument()
@@ -271,8 +267,8 @@ describe('GanttChart', () => {
         {
           ...mockTasks[0],
           startDate: 'invalid-date',
-          endDate: 'invalid-date'
-        }
+          endDate: 'invalid-date',
+        },
       ]
 
       render(

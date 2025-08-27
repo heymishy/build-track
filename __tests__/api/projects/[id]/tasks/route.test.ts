@@ -8,7 +8,7 @@ import { NextRequest } from 'next/server'
 
 // Mock dependencies
 jest.mock('@/lib/middleware', () => ({
-  withAuth: (handler: any) => handler
+  withAuth: (handler: any) => handler,
 }))
 
 const mockPrisma = {
@@ -18,26 +18,26 @@ const mockPrisma = {
     findUnique: jest.fn(),
     update: jest.fn(),
     delete: jest.fn(),
-    count: jest.fn()
+    count: jest.fn(),
   },
   project: {
     findUnique: jest.fn(),
-    update: jest.fn()
+    update: jest.fn(),
   },
   projectUser: {
-    findFirst: jest.fn()
-  }
+    findFirst: jest.fn(),
+  },
 }
 
 jest.mock('@/lib/prisma', () => ({
-  prisma: mockPrisma
+  prisma: mockPrisma,
 }))
 
 const mockUser = {
   id: 'user-1',
   name: 'Test User',
   email: 'test@example.com',
-  role: 'ADMIN' as const
+  role: 'ADMIN' as const,
 }
 
 const mockProject = {
@@ -45,7 +45,7 @@ const mockProject = {
   name: 'Test Project',
   startDate: '2024-01-01T00:00:00Z',
   endDate: '2024-12-31T00:00:00Z',
-  status: 'ACTIVE'
+  status: 'ACTIVE',
 }
 
 const mockTask = {
@@ -64,7 +64,7 @@ const mockTask = {
   parentId: null,
   sortOrder: 1,
   createdAt: '2024-01-01T00:00:00Z',
-  updatedAt: '2024-01-08T00:00:00Z'
+  updatedAt: '2024-01-08T00:00:00Z',
 }
 
 describe('Tasks API Routes', () => {
@@ -85,13 +85,13 @@ describe('Tasks API Routes', () => {
         startDate: '2024-01-01',
         endDate: '2024-01-15',
         priority: 'HIGH',
-        assignedTo: 'John Doe'
+        assignedTo: 'John Doe',
       }
 
       const request = new NextRequest('http://localhost/api/projects/project-1/tasks', {
         method: 'POST',
         body: JSON.stringify(taskData),
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json' },
       })
 
       const params = Promise.resolve({ id: 'project-1' })
@@ -112,8 +112,8 @@ describe('Tasks API Routes', () => {
           progress: 0,
           status: 'PENDING',
           priority: 'HIGH',
-          assignedTo: 'John Doe'
-        })
+          assignedTo: 'John Doe',
+        }),
       })
     })
 
@@ -128,12 +128,12 @@ describe('Tasks API Routes', () => {
         description: 'Structural framing',
         startDate: '2024-01-16',
         endDate: '2024-02-15',
-        dependencies: ['existing-task']
+        dependencies: ['existing-task'],
       }
 
       const request = new NextRequest('http://localhost/api/projects/project-1/tasks', {
         method: 'POST',
-        body: JSON.stringify(taskData)
+        body: JSON.stringify(taskData),
       })
 
       const params = Promise.resolve({ id: 'project-1' })
@@ -145,8 +145,8 @@ describe('Tasks API Routes', () => {
       expect(mockPrisma.task.create).toHaveBeenCalledWith({
         data: expect.objectContaining({
           dependencies: ['existing-task'],
-          sortOrder: 2 // Should be incremented
-        })
+          sortOrder: 2, // Should be incremented
+        }),
       })
     })
 
@@ -154,12 +154,12 @@ describe('Tasks API Routes', () => {
       const taskData = {
         name: 'Invalid Task',
         startDate: '2024-02-01',
-        endDate: '2024-01-01' // End before start
+        endDate: '2024-01-01', // End before start
       }
 
       const request = new NextRequest('http://localhost/api/projects/project-1/tasks', {
         method: 'POST',
-        body: JSON.stringify(taskData)
+        body: JSON.stringify(taskData),
       })
 
       const params = Promise.resolve({ id: 'project-1' })
@@ -176,7 +176,7 @@ describe('Tasks API Routes', () => {
 
       const request = new NextRequest('http://localhost/api/projects/project-1/tasks', {
         method: 'POST',
-        body: JSON.stringify({ name: 'Test Task' })
+        body: JSON.stringify({ name: 'Test Task' }),
       })
 
       const params = Promise.resolve({ id: 'project-1' })
@@ -190,13 +190,13 @@ describe('Tasks API Routes', () => {
 
     it('should validate required fields', async () => {
       const taskData = {
-        description: 'Task without name'
+        description: 'Task without name',
         // Missing required 'name' field
       }
 
       const request = new NextRequest('http://localhost/api/projects/project-1/tasks', {
         method: 'POST',
-        body: JSON.stringify(taskData)
+        body: JSON.stringify(taskData),
       })
 
       const params = Promise.resolve({ id: 'project-1' })
@@ -224,7 +224,7 @@ describe('Tasks API Routes', () => {
       expect(data.tasks).toEqual(mockTasks)
       expect(mockPrisma.task.findMany).toHaveBeenCalledWith({
         where: { projectId: 'project-1' },
-        orderBy: [{ sortOrder: 'asc' }, { startDate: 'asc' }]
+        orderBy: [{ sortOrder: 'asc' }, { startDate: 'asc' }],
       })
     })
 
@@ -232,32 +232,36 @@ describe('Tasks API Routes', () => {
       const inProgressTasks = [{ ...mockTask, status: 'IN_PROGRESS' }]
       mockPrisma.task.findMany.mockResolvedValue(inProgressTasks)
 
-      const request = new NextRequest('http://localhost/api/projects/project-1/tasks?status=IN_PROGRESS')
+      const request = new NextRequest(
+        'http://localhost/api/projects/project-1/tasks?status=IN_PROGRESS'
+      )
       const params = Promise.resolve({ id: 'project-1' })
       const response = await GET(request, mockUser, { params })
 
       expect(mockPrisma.task.findMany).toHaveBeenCalledWith({
-        where: { 
+        where: {
           projectId: 'project-1',
-          status: 'IN_PROGRESS'
+          status: 'IN_PROGRESS',
         },
-        orderBy: [{ sortOrder: 'asc' }, { startDate: 'asc' }]
+        orderBy: [{ sortOrder: 'asc' }, { startDate: 'asc' }],
       })
     })
 
     it('should filter tasks by assignee', async () => {
       mockPrisma.task.findMany.mockResolvedValue([mockTask])
 
-      const request = new NextRequest('http://localhost/api/projects/project-1/tasks?assignedTo=John Doe')
+      const request = new NextRequest(
+        'http://localhost/api/projects/project-1/tasks?assignedTo=John Doe'
+      )
       const params = Promise.resolve({ id: 'project-1' })
       const response = await GET(request, mockUser, { params })
 
       expect(mockPrisma.task.findMany).toHaveBeenCalledWith({
-        where: { 
+        where: {
           projectId: 'project-1',
-          assignedTo: 'John Doe'
+          assignedTo: 'John Doe',
         },
-        orderBy: [{ sortOrder: 'asc' }, { startDate: 'asc' }]
+        orderBy: [{ sortOrder: 'asc' }, { startDate: 'asc' }],
       })
     })
 
@@ -283,12 +287,12 @@ describe('Tasks API Routes', () => {
 
       const updateData = {
         progress: 75,
-        status: 'IN_PROGRESS'
+        status: 'IN_PROGRESS',
       }
 
       const request = new NextRequest('http://localhost/api/projects/project-1/tasks/task-1', {
         method: 'PUT',
-        body: JSON.stringify(updateData)
+        body: JSON.stringify(updateData),
       })
 
       const params = Promise.resolve({ id: 'project-1', taskId: 'task-1' })
@@ -303,8 +307,8 @@ describe('Tasks API Routes', () => {
         data: expect.objectContaining({
           progress: 75,
           status: 'IN_PROGRESS',
-          updatedAt: expect.any(Date)
-        })
+          updatedAt: expect.any(Date),
+        }),
       })
     })
 
@@ -314,12 +318,12 @@ describe('Tasks API Routes', () => {
 
       const updateData = {
         startDate: '2024-01-01',
-        endDate: '2024-01-22' // 21 days
+        endDate: '2024-01-22', // 21 days
       }
 
       const request = new NextRequest('http://localhost/api/projects/project-1/tasks/task-1', {
         method: 'PUT',
-        body: JSON.stringify(updateData)
+        body: JSON.stringify(updateData),
       })
 
       const params = Promise.resolve({ id: 'project-1', taskId: 'task-1' })
@@ -328,8 +332,8 @@ describe('Tasks API Routes', () => {
       expect(mockPrisma.task.update).toHaveBeenCalledWith({
         where: { id: 'task-1' },
         data: expect.objectContaining({
-          duration: 21
-        })
+          duration: 21,
+        }),
       })
     })
 
@@ -338,7 +342,7 @@ describe('Tasks API Routes', () => {
 
       const request = new NextRequest('http://localhost/api/projects/project-1/tasks/nonexistent', {
         method: 'PUT',
-        body: JSON.stringify({ progress: 50 })
+        body: JSON.stringify({ progress: 50 }),
       })
 
       const params = Promise.resolve({ id: 'project-1', taskId: 'nonexistent' })
@@ -354,12 +358,12 @@ describe('Tasks API Routes', () => {
       mockPrisma.task.findUnique.mockResolvedValue(mockTask)
 
       const updateData = {
-        progress: 150 // Invalid progress > 100
+        progress: 150, // Invalid progress > 100
       }
 
       const request = new NextRequest('http://localhost/api/projects/project-1/tasks/task-1', {
         method: 'PUT',
-        body: JSON.stringify(updateData)
+        body: JSON.stringify(updateData),
       })
 
       const params = Promise.resolve({ id: 'project-1', taskId: 'task-1' })
@@ -378,7 +382,7 @@ describe('Tasks API Routes', () => {
       mockPrisma.task.delete.mockResolvedValue(mockTask)
 
       const request = new NextRequest('http://localhost/api/projects/project-1/tasks/task-1', {
-        method: 'DELETE'
+        method: 'DELETE',
       })
 
       const params = Promise.resolve({ id: 'project-1', taskId: 'task-1' })
@@ -388,19 +392,19 @@ describe('Tasks API Routes', () => {
       expect(response.status).toBe(200)
       expect(data.success).toBe(true)
       expect(mockPrisma.task.delete).toHaveBeenCalledWith({
-        where: { id: 'task-1' }
+        where: { id: 'task-1' },
       })
     })
 
     it('should prevent deletion of tasks with dependencies', async () => {
       const dependentTask = { ...mockTask, id: 'dependent-task' }
       const tasksWithDependency = [dependentTask]
-      
+
       mockPrisma.task.findUnique.mockResolvedValue(mockTask)
       mockPrisma.task.findMany.mockResolvedValue(tasksWithDependency)
 
       const request = new NextRequest('http://localhost/api/projects/project-1/tasks/task-1', {
-        method: 'DELETE'
+        method: 'DELETE',
       })
 
       const params = Promise.resolve({ id: 'project-1', taskId: 'task-1' })
@@ -416,7 +420,7 @@ describe('Tasks API Routes', () => {
       mockPrisma.task.findUnique.mockResolvedValue(null)
 
       const request = new NextRequest('http://localhost/api/projects/project-1/tasks/nonexistent', {
-        method: 'DELETE'
+        method: 'DELETE',
       })
 
       const params = Promise.resolve({ id: 'project-1', taskId: 'nonexistent' })
@@ -447,7 +451,7 @@ describe('Tasks API Routes', () => {
       const request = new NextRequest('http://localhost/api/projects/project-1/tasks', {
         method: 'POST',
         body: 'invalid-json',
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json' },
       })
 
       const params = Promise.resolve({ id: 'project-1' })
@@ -470,12 +474,12 @@ describe('Tasks API Routes', () => {
       const taskData = {
         name: 'New Task',
         startDate: '2023-12-01', // Before project start
-        endDate: '2025-01-01' // After project end
+        endDate: '2025-01-01', // After project end
       }
 
       const request = new NextRequest('http://localhost/api/projects/project-1/tasks', {
         method: 'POST',
-        body: JSON.stringify(taskData)
+        body: JSON.stringify(taskData),
       })
 
       const params = Promise.resolve({ id: 'project-1' })
@@ -488,7 +492,12 @@ describe('Tasks API Routes', () => {
     it('should maintain project timeline integrity', async () => {
       const multipleTasks = [
         { ...mockTask, startDate: '2024-01-01T00:00:00Z', endDate: '2024-01-15T00:00:00Z' },
-        { ...mockTask, id: 'task-2', startDate: '2024-02-01T00:00:00Z', endDate: '2024-02-28T00:00:00Z' }
+        {
+          ...mockTask,
+          id: 'task-2',
+          startDate: '2024-02-01T00:00:00Z',
+          endDate: '2024-02-28T00:00:00Z',
+        },
       ]
 
       mockPrisma.task.findMany.mockResolvedValue(multipleTasks)

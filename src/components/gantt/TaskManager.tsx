@@ -67,7 +67,7 @@ export function TaskManager({ projectId, className = '' }: TaskManagerProps) {
       estimatedHours: task.estimatedHours,
       actualHours: task.actualHours,
       description: task.description,
-      children: task.children ? transformTasksData(task.children) : undefined
+      children: task.children ? transformTasksData(task.children) : undefined,
     }))
   }
 
@@ -104,7 +104,7 @@ export function TaskManager({ projectId, className = '' }: TaskManagerProps) {
             assignee: 'Survey Team',
             estimatedHours: 16,
             actualHours: 18,
-            parentId: '1'
+            parentId: '1',
           },
           {
             id: '1.2',
@@ -117,9 +117,9 @@ export function TaskManager({ projectId, className = '' }: TaskManagerProps) {
             assignee: 'Design Team',
             estimatedHours: 24,
             actualHours: 20,
-            parentId: '1'
-          }
-        ]
+            parentId: '1',
+          },
+        ],
       },
       {
         id: '2',
@@ -143,7 +143,7 @@ export function TaskManager({ projectId, className = '' }: TaskManagerProps) {
             priority: 'critical',
             assignee: 'Excavation Team',
             estimatedHours: 40,
-            parentId: '2'
+            parentId: '2',
           },
           {
             id: '2.2',
@@ -156,9 +156,9 @@ export function TaskManager({ projectId, className = '' }: TaskManagerProps) {
             assignee: 'Concrete Team',
             estimatedHours: 60,
             dependencies: ['2.1'],
-            parentId: '2'
-          }
-        ]
+            parentId: '2',
+          },
+        ],
       },
       {
         id: '3',
@@ -182,7 +182,7 @@ export function TaskManager({ projectId, className = '' }: TaskManagerProps) {
             priority: 'high',
             assignee: 'Framing Team A',
             estimatedHours: 120,
-            parentId: '3'
+            parentId: '3',
           },
           {
             id: '3.2',
@@ -195,9 +195,9 @@ export function TaskManager({ projectId, className = '' }: TaskManagerProps) {
             assignee: 'Framing Team B',
             estimatedHours: 80,
             dependencies: ['3.1'],
-            parentId: '3'
-          }
-        ]
+            parentId: '3',
+          },
+        ],
       },
       {
         id: '4',
@@ -208,8 +208,8 @@ export function TaskManager({ projectId, className = '' }: TaskManagerProps) {
         status: 'not-started',
         priority: 'critical',
         milestone: true,
-        dependencies: ['2']
-      }
+        dependencies: ['2'],
+      },
     ]
   }
 
@@ -222,7 +222,7 @@ export function TaskManager({ projectId, className = '' }: TaskManagerProps) {
       await fetch(`/api/projects/${projectId}/tasks/${taskId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updates)
+        body: JSON.stringify(updates),
       })
     } catch (error) {
       console.error('Failed to update task:', error)
@@ -231,7 +231,11 @@ export function TaskManager({ projectId, className = '' }: TaskManagerProps) {
     }
   }
 
-  const updateTaskInTree = (tasks: GanttTask[], taskId: string, updates: Partial<GanttTask>): GanttTask[] => {
+  const updateTaskInTree = (
+    tasks: GanttTask[],
+    taskId: string,
+    updates: Partial<GanttTask>
+  ): GanttTask[] => {
     return tasks.map(task => {
       if (task.id === taskId) {
         return { ...task, ...updates }
@@ -250,7 +254,7 @@ export function TaskManager({ projectId, className = '' }: TaskManagerProps) {
 
   const getFilteredTasks = () => {
     if (filter === 'all') return tasks
-    
+
     const filterTask = (task: GanttTask): boolean => {
       switch (filter) {
         case 'active':
@@ -258,21 +262,27 @@ export function TaskManager({ projectId, className = '' }: TaskManagerProps) {
         case 'completed':
           return task.status === 'completed'
         case 'overdue':
-          return task.status === 'overdue' || (task.endDate < new Date() && task.status !== 'completed')
+          return (
+            task.status === 'overdue' || (task.endDate < new Date() && task.status !== 'completed')
+          )
         default:
           return true
       }
     }
 
     const filterTasksRecursively = (tasks: GanttTask[]): GanttTask[] => {
-      return tasks.filter(task => {
-        const matchesFilter = filterTask(task)
-        const hasMatchingChildren = task.children ? filterTasksRecursively(task.children).length > 0 : false
-        return matchesFilter || hasMatchingChildren
-      }).map(task => ({
-        ...task,
-        children: task.children ? filterTasksRecursively(task.children) : undefined
-      }))
+      return tasks
+        .filter(task => {
+          const matchesFilter = filterTask(task)
+          const hasMatchingChildren = task.children
+            ? filterTasksRecursively(task.children).length > 0
+            : false
+          return matchesFilter || hasMatchingChildren
+        })
+        .map(task => ({
+          ...task,
+          children: task.children ? filterTasksRecursively(task.children) : undefined,
+        }))
     }
 
     return filterTasksRecursively(tasks)
@@ -280,22 +290,27 @@ export function TaskManager({ projectId, className = '' }: TaskManagerProps) {
 
   const getTaskStats = () => {
     const flatTasks: GanttTask[] = []
-    
+
     const flatten = (tasks: GanttTask[]) => {
       for (const task of tasks) {
         flatTasks.push(task)
         if (task.children) flatten(task.children)
       }
     }
-    
+
     flatten(tasks)
-    
+
     return {
       total: flatTasks.length,
       completed: flatTasks.filter(t => t.status === 'completed').length,
       inProgress: flatTasks.filter(t => t.status === 'in-progress').length,
-      overdue: flatTasks.filter(t => t.status === 'overdue' || (t.endDate < new Date() && t.status !== 'completed')).length,
-      avgProgress: flatTasks.length > 0 ? Math.round(flatTasks.reduce((sum, t) => sum + t.progress, 0) / flatTasks.length) : 0
+      overdue: flatTasks.filter(
+        t => t.status === 'overdue' || (t.endDate < new Date() && t.status !== 'completed')
+      ).length,
+      avgProgress:
+        flatTasks.length > 0
+          ? Math.round(flatTasks.reduce((sum, t) => sum + t.progress, 0) / flatTasks.length)
+          : 0,
     }
   }
 
@@ -381,7 +396,7 @@ export function TaskManager({ projectId, className = '' }: TaskManagerProps) {
             <label className="block text-sm font-medium text-gray-700 mb-1">Filter Tasks</label>
             <select
               value={filter}
-              onChange={(e) => setFilter(e.target.value as any)}
+              onChange={e => setFilter(e.target.value as any)}
               className="rounded-md border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500"
             >
               <option value="all">All Tasks</option>
@@ -395,7 +410,7 @@ export function TaskManager({ projectId, className = '' }: TaskManagerProps) {
             <label className="block text-sm font-medium text-gray-700 mb-1">View Mode</label>
             <select
               value={viewMode}
-              onChange={(e) => setViewMode(e.target.value as any)}
+              onChange={e => setViewMode(e.target.value as any)}
               className="rounded-md border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500"
             >
               <option value="days">Days</option>
@@ -436,7 +451,7 @@ export function TaskManager({ projectId, className = '' }: TaskManagerProps) {
             setShowTaskModal(false)
             setSelectedTask(null)
           }}
-          onSave={(taskData) => {
+          onSave={taskData => {
             // Handle task save
             console.log('Save task:', taskData)
             setShowTaskModal(false)
@@ -465,7 +480,7 @@ function TaskModal({ task, onClose, onSave }: TaskModalProps) {
     status: task?.status || 'not-started',
     priority: task?.priority || 'medium',
     assignee: task?.assignee || '',
-    estimatedHours: task?.estimatedHours || 0
+    estimatedHours: task?.estimatedHours || 0,
   })
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -473,7 +488,7 @@ function TaskModal({ task, onClose, onSave }: TaskModalProps) {
     onSave({
       ...formData,
       startDate: new Date(formData.startDate),
-      endDate: new Date(formData.endDate)
+      endDate: new Date(formData.endDate),
     })
   }
 
@@ -484,14 +499,14 @@ function TaskModal({ task, onClose, onSave }: TaskModalProps) {
           <h3 className="text-lg font-medium text-gray-900 mb-4">
             {task ? 'Edit Task' : 'New Task'}
           </h3>
-          
+
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700">Task Name</label>
               <input
                 type="text"
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                onChange={e => setFormData({ ...formData, name: e.target.value })}
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 required
               />
@@ -501,7 +516,7 @@ function TaskModal({ task, onClose, onSave }: TaskModalProps) {
               <label className="block text-sm font-medium text-gray-700">Description</label>
               <textarea
                 value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                onChange={e => setFormData({ ...formData, description: e.target.value })}
                 rows={3}
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               />
@@ -513,7 +528,7 @@ function TaskModal({ task, onClose, onSave }: TaskModalProps) {
                 <input
                   type="date"
                   value={formData.startDate}
-                  onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                  onChange={e => setFormData({ ...formData, startDate: e.target.value })}
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                   required
                 />
@@ -524,7 +539,7 @@ function TaskModal({ task, onClose, onSave }: TaskModalProps) {
                 <input
                   type="date"
                   value={formData.endDate}
-                  onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                  onChange={e => setFormData({ ...formData, endDate: e.target.value })}
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                   required
                 />
@@ -536,7 +551,7 @@ function TaskModal({ task, onClose, onSave }: TaskModalProps) {
                 <label className="block text-sm font-medium text-gray-700">Status</label>
                 <select
                   value={formData.status}
-                  onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
+                  onChange={e => setFormData({ ...formData, status: e.target.value as any })}
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 >
                   <option value="not-started">Not Started</option>
@@ -551,7 +566,7 @@ function TaskModal({ task, onClose, onSave }: TaskModalProps) {
                 <label className="block text-sm font-medium text-gray-700">Priority</label>
                 <select
                   value={formData.priority}
-                  onChange={(e) => setFormData({ ...formData, priority: e.target.value as any })}
+                  onChange={e => setFormData({ ...formData, priority: e.target.value as any })}
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 >
                   <option value="low">Low</option>
@@ -569,7 +584,9 @@ function TaskModal({ task, onClose, onSave }: TaskModalProps) {
                 min="0"
                 max="100"
                 value={formData.progress}
-                onChange={(e) => setFormData({ ...formData, progress: parseInt(e.target.value) || 0 })}
+                onChange={e =>
+                  setFormData({ ...formData, progress: parseInt(e.target.value) || 0 })
+                }
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               />
             </div>

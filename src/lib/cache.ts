@@ -70,7 +70,7 @@ class CacheService {
       errors: 0,
       avgResponseTime: 0,
       memoryUsage: 0,
-      hitRate: 0
+      hitRate: 0,
     }
     this.initializeClient()
   }
@@ -88,7 +88,7 @@ class CacheService {
       // In production, use Redis
       const Redis = require('ioredis')
       this.client = new Redis(this.config.redis)
-      
+
       this.client.on('connect', () => {
         this.connected = true
         console.log('[Cache] Connected to Redis')
@@ -103,7 +103,6 @@ class CacheService {
         this.connected = false
         console.log('[Cache] Redis connection closed')
       })
-
     } catch (error) {
       console.error('[Cache] Failed to initialize cache client:', error)
       // Fallback to in-memory cache
@@ -113,16 +112,12 @@ class CacheService {
   }
 
   private generateKey(key: CacheKey): string {
-    const parts = [
-      this.config.keyPrefix,
-      key.prefix,
-      key.identifier
-    ]
-    
+    const parts = [this.config.keyPrefix, key.prefix, key.identifier]
+
     if (key.version) {
       parts.push(key.version)
     }
-    
+
     return parts.join(':')
   }
 
@@ -196,7 +191,7 @@ class CacheService {
 
   private updateMetrics(operation: keyof CacheMetrics, value: number = 1) {
     this.metrics[operation] = (this.metrics[operation] as number) + value
-    
+
     // Calculate hit rate
     const total = this.metrics.hits + this.metrics.misses
     this.metrics.hitRate = total > 0 ? (this.metrics.hits / total) * 100 : 0
@@ -244,7 +239,6 @@ class CacheService {
       this.updateMetrics('hits')
       this.updateMetrics('avgResponseTime', Date.now() - startTime)
       return result
-
     } catch (error) {
       console.error('[Cache] Get error:', error)
       this.updateMetrics('errors')
@@ -275,13 +269,13 @@ class CacheService {
           ttl,
           timestamp: Date.now(),
           compressed: false,
-          size: originalSize
+          size: originalSize,
         }
         this.client.set(cacheKey, entry)
       } else {
         // Redis cache
         const compressedData = this.compress(serializedData)
-        
+
         if (ttl > 0) {
           await this.client.setex(cacheKey, ttl, compressedData)
         } else {
@@ -292,7 +286,6 @@ class CacheService {
       this.updateMetrics('sets')
       this.updateMetrics('avgResponseTime', Date.now() - startTime)
       return true
-
     } catch (error) {
       console.error('[Cache] Set error:', error)
       this.updateMetrics('errors')
@@ -337,14 +330,14 @@ class CacheService {
       if (this.client instanceof Map) {
         let deleted = 0
         const regex = new RegExp(pattern.replace('*', '.*'))
-        
+
         for (const key of this.client.keys()) {
           if (regex.test(key)) {
             this.client.delete(key)
             deleted++
           }
         }
-        
+
         this.updateMetrics('deletes', deleted)
         return deleted
       } else {
@@ -352,7 +345,7 @@ class CacheService {
         if (keys.length === 0) {
           return 0
         }
-        
+
         const result = await this.client.del(...keys)
         this.updateMetrics('deletes', result)
         return result
@@ -418,11 +411,11 @@ class CacheService {
         if (!entry) {
           return -2 // Key doesn't exist
         }
-        
+
         if (entry.ttl <= 0) {
           return -1 // No expiry
         }
-        
+
         const remaining = entry.ttl - Math.floor((Date.now() - entry.timestamp) / 1000)
         return Math.max(0, remaining)
       } else {
@@ -460,11 +453,7 @@ export class CacheHelpers {
   }
 
   // Wrap a function with caching
-  async wrap<T>(
-    key: CacheKey,
-    fn: () => Promise<T> | T,
-    ttl?: number
-  ): Promise<T> {
+  async wrap<T>(key: CacheKey, fn: () => Promise<T> | T, ttl?: number): Promise<T> {
     // Try to get from cache first
     const cached = await this.cache.get<T>(key)
     if (cached !== null) {
@@ -478,68 +467,63 @@ export class CacheHelpers {
   }
 
   // Cache with tags for easier invalidation
-  async setWithTags<T>(
-    key: CacheKey,
-    data: T,
-    tags: string[],
-    ttl?: number
-  ): Promise<boolean> {
+  async setWithTags<T>(key: CacheKey, data: T, tags: string[], ttl?: number): Promise<boolean> {
     const keyWithTags = { ...key, tags }
-    
+
     // Store the main data
     const success = await this.cache.set(keyWithTags, data, ttl)
-    
+
     if (success && tags.length > 0) {
       // Store tag mappings for invalidation
       for (const tag of tags) {
         const tagKey: CacheKey = {
           prefix: 'tags',
-          identifier: tag
+          identifier: tag,
         }
-        
-        const existingKeys = await this.cache.get<string[]>(tagKey) || []
+
+        const existingKeys = (await this.cache.get<string[]>(tagKey)) || []
         const keyString = this.cache['generateKey'](keyWithTags)
-        
+
         if (!existingKeys.includes(keyString)) {
           existingKeys.push(keyString)
           await this.cache.set(tagKey, existingKeys, ttl)
         }
       }
     }
-    
+
     return success
   }
 
   // Invalidate by tags
   async invalidateByTags(tags: string[]): Promise<number> {
     let totalDeleted = 0
-    
+
     for (const tag of tags) {
       const tagKey: CacheKey = {
         prefix: 'tags',
-        identifier: tag
+        identifier: tag,
       }
-      
-      const keys = await this.cache.get<string[]>(tagKey) || []
-      
+
+      const keys = (await this.cache.get<string[]>(tagKey)) || []
+
       for (const key of keys) {
         // Parse key back to CacheKey format
         const keyParts = key.split(':')
         const parsedKey: CacheKey = {
           prefix: keyParts[1] || '',
-          identifier: keyParts[2] || ''
+          identifier: keyParts[2] || '',
         }
-        
+
         const deleted = await this.cache.delete(parsedKey)
         if (deleted) {
           totalDeleted++
         }
       }
-      
+
       // Clear the tag mapping
       await this.cache.delete(tagKey)
     }
-    
+
     return totalDeleted
   }
 }
@@ -553,18 +537,18 @@ const defaultConfig: CacheConfig = {
     db: parseInt(process.env.REDIS_DB || '0'),
     maxRetriesPerRequest: 3,
     retryDelayOnFailover: 100,
-    lazyConnect: true
+    lazyConnect: true,
   },
   defaultTTL: parseInt(process.env.CACHE_DEFAULT_TTL || '3600'), // 1 hour
   keyPrefix: process.env.CACHE_KEY_PREFIX || 'buildtrack',
   compression: {
     enabled: process.env.CACHE_COMPRESSION === 'true',
-    threshold: parseInt(process.env.CACHE_COMPRESSION_THRESHOLD || '1024') // 1KB
+    threshold: parseInt(process.env.CACHE_COMPRESSION_THRESHOLD || '1024'), // 1KB
   },
   serialization: {
     enabled: true,
-    method: 'json' as const
-  }
+    method: 'json' as const,
+  },
 }
 
 // Singleton instance

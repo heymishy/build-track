@@ -80,7 +80,7 @@ export default function EstimatesPage() {
       // Calculate summary from projects data
       const projectsWithEstimates = projects.filter(p => p.totalBudget > 0).length
       const totalEstimatedValue = projects.reduce((sum, p) => sum + p.totalBudget, 0)
-      
+
       setSummary({
         totalProjects: projects.length,
         projectsWithEstimates,
@@ -104,7 +104,6 @@ export default function EstimatesPage() {
       currency: currency,
     }).format(amount)
   }
-
 
   if (loading) {
     return (

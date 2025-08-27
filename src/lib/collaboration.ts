@@ -57,7 +57,13 @@ export interface Notification {
 
 export interface ActivityItem {
   id: string
-  type: 'comment' | 'status_change' | 'assignment' | 'file_upload' | 'milestone_completion' | 'budget_update'
+  type:
+    | 'comment'
+    | 'status_change'
+    | 'assignment'
+    | 'file_upload'
+    | 'milestone_completion'
+    | 'budget_update'
   title: string
   description: string
   userId: string
@@ -98,7 +104,7 @@ export class CollaborationService {
         console.log('WebSocket connected for collaboration')
       }
 
-      this.wsConnection.onmessage = (event) => {
+      this.wsConnection.onmessage = event => {
         try {
           const data = JSON.parse(event.data)
           this.handleRealtimeUpdate(data)
@@ -112,7 +118,7 @@ export class CollaborationService {
         setTimeout(() => this.initializeWebSocket(), 5000)
       }
 
-      this.wsConnection.onerror = (error) => {
+      this.wsConnection.onerror = error => {
         console.error('WebSocket error:', error)
       }
     } catch (error) {
@@ -193,7 +199,7 @@ export class CollaborationService {
       formData.append('targetType', targetType)
       formData.append('targetId', targetId)
       formData.append('content', content)
-      
+
       if (parentId) {
         formData.append('parentId', parentId)
       }
@@ -214,9 +220,9 @@ export class CollaborationService {
       return result
     } catch (error) {
       console.error('Error adding comment:', error)
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Failed to add comment' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to add comment',
       }
     }
   }
@@ -236,9 +242,9 @@ export class CollaborationService {
       return result
     } catch (error) {
       console.error('Error fetching comments:', error)
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Failed to fetch comments' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to fetch comments',
       }
     }
   }
@@ -263,9 +269,9 @@ export class CollaborationService {
       return result
     } catch (error) {
       console.error('Error updating comment:', error)
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Failed to update comment' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to update comment',
       }
     }
   }
@@ -283,9 +289,9 @@ export class CollaborationService {
       return result
     } catch (error) {
       console.error('Error deleting comment:', error)
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Failed to delete comment' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to delete comment',
       }
     }
   }
@@ -310,9 +316,9 @@ export class CollaborationService {
       return result
     } catch (error) {
       console.error('Error adding reaction:', error)
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Failed to add reaction' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to add reaction',
       }
     }
   }
@@ -330,9 +336,9 @@ export class CollaborationService {
       return result
     } catch (error) {
       console.error('Error resolving comment:', error)
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Failed to resolve comment' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to resolve comment',
       }
     }
   }
@@ -347,9 +353,9 @@ export class CollaborationService {
       return result
     } catch (error) {
       console.error('Error fetching notifications:', error)
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Failed to fetch notifications' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to fetch notifications',
       }
     }
   }
@@ -357,7 +363,9 @@ export class CollaborationService {
   /**
    * Mark notification as read
    */
-  async markNotificationRead(notificationId: string): Promise<{ success: boolean; error?: string }> {
+  async markNotificationRead(
+    notificationId: string
+  ): Promise<{ success: boolean; error?: string }> {
     try {
       const response = await fetch(`${this.apiEndpoint}/notifications/${notificationId}/read`, {
         method: 'PUT',
@@ -367,9 +375,9 @@ export class CollaborationService {
       return result
     } catch (error) {
       console.error('Error marking notification as read:', error)
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Failed to mark notification as read' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to mark notification as read',
       }
     }
   }
@@ -387,9 +395,9 @@ export class CollaborationService {
       return result
     } catch (error) {
       console.error('Error marking all notifications as read:', error)
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Failed to mark all notifications as read' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to mark all notifications as read',
       }
     }
   }
@@ -410,9 +418,9 @@ export class CollaborationService {
       return result
     } catch (error) {
       console.error('Error fetching activity feed:', error)
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Failed to fetch activity feed' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to fetch activity feed',
       }
     }
   }
@@ -420,16 +428,22 @@ export class CollaborationService {
   /**
    * Search for users to mention
    */
-  async searchUsers(query: string): Promise<{ success: boolean; data?: Array<{ id: string; name: string; email: string }>; error?: string }> {
+  async searchUsers(query: string): Promise<{
+    success: boolean
+    data?: Array<{ id: string; name: string; email: string }>
+    error?: string
+  }> {
     try {
-      const response = await fetch(`${this.apiEndpoint}/users/search?q=${encodeURIComponent(query)}`)
+      const response = await fetch(
+        `${this.apiEndpoint}/users/search?q=${encodeURIComponent(query)}`
+      )
       const result = await response.json()
       return result
     } catch (error) {
       console.error('Error searching users:', error)
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Failed to search users' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to search users',
       }
     }
   }
@@ -505,9 +519,9 @@ export class CollaborationService {
       return result
     } catch (error) {
       console.error('Error creating notification:', error)
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Failed to create notification' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to create notification',
       }
     }
   }
@@ -547,9 +561,9 @@ export class CollaborationService {
       return result
     } catch (error) {
       console.error('Error logging activity:', error)
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Failed to log activity' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to log activity',
       }
     }
   }
@@ -581,7 +595,8 @@ export function useCollaboration() {
     resolveComment: collaborationService.resolveComment.bind(collaborationService),
     getNotifications: collaborationService.getNotifications.bind(collaborationService),
     markNotificationRead: collaborationService.markNotificationRead.bind(collaborationService),
-    markAllNotificationsRead: collaborationService.markAllNotificationsRead.bind(collaborationService),
+    markAllNotificationsRead:
+      collaborationService.markAllNotificationsRead.bind(collaborationService),
     getActivityFeed: collaborationService.getActivityFeed.bind(collaborationService),
     searchUsers: collaborationService.searchUsers.bind(collaborationService),
     subscribe: collaborationService.subscribe.bind(collaborationService),

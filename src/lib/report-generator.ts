@@ -148,7 +148,7 @@ export interface InvoiceReportData {
 
 export class ReportGenerator {
   private apiEndpoint = '/api/reports'
-  
+
   /**
    * Generate a comprehensive project report
    */
@@ -158,7 +158,7 @@ export class ReportGenerator {
   ): Promise<{ success: boolean; data?: Blob; url?: string; error?: string }> {
     try {
       const reportData = await this.fetchProjectReportData(projectId)
-      
+
       if (!reportData) {
         return { success: false, error: 'Failed to fetch project data' }
       }
@@ -167,25 +167,28 @@ export class ReportGenerator {
         type: 'project',
         title: `Project Report - ${reportData.project.name}`,
         subtitle: `Generated on ${new Date().toLocaleDateString()}`,
-        dateRange: reportData.project.startDate && reportData.project.endDate ? {
-          startDate: new Date(reportData.project.startDate),
-          endDate: new Date(reportData.project.endDate)
-        } : undefined,
+        dateRange:
+          reportData.project.startDate && reportData.project.endDate
+            ? {
+                startDate: new Date(reportData.project.startDate),
+                endDate: new Date(reportData.project.endDate),
+              }
+            : undefined,
         data: reportData,
         metadata: {
           generatedBy: 'BuildTrack System',
           generatedAt: new Date(),
           version: '1.0.0',
-          projectId
-        }
+          projectId,
+        },
       }
 
       return await this.generateReport(report, config)
     } catch (error) {
       console.error('Error generating project report:', error)
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
       }
     }
   }
@@ -205,7 +208,7 @@ export class ReportGenerator {
   ): Promise<{ success: boolean; data?: Blob; url?: string; error?: string }> {
     try {
       const reportData = await this.fetchInvoiceReportData(filters)
-      
+
       if (!reportData) {
         return { success: false, error: 'Failed to fetch invoice data' }
       }
@@ -214,24 +217,27 @@ export class ReportGenerator {
         type: 'invoice',
         title: 'Invoice Summary Report',
         subtitle: `Generated on ${new Date().toLocaleDateString()}`,
-        dateRange: filters?.dateFrom && filters?.dateTo ? {
-          startDate: new Date(filters.dateFrom),
-          endDate: new Date(filters.dateTo)
-        } : undefined,
+        dateRange:
+          filters?.dateFrom && filters?.dateTo
+            ? {
+                startDate: new Date(filters.dateFrom),
+                endDate: new Date(filters.dateTo),
+              }
+            : undefined,
         data: reportData,
         metadata: {
           generatedBy: 'BuildTrack System',
           generatedAt: new Date(),
-          version: '1.0.0'
-        }
+          version: '1.0.0',
+        },
       }
 
       return await this.generateReport(report, config)
     } catch (error) {
       console.error('Error generating invoice report:', error)
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
       }
     }
   }
@@ -246,7 +252,7 @@ export class ReportGenerator {
   ): Promise<{ success: boolean; data?: Blob; url?: string; error?: string }> {
     try {
       const analyticsData = await this.fetchAnalyticsData(projectId, timeRange)
-      
+
       if (!analyticsData) {
         return { success: false, error: 'Failed to fetch analytics data' }
       }
@@ -260,16 +266,16 @@ export class ReportGenerator {
           generatedBy: 'BuildTrack System',
           generatedAt: new Date(),
           version: '1.0.0',
-          projectId
-        }
+          projectId,
+        },
       }
 
       return await this.generateReport(report, config)
     } catch (error) {
       console.error('Error generating analytics report:', error)
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
       }
     }
   }
@@ -283,7 +289,7 @@ export class ReportGenerator {
   ): Promise<{ success: boolean; data?: Blob; url?: string; error?: string }> {
     try {
       const costData = await this.fetchCostTrackingData(projectId)
-      
+
       if (!costData) {
         return { success: false, error: 'Failed to fetch cost tracking data' }
       }
@@ -297,16 +303,16 @@ export class ReportGenerator {
           generatedBy: 'BuildTrack System',
           generatedAt: new Date(),
           version: '1.0.0',
-          projectId
-        }
+          projectId,
+        },
       }
 
       return await this.generateReport(report, config)
     } catch (error) {
       console.error('Error generating cost tracking report:', error)
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
       }
     }
   }
@@ -320,7 +326,7 @@ export class ReportGenerator {
   ): Promise<{ success: boolean; data?: Blob; url?: string; error?: string }> {
     try {
       const summaryData = await this.fetchExecutiveSummaryData(projectIds)
-      
+
       if (!summaryData) {
         return { success: false, error: 'Failed to fetch executive summary data' }
       }
@@ -333,16 +339,16 @@ export class ReportGenerator {
         metadata: {
           generatedBy: 'BuildTrack System',
           generatedAt: new Date(),
-          version: '1.0.0'
-        }
+          version: '1.0.0',
+        },
       }
 
       return await this.generateReport(report, config)
     } catch (error) {
       console.error('Error generating executive summary:', error)
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
       }
     }
   }
@@ -351,16 +357,16 @@ export class ReportGenerator {
    * Core report generation method
    */
   private async generateReport(
-    reportData: ReportData, 
+    reportData: ReportData,
     config: ReportConfig
   ): Promise<{ success: boolean; data?: Blob; url?: string; error?: string }> {
     try {
       if (config.format === 'json') {
         // Return JSON data directly
         const jsonBlob = new Blob([JSON.stringify(reportData, null, 2)], {
-          type: 'application/json'
+          type: 'application/json',
         })
-        
+
         const url = URL.createObjectURL(jsonBlob)
         return { success: true, data: jsonBlob, url }
       }
@@ -380,9 +386,9 @@ export class ReportGenerator {
       return { success: false, error: `Unsupported format: ${config.format}` }
     } catch (error) {
       console.error('Error in generateReport:', error)
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
       }
     }
   }
@@ -397,7 +403,7 @@ export class ReportGenerator {
     try {
       // Create HTML content for PDF generation
       const htmlContent = await this.generateHTMLReport(reportData, config)
-      
+
       // For now, we'll create a PDF using the browser's print functionality
       // In a production environment, you might want to use a service like Puppeteer or jsPDF
       const printWindow = window.open('', '_blank')
@@ -407,7 +413,7 @@ export class ReportGenerator {
 
       printWindow.document.write(htmlContent)
       printWindow.document.close()
-      
+
       // Trigger print dialog
       setTimeout(() => {
         printWindow.print()
@@ -418,9 +424,9 @@ export class ReportGenerator {
       return { success: true }
     } catch (error) {
       console.error('Error generating PDF:', error)
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'PDF generation failed' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'PDF generation failed',
       }
     }
   }
@@ -450,9 +456,9 @@ export class ReportGenerator {
       return { success: true, data: csvBlob, url }
     } catch (error) {
       console.error('Error generating CSV:', error)
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'CSV generation failed' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'CSV generation failed',
       }
     }
   }
@@ -473,7 +479,7 @@ export class ReportGenerator {
    */
   private async generateHTMLReport(reportData: ReportData, config: ReportConfig): Promise<string> {
     const styles = this.getReportStyles(config)
-    
+
     return `
     <!DOCTYPE html>
     <html>
@@ -490,9 +496,13 @@ export class ReportGenerator {
                 ${reportData.subtitle ? `<p class="subtitle">${reportData.subtitle}</p>` : ''}
                 <div class="metadata">
                     <p>Generated: ${reportData.metadata?.generatedAt?.toLocaleString()}</p>
-                    ${reportData.dateRange ? `
+                    ${
+                      reportData.dateRange
+                        ? `
                         <p>Report Period: ${reportData.dateRange.startDate.toLocaleDateString()} - ${reportData.dateRange.endDate.toLocaleDateString()}</p>
-                    ` : ''}
+                    `
+                        : ''
+                    }
                 </div>
             </header>
             
@@ -513,7 +523,10 @@ export class ReportGenerator {
   /**
    * Generate report-specific content
    */
-  private async generateReportContent(reportData: ReportData, config: ReportConfig): Promise<string> {
+  private async generateReportContent(
+    reportData: ReportData,
+    config: ReportConfig
+  ): Promise<string> {
     switch (reportData.type) {
       case 'project':
         return this.generateProjectReportContent(reportData.data, config)
@@ -565,7 +578,9 @@ export class ReportGenerator {
         </div>
     </section>
 
-    ${config.includeTables && data.trades ? `
+    ${
+      config.includeTables && data.trades
+        ? `
     <section class="trades-section">
         <h3>Trade Breakdown</h3>
         <table class="data-table">
@@ -579,7 +594,9 @@ export class ReportGenerator {
                 </tr>
             </thead>
             <tbody>
-                ${data.trades.map(trade => `
+                ${data.trades
+                  .map(
+                    trade => `
                 <tr>
                     <td>${trade.name}</td>
                     <td class="currency">${this.formatCurrency(trade.budget, data.project.currency)}</td>
@@ -590,13 +607,19 @@ export class ReportGenerator {
                     </td>
                     <td class="status-${trade.status.toLowerCase()}">${trade.status}</td>
                 </tr>
-                `).join('')}
+                `
+                  )
+                  .join('')}
             </tbody>
         </table>
     </section>
-    ` : ''}
+    `
+        : ''
+    }
 
-    ${config.includeTables && data.milestones ? `
+    ${
+      config.includeTables && data.milestones
+        ? `
     <section class="milestones-section">
         <h3>Milestones</h3>
         <table class="data-table">
@@ -611,7 +634,9 @@ export class ReportGenerator {
                 </tr>
             </thead>
             <tbody>
-                ${data.milestones.map(milestone => `
+                ${data.milestones
+                  .map(
+                    milestone => `
                 <tr>
                     <td>${milestone.name}</td>
                     <td>${new Date(milestone.targetDate).toLocaleDateString()}</td>
@@ -620,11 +645,15 @@ export class ReportGenerator {
                     <td>${milestone.percentComplete}%</td>
                     <td class="status-${milestone.status.toLowerCase()}">${milestone.status}</td>
                 </tr>
-                `).join('')}
+                `
+                  )
+                  .join('')}
             </tbody>
         </table>
     </section>
-    ` : ''}
+    `
+        : ''
+    }
     `
   }
 
@@ -655,7 +684,9 @@ export class ReportGenerator {
         </div>
     </section>
 
-    ${config.includeTables ? `
+    ${
+      config.includeTables
+        ? `
     <section class="invoices-section">
         <h3>Invoice Details</h3>
         <table class="data-table">
@@ -669,7 +700,10 @@ export class ReportGenerator {
                 </tr>
             </thead>
             <tbody>
-                ${data.invoices.slice(0, 50).map(invoice => `
+                ${data.invoices
+                  .slice(0, 50)
+                  .map(
+                    invoice => `
                 <tr>
                     <td>${new Date(invoice.date).toLocaleDateString()}</td>
                     <td>${invoice.supplier}</td>
@@ -677,12 +711,16 @@ export class ReportGenerator {
                     <td>${invoice.project}</td>
                     <td class="status-${invoice.status.toLowerCase()}">${invoice.status}</td>
                 </tr>
-                `).join('')}
+                `
+                  )
+                  .join('')}
             </tbody>
         </table>
         ${data.invoices.length > 50 ? `<p class="note">Showing first 50 of ${data.invoices.length} invoices</p>` : ''}
     </section>
-    ` : ''}
+    `
+        : ''
+    }
     `
   }
 
@@ -727,7 +765,15 @@ export class ReportGenerator {
    * Convert project data to CSV format
    */
   private projectDataToCSV(data: ProjectReportData): string {
-    const headers = ['Project Name', 'Status', 'Total Budget', 'Budget Used', 'Budget Used %', 'Progress %', 'Health Score']
+    const headers = [
+      'Project Name',
+      'Status',
+      'Total Budget',
+      'Budget Used',
+      'Budget Used %',
+      'Progress %',
+      'Health Score',
+    ]
     const projectRow = [
       data.project.name,
       data.project.status,
@@ -735,7 +781,7 @@ export class ReportGenerator {
       data.summary.budgetUsed,
       data.summary.budgetUsedPercent.toFixed(1),
       data.project.progress,
-      data.summary.healthScore
+      data.summary.healthScore,
     ]
 
     let csv = headers.join(',') + '\n'
@@ -797,9 +843,9 @@ export class ReportGenerator {
         companyName: 'BuildTrack',
         colors: {
           primary: '#3b82f6',
-          secondary: '#64748b'
-        }
-      }
+          secondary: '#64748b',
+        },
+      },
     }
   }
 
@@ -1003,7 +1049,7 @@ export class ReportGenerator {
     try {
       const response = await fetch(`/api/projects/${projectId}`)
       const data = await response.json()
-      
+
       if (!data.success) {
         throw new Error(data.error)
       }
@@ -1020,7 +1066,7 @@ export class ReportGenerator {
           currency: project.currency || 'NZD',
           startDate: project.startDate,
           endDate: project.estimatedEndDate || project.endDate,
-          progress: project.progress || 0
+          progress: project.progress || 0,
         },
         summary: {
           totalBudget: project.totalBudget || project.budget || 0,
@@ -1032,8 +1078,8 @@ export class ReportGenerator {
           totalInvoices: project.stats?.totalInvoices || 0,
           totalMilestones: project.stats?.totalMilestones || 0,
           completedMilestones: project.stats?.completedMilestones || 0,
-          healthScore: this.calculateHealthScore(project)
-        }
+          healthScore: this.calculateHealthScore(project),
+        },
       }
     } catch (error) {
       console.error('Error fetching project report data:', error)
@@ -1054,18 +1100,27 @@ export class ReportGenerator {
 
       const response = await fetch(`/api/invoices?${queryParams.toString()}`)
       const data = await response.json()
-      
+
       if (!data.success) {
         throw new Error(data.error)
       }
 
       const invoices = data.invoices || []
-      
+
       // Calculate summary statistics
-      const totalAmount = invoices.reduce((sum: number, inv: any) => sum + (inv.totalAmount || 0), 0)
-      const pendingAmount = invoices.filter((inv: any) => inv.status === 'PENDING').reduce((sum: number, inv: any) => sum + (inv.totalAmount || 0), 0)
-      const approvedAmount = invoices.filter((inv: any) => inv.status === 'APPROVED').reduce((sum: number, inv: any) => sum + (inv.totalAmount || 0), 0)
-      const paidAmount = invoices.filter((inv: any) => inv.status === 'PAID').reduce((sum: number, inv: any) => sum + (inv.totalAmount || 0), 0)
+      const totalAmount = invoices.reduce(
+        (sum: number, inv: any) => sum + (inv.totalAmount || 0),
+        0
+      )
+      const pendingAmount = invoices
+        .filter((inv: any) => inv.status === 'PENDING')
+        .reduce((sum: number, inv: any) => sum + (inv.totalAmount || 0), 0)
+      const approvedAmount = invoices
+        .filter((inv: any) => inv.status === 'APPROVED')
+        .reduce((sum: number, inv: any) => sum + (inv.totalAmount || 0), 0)
+      const paidAmount = invoices
+        .filter((inv: any) => inv.status === 'PAID')
+        .reduce((sum: number, inv: any) => sum + (inv.totalAmount || 0), 0)
 
       return {
         summary: {
@@ -1074,7 +1129,7 @@ export class ReportGenerator {
           pendingAmount,
           approvedAmount,
           paidAmount,
-          averageInvoiceValue: invoices.length > 0 ? totalAmount / invoices.length : 0
+          averageInvoiceValue: invoices.length > 0 ? totalAmount / invoices.length : 0,
         },
         invoices: invoices.map((inv: any) => ({
           id: inv.id,
@@ -1083,14 +1138,14 @@ export class ReportGenerator {
           date: inv.invoiceDate || inv.createdAt,
           status: inv.status,
           project: inv.project?.name || 'Unknown',
-          description: inv.description
+          description: inv.description,
         })),
         byStatus: {
           pending: invoices.filter((inv: any) => inv.status === 'PENDING').length,
           approved: invoices.filter((inv: any) => inv.status === 'APPROVED').length,
-          paid: invoices.filter((inv: any) => inv.status === 'PAID').length
+          paid: invoices.filter((inv: any) => inv.status === 'PAID').length,
         },
-        bySupplier: []
+        bySupplier: [],
       }
     } catch (error) {
       console.error('Error fetching invoice report data:', error)
@@ -1134,17 +1189,17 @@ export class ReportGenerator {
 
   private calculateHealthScore(project: any): number {
     let score = 100
-    
+
     if (project.stats?.isOverBudget) {
       score -= 40
     } else if ((project.stats?.budgetUsedPercent || 0) > 85) {
       score -= 20
     }
-    
+
     if (project.status === 'ON_HOLD') {
       score -= 30
     }
-    
+
     return Math.max(0, score)
   }
 }

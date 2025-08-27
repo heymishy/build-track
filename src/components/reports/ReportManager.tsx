@@ -1,14 +1,14 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { 
-  DocumentArrowDownIcon, 
-  ChartBarIcon, 
+import {
+  DocumentArrowDownIcon,
+  ChartBarIcon,
   CurrencyDollarIcon,
   ClockIcon,
   DocumentTextIcon,
   Cog6ToothIcon,
-  InformationCircleIcon
+  InformationCircleIcon,
 } from '@heroicons/react/24/outline'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
@@ -49,7 +49,7 @@ export function ReportManager({ className = '', projectId, projects = [] }: Repo
     includeTables: true,
     includeDetails: true,
     orientation: 'portrait',
-    pageSize: 'A4'
+    pageSize: 'A4',
   })
   const [selectedProject, setSelectedProject] = useState<string>(projectId || '')
   const [isGenerating, setIsGenerating] = useState(false)
@@ -66,7 +66,7 @@ export function ReportManager({ className = '', projectId, projects = [] }: Repo
       type: 'project',
       icon: DocumentTextIcon,
       formats: ['pdf', 'csv', 'json'],
-      requiresProject: true
+      requiresProject: true,
     },
     {
       id: 'project-executive',
@@ -75,7 +75,7 @@ export function ReportManager({ className = '', projectId, projects = [] }: Repo
       type: 'project',
       icon: ChartBarIcon,
       formats: ['pdf'],
-      requiresProject: true
+      requiresProject: true,
     },
     {
       id: 'cost-tracking',
@@ -84,7 +84,7 @@ export function ReportManager({ className = '', projectId, projects = [] }: Repo
       type: 'cost-tracking',
       icon: CurrencyDollarIcon,
       formats: ['pdf', 'csv', 'xlsx'],
-      requiresProject: true
+      requiresProject: true,
     },
     {
       id: 'invoice-summary',
@@ -93,7 +93,7 @@ export function ReportManager({ className = '', projectId, projects = [] }: Repo
       type: 'invoice',
       icon: DocumentArrowDownIcon,
       formats: ['pdf', 'csv', 'xlsx'],
-      requiresProject: false
+      requiresProject: false,
     },
     {
       id: 'analytics-dashboard',
@@ -102,7 +102,7 @@ export function ReportManager({ className = '', projectId, projects = [] }: Repo
       type: 'analytics',
       icon: ChartBarIcon,
       formats: ['pdf'],
-      requiresProject: true
+      requiresProject: true,
     },
     {
       id: 'milestone-tracking',
@@ -111,15 +111,15 @@ export function ReportManager({ className = '', projectId, projects = [] }: Repo
       type: 'project',
       icon: ClockIcon,
       formats: ['pdf', 'csv'],
-      requiresProject: true
-    }
+      requiresProject: true,
+    },
   ]
 
   const handleGenerateReport = async (template: ReportTemplate) => {
     if (template.requiresProject && !selectedProject) {
       setGenerationStatus({
         type: 'error',
-        message: 'Please select a project for this report type'
+        message: 'Please select a project for this report type',
       })
       return
     }
@@ -134,7 +134,7 @@ export function ReportManager({ className = '', projectId, projects = [] }: Repo
     try {
       setIsGenerating(true)
       setGenerationStatus({ type: null, message: '' })
-      
+
       let result
 
       switch (selectedTemplate.type) {
@@ -155,7 +155,11 @@ export function ReportManager({ className = '', projectId, projects = [] }: Repo
           )
           break
         case 'analytics':
-          result = await reportGenerator.generateAnalyticsReport(selectedProject, '90d', reportConfig)
+          result = await reportGenerator.generateAnalyticsReport(
+            selectedProject,
+            '90d',
+            reportConfig
+          )
           break
         case 'cost-tracking':
           result = await reportGenerator.generateCostTrackingReport(selectedProject, reportConfig)
@@ -178,7 +182,7 @@ export function ReportManager({ className = '', projectId, projects = [] }: Repo
 
         setGenerationStatus({
           type: 'success',
-          message: 'Report generated successfully!'
+          message: 'Report generated successfully!',
         })
       } else {
         throw new Error(result.error || 'Report generation failed')
@@ -187,7 +191,7 @@ export function ReportManager({ className = '', projectId, projects = [] }: Repo
       console.error('Report generation error:', error)
       setGenerationStatus({
         type: 'error',
-        message: error instanceof Error ? error.message : 'Failed to generate report'
+        message: error instanceof Error ? error.message : 'Failed to generate report',
       })
     } finally {
       setIsGenerating(false)
@@ -218,7 +222,7 @@ export function ReportManager({ className = '', projectId, projects = [] }: Repo
             <select
               id="project-select"
               value={selectedProject}
-              onChange={(e) => setSelectedProject(e.target.value)}
+              onChange={e => setSelectedProject(e.target.value)}
               className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">All Projects</option>
@@ -256,15 +260,11 @@ export function ReportManager({ className = '', projectId, projects = [] }: Repo
                     <Icon className="h-8 w-8 text-blue-600" />
                   </div>
                   <div className="ml-3">
-                    <h3 className="text-lg font-medium text-gray-900">
-                      {template.name}
-                    </h3>
+                    <h3 className="text-lg font-medium text-gray-900">{template.name}</h3>
                   </div>
                 </div>
-                
-                <p className="text-sm text-gray-600 mb-4">
-                  {template.description}
-                </p>
+
+                <p className="text-sm text-gray-600 mb-4">{template.description}</p>
 
                 <div className="space-y-3">
                   <div>
@@ -311,15 +311,15 @@ export function ReportManager({ className = '', projectId, projects = [] }: Repo
       >
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Format
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Format</label>
             <select
               value={reportConfig.format}
-              onChange={(e) => setReportConfig(prev => ({ 
-                ...prev, 
-                format: e.target.value as any 
-              }))}
+              onChange={e =>
+                setReportConfig(prev => ({
+                  ...prev,
+                  format: e.target.value as any,
+                }))
+              }
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               {selectedTemplate?.formats.map(format => (
@@ -331,15 +331,15 @@ export function ReportManager({ className = '', projectId, projects = [] }: Repo
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Template Style
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Template Style</label>
             <select
               value={reportConfig.template}
-              onChange={(e) => setReportConfig(prev => ({ 
-                ...prev, 
-                template: e.target.value as any 
-              }))}
+              onChange={e =>
+                setReportConfig(prev => ({
+                  ...prev,
+                  template: e.target.value as any,
+                }))
+              }
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="standard">Standard</option>
@@ -361,10 +361,12 @@ export function ReportManager({ className = '', projectId, projects = [] }: Repo
                       type="radio"
                       value="portrait"
                       checked={reportConfig.orientation === 'portrait'}
-                      onChange={(e) => setReportConfig(prev => ({ 
-                        ...prev, 
-                        orientation: e.target.value as any 
-                      }))}
+                      onChange={e =>
+                        setReportConfig(prev => ({
+                          ...prev,
+                          orientation: e.target.value as any,
+                        }))
+                      }
                       className="mr-2"
                     />
                     Portrait
@@ -374,10 +376,12 @@ export function ReportManager({ className = '', projectId, projects = [] }: Repo
                       type="radio"
                       value="landscape"
                       checked={reportConfig.orientation === 'landscape'}
-                      onChange={(e) => setReportConfig(prev => ({ 
-                        ...prev, 
-                        orientation: e.target.value as any 
-                      }))}
+                      onChange={e =>
+                        setReportConfig(prev => ({
+                          ...prev,
+                          orientation: e.target.value as any,
+                        }))
+                      }
                       className="mr-2"
                     />
                     Landscape
@@ -386,15 +390,15 @@ export function ReportManager({ className = '', projectId, projects = [] }: Repo
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Page Size
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Page Size</label>
                 <select
                   value={reportConfig.pageSize}
-                  onChange={(e) => setReportConfig(prev => ({ 
-                    ...prev, 
-                    pageSize: e.target.value as any 
-                  }))}
+                  onChange={e =>
+                    setReportConfig(prev => ({
+                      ...prev,
+                      pageSize: e.target.value as any,
+                    }))
+                  }
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="A4">A4</option>
@@ -406,18 +410,18 @@ export function ReportManager({ className = '', projectId, projects = [] }: Repo
           )}
 
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">
-              Include Content
-            </label>
+            <label className="block text-sm font-medium text-gray-700">Include Content</label>
             <div className="space-y-2">
               <label className="flex items-center">
                 <input
                   type="checkbox"
                   checked={reportConfig.includeCharts}
-                  onChange={(e) => setReportConfig(prev => ({ 
-                    ...prev, 
-                    includeCharts: e.target.checked 
-                  }))}
+                  onChange={e =>
+                    setReportConfig(prev => ({
+                      ...prev,
+                      includeCharts: e.target.checked,
+                    }))
+                  }
                   className="mr-2"
                 />
                 <span className="text-sm text-gray-700">Charts and graphs</span>
@@ -426,10 +430,12 @@ export function ReportManager({ className = '', projectId, projects = [] }: Repo
                 <input
                   type="checkbox"
                   checked={reportConfig.includeTables}
-                  onChange={(e) => setReportConfig(prev => ({ 
-                    ...prev, 
-                    includeTables: e.target.checked 
-                  }))}
+                  onChange={e =>
+                    setReportConfig(prev => ({
+                      ...prev,
+                      includeTables: e.target.checked,
+                    }))
+                  }
                   className="mr-2"
                 />
                 <span className="text-sm text-gray-700">Data tables</span>
@@ -438,10 +444,12 @@ export function ReportManager({ className = '', projectId, projects = [] }: Repo
                 <input
                   type="checkbox"
                   checked={reportConfig.includeDetails}
-                  onChange={(e) => setReportConfig(prev => ({ 
-                    ...prev, 
-                    includeDetails: e.target.checked 
-                  }))}
+                  onChange={e =>
+                    setReportConfig(prev => ({
+                      ...prev,
+                      includeDetails: e.target.checked,
+                    }))
+                  }
                   className="mr-2"
                 />
                 <span className="text-sm text-gray-700">Detailed breakdowns</span>
@@ -450,10 +458,7 @@ export function ReportManager({ className = '', projectId, projects = [] }: Repo
           </div>
 
           <div className="flex justify-end space-x-3 pt-4">
-            <Button
-              variant="secondary"
-              onClick={() => setShowConfigModal(false)}
-            >
+            <Button variant="secondary" onClick={() => setShowConfigModal(false)}>
               Cancel
             </Button>
             <Button

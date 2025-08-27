@@ -7,13 +7,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getCache } from './cache'
 
 export interface RateLimitConfig {
-  windowMs: number      // Time window in milliseconds
-  maxRequests: number   // Maximum requests per window
+  windowMs: number // Time window in milliseconds
+  maxRequests: number // Maximum requests per window
   skipSuccessfulRequests?: boolean
   skipFailedRequests?: boolean
   keyGenerator?: (req: NextRequest) => string
   onLimitReached?: (req: NextRequest, identifier: string) => void
-  headers?: boolean     // Include rate limit headers
+  headers?: boolean // Include rate limit headers
   standardHeaders?: boolean // RFC compliant headers
 }
 
@@ -46,7 +46,7 @@ class RateLimiter {
       keyGenerator: config.keyGenerator ?? this.defaultKeyGenerator,
       onLimitReached: config.onLimitReached ?? (() => {}),
       headers: config.headers ?? true,
-      standardHeaders: config.standardHeaders ?? true
+      standardHeaders: config.standardHeaders ?? true,
     }
   }
 
@@ -55,10 +55,10 @@ class RateLimiter {
     const forwarded = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
     const real = req.headers.get('x-real-ip')
     const connecting = req.headers.get('x-connecting-ip')
-    
+
     const ip = forwarded || real || connecting || 'unknown'
     const userAgent = req.headers.get('user-agent') || 'unknown'
-    
+
     // Create a composite key for better tracking
     return `rate_limit:${ip}:${Buffer.from(userAgent).toString('base64').slice(0, 16)}`
   }
@@ -81,15 +81,15 @@ class RateLimiter {
     const cacheKey = {
       prefix: 'ratelimit',
       identifier: `${identifier}:${currentWindow}`,
-      version: 'v1'
+      version: 'v1',
     }
 
     try {
       // Get current usage
-      const current = await this.cache.get<{
+      const current = (await this.cache.get<{
         count: number
         windowStart: number
-      }>(cacheKey) || { count: 0, windowStart: currentWindow }
+      }>(cacheKey)) || { count: 0, windowStart: currentWindow }
 
       const isAllowed = current.count < this.config.maxRequests
       const remaining = Math.max(0, this.config.maxRequests - current.count - (isAllowed ? 1 : 0))
@@ -102,7 +102,7 @@ class RateLimiter {
           cacheKey,
           {
             count: current.count + 1,
-            windowStart: currentWindow
+            windowStart: currentWindow,
           },
           Math.ceil(this.config.windowMs / 1000) // TTL in seconds
         )
@@ -113,12 +113,12 @@ class RateLimiter {
         remaining,
         resetTime,
         totalHits: current.count + (isAllowed ? 1 : 0),
-        windowStart
+        windowStart,
       }
 
       // Generate headers
       const headers: Record<string, string> = {}
-      
+
       if (this.config.headers) {
         headers['X-RateLimit-Limit'] = this.config.maxRequests.toString()
         headers['X-RateLimit-Remaining'] = remaining.toString()
@@ -140,12 +140,11 @@ class RateLimiter {
       return {
         allowed: isAllowed,
         info,
-        headers
+        headers,
       }
-
     } catch (error) {
       console.error('[RateLimit] Error checking rate limit:', error)
-      
+
       // Fail open in case of cache errors
       return {
         allowed: true,
@@ -154,9 +153,9 @@ class RateLimiter {
           remaining: this.config.maxRequests - 1,
           resetTime: new Date(this.getResetTime(currentWindow)),
           totalHits: 1,
-          windowStart: new Date(currentWindow * this.config.windowMs)
+          windowStart: new Date(currentWindow * this.config.windowMs),
         },
-        headers: {}
+        headers: {},
       }
     }
   }
@@ -167,22 +166,24 @@ class RateLimiter {
       const result = await this.checkLimit(req)
 
       // Add headers to response
-      const response = result.allowed 
+      const response = result.allowed
         ? NextResponse.next()
         : NextResponse.json(
-          {
-            error: 'Too Many Requests',
-            message: `Rate limit exceeded. Try again in ${Math.ceil((result.info.resetTime.getTime() - Date.now()) / 1000)} seconds.`,
-            retryAfter: Math.ceil((result.info.resetTime.getTime() - Date.now()) / 1000)
-          },
-          { 
-            status: 429,
-            headers: {
-              'Retry-After': Math.ceil((result.info.resetTime.getTime() - Date.now()) / 1000).toString(),
-              ...result.headers
+            {
+              error: 'Too Many Requests',
+              message: `Rate limit exceeded. Try again in ${Math.ceil((result.info.resetTime.getTime() - Date.now()) / 1000)} seconds.`,
+              retryAfter: Math.ceil((result.info.resetTime.getTime() - Date.now()) / 1000),
+            },
+            {
+              status: 429,
+              headers: {
+                'Retry-After': Math.ceil(
+                  (result.info.resetTime.getTime() - Date.now()) / 1000
+                ).toString(),
+                ...result.headers,
+              },
             }
-          }
-        )
+          )
 
       // Apply headers to response
       Object.entries(result.headers).forEach(([key, value]) => {
@@ -203,7 +204,7 @@ export const createRateLimiters = () => ({
     skipSuccessfulRequests: false,
     onLimitReached: (req, identifier) => {
       console.warn(`[Security] Rate limit exceeded for ${identifier} on ${req.url}`)
-    }
+    },
   }),
 
   // Strict rate limiting for authentication endpoints
@@ -213,7 +214,7 @@ export const createRateLimiters = () => ({
     skipSuccessfulRequests: false,
     onLimitReached: (req, identifier) => {
       console.warn(`[Security] Auth rate limit exceeded for ${identifier}`)
-    }
+    },
   }),
 
   // File upload rate limiting
@@ -223,14 +224,14 @@ export const createRateLimiters = () => ({
     skipSuccessfulRequests: true,
     onLimitReached: (req, identifier) => {
       console.warn(`[Security] Upload rate limit exceeded for ${identifier}`)
-    }
+    },
   }),
 
   // Generous rate limiting for static content
   static: new RateLimiter({
     windowMs: 60 * 1000, // 1 minute
     maxRequests: 100,
-    skipSuccessfulRequests: true
+    skipSuccessfulRequests: true,
   }),
 
   // Very strict rate limiting for sensitive operations
@@ -241,13 +242,13 @@ export const createRateLimiters = () => ({
     onLimitReached: (req, identifier) => {
       console.error(`[Security] Sensitive operation rate limit exceeded for ${identifier}`)
       // Could trigger additional security measures here
-    }
-  })
+    },
+  }),
 })
 
 // Export rate limiting function for use in API routes
 export async function rateLimit(
-  req: NextRequest, 
+  req: NextRequest,
   limiter: RateLimiter
 ): Promise<{
   success: boolean
@@ -255,7 +256,7 @@ export async function rateLimit(
   info: RateLimitInfo
 }> {
   const result = await limiter.checkLimit(req)
-  
+
   if (!result.allowed) {
     return {
       success: false,
@@ -263,23 +264,25 @@ export async function rateLimit(
         {
           error: 'Too Many Requests',
           message: `Rate limit exceeded. Try again in ${Math.ceil((result.info.resetTime.getTime() - Date.now()) / 1000)} seconds.`,
-          retryAfter: Math.ceil((result.info.resetTime.getTime() - Date.now()) / 1000)
+          retryAfter: Math.ceil((result.info.resetTime.getTime() - Date.now()) / 1000),
         },
-        { 
+        {
           status: 429,
           headers: {
-            'Retry-After': Math.ceil((result.info.resetTime.getTime() - Date.now()) / 1000).toString(),
-            ...result.headers
-          }
+            'Retry-After': Math.ceil(
+              (result.info.resetTime.getTime() - Date.now()) / 1000
+            ).toString(),
+            ...result.headers,
+          },
         }
       ),
-      info: result.info
+      info: result.info,
     }
   }
 
   return {
     success: true,
-    info: result.info
+    info: result.info,
   }
 }
 
@@ -290,20 +293,20 @@ export function withRateLimit(
 ) {
   return async (req: NextRequest, ...args: any[]): Promise<NextResponse> => {
     const result = await rateLimit(req, rateLimiter)
-    
+
     if (!result.success && result.response) {
       return result.response
     }
-    
+
     // Add rate limit headers to successful responses
     const response = await handler(req, ...args)
-    
+
     // Add rate limit info to response headers
     const { info } = result
     response.headers.set('X-RateLimit-Limit', info.limit.toString())
     response.headers.set('X-RateLimit-Remaining', info.remaining.toString())
     response.headers.set('X-RateLimit-Reset', Math.ceil(info.resetTime.getTime() / 1000).toString())
-    
+
     return response
   }
 }
@@ -334,7 +337,7 @@ export function checkSuspiciousIP(req: NextRequest): {
 
   return {
     suspicious: reasons.length > 0,
-    reasons
+    reasons,
   }
 }
 

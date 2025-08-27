@@ -45,14 +45,14 @@ class OfflineStorageService {
     lastSync: 0,
     pendingActions: 0,
     failedActions: 0,
-    syncInProgress: false
+    syncInProgress: false,
   }
 
   // Store names
   private stores = {
     actions: 'offline-actions',
     cache: 'cached-data',
-    settings: 'offline-settings'
+    settings: 'offline-settings',
   }
 
   constructor() {
@@ -78,7 +78,7 @@ class OfflineStorageService {
         resolve()
       }
 
-      request.onupgradeneeded = (event) => {
+      request.onupgradeneeded = event => {
         const db = (event.target as IDBOpenDBRequest).result
 
         // Create offline actions store
@@ -127,7 +127,9 @@ class OfflineStorageService {
   /**
    * Queue an action for offline execution
    */
-  async queueAction(action: Omit<OfflineAction, 'id' | 'timestamp' | 'retryCount'>): Promise<string> {
+  async queueAction(
+    action: Omit<OfflineAction, 'id' | 'timestamp' | 'retryCount'>
+  ): Promise<string> {
     if (!this.db) await this.initDB()
 
     const actionId = `action-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
@@ -135,7 +137,7 @@ class OfflineStorageService {
       ...action,
       id: actionId,
       timestamp: Date.now(),
-      retryCount: 0
+      retryCount: 0,
     }
 
     return new Promise((resolve, reject) => {
@@ -148,12 +150,12 @@ class OfflineStorageService {
       request.onsuccess = () => {
         this.syncStatus.pendingActions++
         console.log('Action queued for offline sync:', actionId)
-        
+
         // Try to process immediately if online
         if (this.syncStatus.isOnline) {
           this.processOfflineActions()
         }
-        
+
         resolve(actionId)
       }
 
@@ -193,10 +195,10 @@ class OfflineStorageService {
           this.syncStatus.pendingActions--
         } catch (error) {
           console.error(`Failed to execute action ${action.id}:`, error)
-          
+
           // Increment retry count
           action.retryCount++
-          
+
           if (action.retryCount >= action.maxRetries) {
             console.error(`Action ${action.id} exceeded max retries, marking as failed`)
             this.syncStatus.failedActions++
@@ -221,7 +223,7 @@ class OfflineStorageService {
     const response = await fetch(action.url, {
       method: action.method,
       headers: action.headers,
-      body: action.body
+      body: action.body,
     })
 
     if (!response.ok) {
@@ -242,8 +244,8 @@ class OfflineStorageService {
       entityType,
       data,
       timestamp: Date.now(),
-      expiry: Date.now() + (ttlHours * 60 * 60 * 1000),
-      version: 1
+      expiry: Date.now() + ttlHours * 60 * 60 * 1000,
+      version: 1,
     }
 
     return new Promise((resolve, reject) => {
@@ -273,7 +275,7 @@ class OfflineStorageService {
 
       request.onsuccess = () => {
         const result = request.result as CachedData
-        
+
         if (!result) {
           resolve(null)
           return
@@ -329,11 +331,9 @@ class OfflineStorageService {
       request.onsuccess = () => {
         const results = request.result as CachedData[]
         const currentTime = Date.now()
-        
+
         // Filter out expired data and extract the data objects
-        const validData = results
-          .filter(item => currentTime <= item.expiry)
-          .map(item => item.data)
+        const validData = results.filter(item => currentTime <= item.expiry).map(item => item.data)
 
         resolve(validData)
       }
@@ -356,10 +356,10 @@ class OfflineStorageService {
       const index = store.index('expiry')
       const range = IDBKeyRange.upperBound(Date.now())
       const request = index.openCursor(range)
-      
+
       let deletedCount = 0
 
-      request.onsuccess = (event) => {
+      request.onsuccess = event => {
         const cursor = (event.target as IDBRequest).result
         if (cursor) {
           cursor.delete()
@@ -440,10 +440,10 @@ class OfflineStorageService {
       if (!this.db) return reject(new Error('Database not initialized'))
 
       const transaction = this.db.transaction([this.stores.actions, this.stores.cache], 'readwrite')
-      
+
       const actionsStore = transaction.objectStore(this.stores.actions)
       const cacheStore = transaction.objectStore(this.stores.cache)
-      
+
       const clearActions = actionsStore.clear()
       const clearCache = cacheStore.clear()
 
@@ -477,13 +477,13 @@ class OfflineStorageService {
     const allCache = await this.getAllCache()
 
     const cacheTimestamps = allCache.map(item => item.timestamp).filter(Boolean)
-    
+
     return {
       totalActions: actions.length,
       totalCachedItems: allCache.length,
       cacheSize: this.calculateCacheSize(allCache),
       oldestCacheEntry: cacheTimestamps.length > 0 ? Math.min(...cacheTimestamps) : null,
-      newestCacheEntry: cacheTimestamps.length > 0 ? Math.max(...cacheTimestamps) : null
+      newestCacheEntry: cacheTimestamps.length > 0 ? Math.max(...cacheTimestamps) : null,
     }
   }
 
@@ -530,7 +530,7 @@ export const OfflineStorageUtils = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
       maxRetries: 3,
-      priority: 2
+      priority: 2,
     })
   },
 
@@ -546,7 +546,7 @@ export const OfflineStorageUtils = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
       maxRetries: 3,
-      priority: 1
+      priority: 1,
     })
   },
 
@@ -568,5 +568,5 @@ export const OfflineStorageUtils = {
   // Get cached invoice
   getCachedInvoice: (invoiceId: string) => {
     return offlineStorage.getCachedData('invoice', invoiceId)
-  }
+  },
 }

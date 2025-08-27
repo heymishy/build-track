@@ -48,14 +48,14 @@ export function GanttChart({
   onDateRangeChange,
   viewMode = 'weeks',
   showCriticalPath = false,
-  className = ''
+  className = '',
 }: GanttChartProps) {
   const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set())
   const [selectedTask, setSelectedTask] = useState<string | null>(null)
   const [draggedTask, setDraggedTask] = useState<string | null>(null)
   const [viewStart, setViewStart] = useState<Date>(new Date())
   const [viewEnd, setViewEnd] = useState<Date>(new Date())
-  
+
   const chartRef = useRef<HTMLDivElement>(null)
 
   // Calculate view range based on tasks
@@ -65,15 +65,15 @@ export function GanttChart({
     const allDates = tasks.flatMap(task => [task.startDate, task.endDate])
     const minDate = new Date(Math.min(...allDates.map(d => d.getTime())))
     const maxDate = new Date(Math.max(...allDates.map(d => d.getTime())))
-    
+
     // Add padding
     const padding = viewMode === 'days' ? 7 : viewMode === 'weeks' ? 14 : 30
     const startPadding = new Date(minDate.getTime() - padding * 24 * 60 * 60 * 1000)
     const endPadding = new Date(maxDate.getTime() + padding * 24 * 60 * 60 * 1000)
-    
+
     setViewStart(startPadding)
     setViewEnd(endPadding)
-    
+
     onDateRangeChange?.(startPadding, endPadding)
   }, [tasks, viewMode, onDateRangeChange])
 
@@ -81,10 +81,10 @@ export function GanttChart({
   const timePeriods = useMemo(() => {
     const periods = []
     const current = new Date(viewStart)
-    
+
     while (current <= viewEnd) {
       periods.push(new Date(current))
-      
+
       if (viewMode === 'days') {
         current.setDate(current.getDate() + 1)
       } else if (viewMode === 'weeks') {
@@ -93,7 +93,7 @@ export function GanttChart({
         current.setMonth(current.getMonth() + 1)
       }
     }
-    
+
     return periods
   }, [viewStart, viewEnd, viewMode])
 
@@ -101,23 +101,25 @@ export function GanttChart({
   const calculateTaskGeometry = (task: GanttTask) => {
     const totalDays = (viewEnd.getTime() - viewStart.getTime()) / (24 * 60 * 60 * 1000)
     const taskStartDays = (task.startDate.getTime() - viewStart.getTime()) / (24 * 60 * 60 * 1000)
-    const taskDurationDays = (task.endDate.getTime() - task.startDate.getTime()) / (24 * 60 * 60 * 1000)
-    
+    const taskDurationDays =
+      (task.endDate.getTime() - task.startDate.getTime()) / (24 * 60 * 60 * 1000)
+
     const left = (taskStartDays / totalDays) * 100
     const width = (taskDurationDays / totalDays) * 100
-    
+
     return { left: Math.max(0, left), width: Math.max(0.5, width) }
   }
 
   // Get task status color and styling
   const getTaskStyling = (task: GanttTask) => {
-    const isOverdue = task.status === 'overdue' || (task.endDate < new Date() && task.progress < 100)
+    const isOverdue =
+      task.status === 'overdue' || (task.endDate < new Date() && task.progress < 100)
     const isCritical = task.priority === 'critical'
-    
+
     let backgroundColor = 'bg-blue-500'
     let progressColor = 'bg-blue-600'
     let textColor = 'text-white'
-    
+
     if (isOverdue) {
       backgroundColor = 'bg-red-500'
       progressColor = 'bg-red-600'
@@ -136,12 +138,16 @@ export function GanttChart({
       backgroundColor = 'bg-orange-500'
       progressColor = 'bg-orange-600'
     }
-    
+
     return {
       backgroundColor,
       progressColor,
       textColor,
-      borderColor: isOverdue ? 'border-red-600' : isCritical ? 'border-purple-600' : 'border-transparent'
+      borderColor: isOverdue
+        ? 'border-red-600'
+        : isCritical
+          ? 'border-purple-600'
+          : 'border-transparent',
     }
   }
 
@@ -157,18 +163,21 @@ export function GanttChart({
   }
 
   // Flatten tasks for display (respecting expansion state)
-  const flattenTasks = (tasks: GanttTask[], level = 0): Array<GanttTask & { level: number; isVisible: boolean }> => {
+  const flattenTasks = (
+    tasks: GanttTask[],
+    level = 0
+  ): Array<GanttTask & { level: number; isVisible: boolean }> => {
     const result: Array<GanttTask & { level: number; isVisible: boolean }> = []
-    
+
     for (const task of tasks) {
       result.push({ ...task, level, isVisible: true })
-      
+
       if (task.children && expandedTasks.has(task.id)) {
         const childTasks = flattenTasks(task.children, level + 1)
         result.push(...childTasks)
       }
     }
-    
+
     return result
   }
 
@@ -215,11 +224,11 @@ export function GanttChart({
               Interactive Gantt chart with task dependencies and progress tracking
             </p>
           </div>
-          
+
           <div className="flex items-center space-x-3">
             {/* View Mode Selector */}
             <div className="flex rounded-lg bg-gray-100 p-1">
-              {(['days', 'weeks', 'months'] as const).map((mode) => (
+              {(['days', 'weeks', 'months'] as const).map(mode => (
                 <button
                   key={mode}
                   onClick={() => setViewStart(new Date())} // Trigger recalculation
@@ -262,7 +271,12 @@ export function GanttChart({
           <div className="bg-red-50 rounded-lg p-3">
             <div className="text-sm font-medium text-red-900">Overdue</div>
             <div className="text-lg font-bold text-red-600">
-              {flatTasks.filter(t => t.status === 'overdue' || (t.endDate < new Date() && t.status !== 'completed')).length}
+              {
+                flatTasks.filter(
+                  t =>
+                    t.status === 'overdue' || (t.endDate < new Date() && t.status !== 'completed')
+                ).length
+              }
             </div>
           </div>
         </div>
@@ -282,8 +296,11 @@ export function GanttChart({
                   <div
                     key={period.toISOString()}
                     className={`px-2 py-4 text-center border-r border-gray-200 text-xs font-medium text-gray-600 ${
-                      viewMode === 'days' ? 'min-w-[60px]' : 
-                      viewMode === 'weeks' ? 'min-w-[80px]' : 'min-w-[100px]'
+                      viewMode === 'days'
+                        ? 'min-w-[60px]'
+                        : viewMode === 'weeks'
+                          ? 'min-w-[80px]'
+                          : 'min-w-[100px]'
                     }`}
                   >
                     {formatDate(period)}
@@ -295,16 +312,19 @@ export function GanttChart({
 
           {/* Task Rows */}
           <div className="divide-y divide-gray-200">
-            {flatTasks.map((task) => {
+            {flatTasks.map(task => {
               const geometry = calculateTaskGeometry(task)
               const styling = getTaskStyling(task)
               const hasChildren = task.children && task.children.length > 0
-              
+
               return (
                 <div key={task.id} className="flex hover:bg-gray-50">
                   {/* Task Info Column */}
                   <div className="w-80 flex-shrink-0 px-6 py-4 border-r border-gray-200">
-                    <div className="flex items-center space-x-2" style={{ marginLeft: `${task.level * 20}px` }}>
+                    <div
+                      className="flex items-center space-x-2"
+                      style={{ marginLeft: `${task.level * 20}px` }}
+                    >
                       {hasChildren && (
                         <button
                           onClick={() => toggleTaskExpansion(task.id)}
@@ -317,10 +337,10 @@ export function GanttChart({
                           )}
                         </button>
                       )}
-                      
+
                       <div className="flex items-center space-x-2 flex-1 min-w-0">
                         {getStatusIcon(task)}
-                        
+
                         <div className="flex-1 min-w-0">
                           <button
                             onClick={() => {
@@ -328,25 +348,33 @@ export function GanttChart({
                               onTaskClick?.(task)
                             }}
                             className={`text-left text-sm font-medium truncate block w-full ${
-                              selectedTask === task.id ? 'text-blue-600' : 'text-gray-900 hover:text-blue-600'
+                              selectedTask === task.id
+                                ? 'text-blue-600'
+                                : 'text-gray-900 hover:text-blue-600'
                             }`}
                           >
                             {task.name}
                           </button>
-                          
+
                           {task.assignee && (
                             <div className="text-xs text-gray-500 truncate">
                               Assigned to: {task.assignee}
                             </div>
                           )}
                         </div>
-                        
+
                         {task.milestone && (
-                          <div className="w-2 h-2 bg-orange-500 rounded-full flex-shrink-0" title="Milestone" />
+                          <div
+                            className="w-2 h-2 bg-orange-500 rounded-full flex-shrink-0"
+                            title="Milestone"
+                          />
                         )}
-                        
+
                         {task.priority === 'critical' && (
-                          <div className="w-2 h-2 bg-red-500 rounded-full flex-shrink-0" title="Critical Priority" />
+                          <div
+                            className="w-2 h-2 bg-red-500 rounded-full flex-shrink-0"
+                            title="Critical Priority"
+                          />
                         )}
                       </div>
                     </div>
@@ -360,7 +388,7 @@ export function GanttChart({
                         className={`absolute top-1/2 transform -translate-y-1/2 h-6 rounded ${styling.backgroundColor} ${styling.textColor} border-2 ${styling.borderColor} flex items-center justify-between px-2 shadow-sm`}
                         style={{
                           left: `${geometry.left}%`,
-                          width: `${geometry.width}%`
+                          width: `${geometry.width}%`,
                         }}
                       >
                         {/* Progress Bar */}
@@ -368,27 +396,25 @@ export function GanttChart({
                           className={`absolute left-0 top-0 h-full ${styling.progressColor} rounded-l opacity-80`}
                           style={{ width: `${task.progress}%` }}
                         />
-                        
+
                         {/* Task Label (if width allows) */}
                         {geometry.width > 10 && (
                           <div className="relative z-10 text-xs font-medium truncate px-1">
                             {task.name.substring(0, 20)}
                           </div>
                         )}
-                        
+
                         {/* Progress Percentage */}
                         {geometry.width > 8 && (
-                          <div className="relative z-10 text-xs font-bold">
-                            {task.progress}%
-                          </div>
+                          <div className="relative z-10 text-xs font-bold">{task.progress}%</div>
                         )}
                       </div>
 
                       {/* Dependencies (simplified lines) */}
-                      {task.dependencies?.map((depId) => {
+                      {task.dependencies?.map(depId => {
                         const depTask = flatTasks.find(t => t.id === depId)
                         if (!depTask) return null
-                        
+
                         const depGeometry = calculateTaskGeometry(depTask)
                         return (
                           <div
@@ -397,7 +423,7 @@ export function GanttChart({
                             style={{
                               left: `${depGeometry.left + depGeometry.width}%`,
                               top: '50%',
-                              width: `${Math.max(0, geometry.left - (depGeometry.left + depGeometry.width))}%`
+                              width: `${Math.max(0, geometry.left - (depGeometry.left + depGeometry.width))}%`,
                             }}
                           />
                         )
@@ -415,8 +441,10 @@ export function GanttChart({
       <div className="absolute inset-0 pointer-events-none">
         {(() => {
           const today = new Date()
-          const todayPosition = ((today.getTime() - viewStart.getTime()) / (viewEnd.getTime() - viewStart.getTime())) * 100
-          
+          const todayPosition =
+            ((today.getTime() - viewStart.getTime()) / (viewEnd.getTime() - viewStart.getTime())) *
+            100
+
           if (todayPosition >= 0 && todayPosition <= 100) {
             return (
               <div

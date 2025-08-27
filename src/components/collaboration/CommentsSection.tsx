@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { 
+import {
   ChatBubbleLeftIcon,
   PaperAirplaneIcon,
   EllipsisVerticalIcon,
@@ -13,9 +13,9 @@ import {
   CheckCircleIcon,
   XMarkIcon,
   UserCircleIcon,
-  ArrowUturnLeftIcon
+  ArrowUturnLeftIcon,
 } from '@heroicons/react/24/outline'
-import { 
+import {
   HandThumbUpIcon as HandThumbUpIconSolid,
   HandThumbDownIcon as HandThumbDownIconSolid,
   HeartIcon as HeartIconSolid,
@@ -37,22 +37,22 @@ interface MentionSuggestion {
   email: string
 }
 
-export function CommentsSection({ 
-  targetType, 
-  targetId, 
+export function CommentsSection({
+  targetType,
+  targetId,
   targetName = 'item',
-  className = '' 
+  className = '',
 }: CommentsSectionProps) {
   const { user } = useAuth()
-  const { 
-    getComments, 
-    addComment, 
-    updateComment, 
+  const {
+    getComments,
+    addComment,
+    updateComment,
     deleteComment,
     addReaction,
     resolveComment,
     searchUsers,
-    subscribe 
+    subscribe,
   } = useCollaboration()
 
   const [comments, setComments] = useState<Comment[]>([])
@@ -72,7 +72,7 @@ export function CommentsSection({
 
   useEffect(() => {
     fetchComments()
-    
+
     // Subscribe to real-time updates
     const unsubscribeCommentAdded = subscribe('comment_added', (comment: Comment) => {
       if (comment.targetType === targetType && comment.targetId === targetId) {
@@ -82,7 +82,7 @@ export function CommentsSection({
 
     const unsubscribeCommentUpdated = subscribe('comment_updated', (comment: Comment) => {
       if (comment.targetType === targetType && comment.targetId === targetId) {
-        setComments(prev => prev.map(c => c.id === comment.id ? comment : c))
+        setComments(prev => prev.map(c => (c.id === comment.id ? comment : c)))
       }
     })
 
@@ -101,11 +101,11 @@ export function CommentsSection({
     try {
       setLoading(true)
       const result = await getComments(targetType, targetId)
-      
+
       if (result.success && result.data) {
         // Sort comments by creation date and build thread structure
-        const sortedComments = result.data.sort((a, b) => 
-          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        const sortedComments = result.data.sort(
+          (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
         )
         setComments(sortedComments)
       }
@@ -122,7 +122,7 @@ export function CommentsSection({
     try {
       setSubmitting(true)
       const result = await addComment(targetType, targetId, content, parentId, attachments)
-      
+
       if (result.success) {
         if (parentId) {
           setReplyTo(null)
@@ -166,7 +166,10 @@ export function CommentsSection({
     }
   }
 
-  const handleReaction = async (commentId: string, reactionType: 'like' | 'dislike' | 'heart' | 'thumbs_up' | 'thumbs_down') => {
+  const handleReaction = async (
+    commentId: string,
+    reactionType: 'like' | 'dislike' | 'heart' | 'thumbs_up' | 'thumbs_down'
+  ) => {
     try {
       await addReaction(commentId, reactionType)
     } catch (error) {
@@ -207,21 +210,18 @@ export function CommentsSection({
     const text = newComment
     const before = text.substring(0, start - mentionQuery.length - 1) // -1 for @
     const after = text.substring(end)
-    
+
     const mention = `@[${suggestion.name}](${suggestion.id})`
     const newText = before + mention + after
-    
+
     setNewComment(newText)
     setShowMentions(false)
     setMentionQuery('')
-    
+
     // Focus back to textarea
     setTimeout(() => {
       textarea.focus()
-      textarea.setSelectionRange(
-        before.length + mention.length,
-        before.length + mention.length
-      )
+      textarea.setSelectionRange(before.length + mention.length, before.length + mention.length)
     }, 0)
   }
 
@@ -246,22 +246,34 @@ export function CommentsSection({
     if (minutes < 60) return `${minutes}m ago`
     if (hours < 24) return `${hours}h ago`
     if (days < 7) return `${days}d ago`
-    
+
     return date.toLocaleDateString()
   }
 
   const getReactionIcon = (type: string, hasReacted: boolean) => {
     const className = `h-4 w-4 ${hasReacted ? 'text-blue-600' : 'text-gray-500'}`
-    
+
     switch (type) {
       case 'like':
       case 'thumbs_up':
-        return hasReacted ? <HandThumbUpIconSolid className={className} /> : <HandThumbUpIcon className={className} />
+        return hasReacted ? (
+          <HandThumbUpIconSolid className={className} />
+        ) : (
+          <HandThumbUpIcon className={className} />
+        )
       case 'dislike':
       case 'thumbs_down':
-        return hasReacted ? <HandThumbDownIconSolid className={className} /> : <HandThumbDownIcon className={className} />
+        return hasReacted ? (
+          <HandThumbDownIconSolid className={className} />
+        ) : (
+          <HandThumbDownIcon className={className} />
+        )
       case 'heart':
-        return hasReacted ? <HeartIconSolid className={className} /> : <HeartIcon className={className} />
+        return hasReacted ? (
+          <HeartIconSolid className={className} />
+        ) : (
+          <HeartIcon className={className} />
+        )
       default:
         return <HandThumbUpIcon className={className} />
     }
@@ -317,7 +329,7 @@ export function CommentsSection({
                 onResolve={handleResolve}
                 onReply={() => setReplyTo(comment.id)}
               />
-              
+
               {/* Replies */}
               {getReplies(comment.id).map(reply => (
                 <div key={reply.id} className="ml-8 border-l-2 border-gray-100 pl-4">
@@ -338,7 +350,7 @@ export function CommentsSection({
                 <div className="ml-8 mt-2">
                   <CommentInput
                     placeholder={`Reply to ${comment.authorName}...`}
-                    onSubmit={(content) => handleSubmit(content, comment.id)}
+                    onSubmit={content => handleSubmit(content, comment.id)}
                     onCancel={() => setReplyTo(null)}
                     submitting={submitting}
                     isReply
@@ -355,7 +367,7 @@ export function CommentsSection({
         <div className="border-t border-gray-200 pt-6">
           <CommentInput
             placeholder="Add a comment..."
-            onSubmit={(content) => handleSubmit(content)}
+            onSubmit={content => handleSubmit(content)}
             submitting={submitting}
             allowAttachments
           />
@@ -384,7 +396,7 @@ function CommentItem({
   onReaction,
   onResolve,
   onReply,
-  isReply = false
+  isReply = false,
 }: CommentItemProps) {
   const [editing, setEditing] = useState(false)
   const [editContent, setEditContent] = useState(comment.content)
@@ -400,18 +412,18 @@ function CommentItem({
   }
 
   return (
-    <div className={`bg-white rounded-lg border ${comment.resolved ? 'border-green-200 bg-green-50' : 'border-gray-200'} p-4`}>
+    <div
+      className={`bg-white rounded-lg border ${comment.resolved ? 'border-green-200 bg-green-50' : 'border-gray-200'} p-4`}
+    >
       <div className="flex items-start space-x-3">
         <div className="flex-shrink-0">
           <UserCircleIcon className="h-8 w-8 text-gray-400" />
         </div>
-        
+
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
-              <h4 className="text-sm font-medium text-gray-900">
-                {comment.authorName}
-              </h4>
+              <h4 className="text-sm font-medium text-gray-900">{comment.authorName}</h4>
               <span className="text-xs text-gray-500">
                 {formatTime(new Date(comment.createdAt))}
               </span>
@@ -422,7 +434,7 @@ function CommentItem({
                 </span>
               )}
             </div>
-            
+
             <div className="flex items-center space-x-1">
               {!comment.resolved && onReply && !isReply && (
                 <button
@@ -433,7 +445,7 @@ function CommentItem({
                   <ArrowUturnLeftIcon className="h-4 w-4" />
                 </button>
               )}
-              
+
               {isAuthor && (
                 <button
                   onClick={() => setEditing(!editing)}
@@ -443,7 +455,7 @@ function CommentItem({
                   <EllipsisVerticalIcon className="h-4 w-4" />
                 </button>
               )}
-              
+
               {!comment.resolved && !isReply && (
                 <button
                   onClick={() => onResolve(comment.id)}
@@ -455,34 +467,27 @@ function CommentItem({
               )}
             </div>
           </div>
-          
+
           <div className="mt-2">
             {editing ? (
               <div className="space-y-2">
                 <textarea
                   value={editContent}
-                  onChange={(e) => setEditContent(e.target.value)}
+                  onChange={e => setEditContent(e.target.value)}
                   className="w-full p-2 border border-gray-300 rounded-md resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   rows={3}
                 />
                 <div className="flex justify-end space-x-2">
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => setEditing(false)}
-                  >
+                  <Button variant="secondary" size="sm" onClick={() => setEditing(false)}>
                     Cancel
                   </Button>
-                  <Button
-                    size="sm"
-                    onClick={handleEditSubmit}
-                  >
+                  <Button size="sm" onClick={handleEditSubmit}>
                     Save
                   </Button>
                 </div>
               </div>
             ) : (
-              <div 
+              <div
                 className="text-sm text-gray-700 prose prose-sm max-w-none"
                 dangerouslySetInnerHTML={{ __html: comment.content }}
               />
@@ -503,9 +508,7 @@ function CommentItem({
                   >
                     {attachment.name}
                   </a>
-                  <span className="text-gray-500">
-                    ({(attachment.size / 1024).toFixed(1)} KB)
-                  </span>
+                  <span className="text-gray-500">({(attachment.size / 1024).toFixed(1)} KB)</span>
                 </div>
               ))}
             </div>
@@ -518,15 +521,21 @@ function CommentItem({
                 onClick={() => onReaction(comment.id, 'like')}
                 className="flex items-center space-x-1 text-xs text-gray-500 hover:text-blue-600"
               >
-                {getReactionIcon('like', userReactions.some(r => r.type === 'like'))}
+                {getReactionIcon(
+                  'like',
+                  userReactions.some(r => r.type === 'like')
+                )}
                 <span>{comment.reactions?.filter(r => r.type === 'like').length || 0}</span>
               </button>
-              
+
               <button
                 onClick={() => onReaction(comment.id, 'heart')}
                 className="flex items-center space-x-1 text-xs text-gray-500 hover:text-red-600"
               >
-                {getReactionIcon('heart', userReactions.some(r => r.type === 'heart'))}
+                {getReactionIcon(
+                  'heart',
+                  userReactions.some(r => r.type === 'heart')
+                )}
                 <span>{comment.reactions?.filter(r => r.type === 'heart').length || 0}</span>
               </button>
             </div>
@@ -561,7 +570,7 @@ function CommentInput({
   onCancel,
   submitting = false,
   isReply = false,
-  allowAttachments = false
+  allowAttachments = false,
 }: CommentInputProps) {
   const [content, setContent] = useState('')
   const [attachments, setAttachments] = useState<File[]>([])
@@ -599,13 +608,13 @@ function CommentInput({
       <div className="relative">
         <textarea
           value={content}
-          onChange={(e) => setContent(e.target.value)}
+          onChange={e => setContent(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
           className="w-full p-3 border border-gray-300 rounded-md resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           rows={isReply ? 2 : 3}
         />
-        
+
         {allowAttachments && (
           <div className="absolute bottom-3 left-3">
             <input
@@ -631,7 +640,10 @@ function CommentInput({
       {attachments.length > 0 && (
         <div className="space-y-2">
           {attachments.map((file, index) => (
-            <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded text-sm">
+            <div
+              key={index}
+              className="flex items-center justify-between p-2 bg-gray-50 rounded text-sm"
+            >
               <span className="truncate">{file.name}</span>
               <button
                 onClick={() => removeAttachment(index)}
@@ -646,11 +658,7 @@ function CommentInput({
 
       <div className="flex justify-end space-x-2">
         {onCancel && (
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={onCancel}
-          >
+          <Button variant="secondary" size="sm" onClick={onCancel}>
             Cancel
           </Button>
         )}
@@ -663,10 +671,8 @@ function CommentInput({
           {submitting ? 'Posting...' : isReply ? 'Reply' : 'Comment'}
         </Button>
       </div>
-      
-      <p className="text-xs text-gray-500">
-        Tip: Use Cmd/Ctrl + Enter to post quickly
-      </p>
+
+      <p className="text-xs text-gray-500">Tip: Use Cmd/Ctrl + Enter to post quickly</p>
     </div>
   )
 }

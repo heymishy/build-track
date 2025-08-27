@@ -405,7 +405,6 @@ export function EstimateManager({ projectId, className = '' }: EstimateManagerPr
         )}
       </div>
 
-
       {/* Estimate Creation Modal */}
       <EstimateCreationModal
         isOpen={showImportModal}

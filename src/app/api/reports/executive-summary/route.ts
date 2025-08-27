@@ -7,16 +7,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { withAuth, AuthUser } from '@/lib/middleware'
 import { prisma } from '@/lib/prisma'
 
-async function GET(
-  request: NextRequest,
-  user: AuthUser
-) {
+async function GET(request: NextRequest, user: AuthUser) {
   try {
     const { searchParams } = new URL(request.url)
     const projectIds = searchParams.get('projects')?.split(',').filter(Boolean)
 
     let projects
-    
+
     if (user.role === 'ADMIN') {
       // Admins can see all projects
       projects = await prisma.project.findMany({
@@ -24,13 +21,13 @@ async function GET(
         include: {
           trades: {
             include: {
-              lineItems: true
-            }
+              lineItems: true,
+            },
           },
           invoices: {
             include: {
-              lineItems: true
-            }
+              lineItems: true,
+            },
           },
           milestones: true,
           projectUsers: {
@@ -40,12 +37,12 @@ async function GET(
                   id: true,
                   name: true,
                   email: true,
-                  role: true
-                }
-              }
-            }
-          }
-        }
+                  role: true,
+                },
+              },
+            },
+          },
+        },
       })
     } else {
       // Regular users can only see their assigned projects
@@ -56,22 +53,22 @@ async function GET(
             {
               projectUsers: {
                 some: {
-                  userId: user.id
-                }
-              }
-            }
-          ]
+                  userId: user.id,
+                },
+              },
+            },
+          ],
         },
         include: {
           trades: {
             include: {
-              lineItems: true
-            }
+              lineItems: true,
+            },
           },
           invoices: {
             include: {
-              lineItems: true
-            }
+              lineItems: true,
+            },
           },
           milestones: true,
           projectUsers: {
@@ -81,12 +78,12 @@ async function GET(
                   id: true,
                   name: true,
                   email: true,
-                  role: true
-                }
-              }
-            }
-          }
-        }
+                  role: true,
+                },
+              },
+            },
+          },
+        },
       })
     }
 
@@ -120,13 +117,14 @@ async function GET(
       const tradeSpent = project.trades.reduce((sum, t) => {
         return sum + t.lineItems.reduce((lSum, l) => lSum + (l.actualCost || 0), 0)
       }, 0)
-      
+
       const budgetUsedPercent = tradeBudget > 0 ? (tradeSpent / tradeBudget) * 100 : 0
       const isOverBudget = tradeSpent > tradeBudget
 
       const milestonesComplete = project.milestones.filter(m => m.status === 'COMPLETED').length
       const milestonesTotal = project.milestones.length
-      const milestoneProgress = milestonesTotal > 0 ? (milestonesComplete / milestonesTotal) * 100 : 0
+      const milestoneProgress =
+        milestonesTotal > 0 ? (milestonesComplete / milestonesTotal) * 100 : 0
 
       let healthScore = 100
       if (isOverBudget) healthScore -= 40
@@ -145,16 +143,17 @@ async function GET(
         milestoneProgress,
         healthScore: Math.max(0, healthScore),
         invoiceCount: project.invoices.length,
-        tradeCount: project.trades.length
+        tradeCount: project.trades.length,
       }
     })
 
     // Risk analysis
     const highRiskProjects = projectPerformance.filter(p => p.healthScore < 60).length
     const overBudgetProjects = projectPerformance.filter(p => p.isOverBudget).length
-    const avgHealthScore = projectPerformance.length > 0 
-      ? projectPerformance.reduce((sum, p) => sum + p.healthScore, 0) / projectPerformance.length
-      : 100
+    const avgHealthScore =
+      projectPerformance.length > 0
+        ? projectPerformance.reduce((sum, p) => sum + p.healthScore, 0) / projectPerformance.length
+        : 100
 
     // Financial trends (last 6 months)
     const sixMonthsAgo = new Date()
@@ -163,18 +162,18 @@ async function GET(
     const recentInvoices = await prisma.invoice.findMany({
       where: {
         createdAt: {
-          gte: sixMonthsAgo
+          gte: sixMonthsAgo,
         },
-        projectId: projectIds ? { in: projectIds } : undefined
+        projectId: projectIds ? { in: projectIds } : undefined,
       },
       include: {
         project: {
           select: {
             id: true,
-            name: true
-          }
-        }
-      }
+            name: true,
+          },
+        },
+      },
     })
 
     // Group invoices by month
@@ -182,19 +181,21 @@ async function GET(
       const date = new Date()
       date.setMonth(date.getMonth() - i)
       const month = date.toISOString().slice(0, 7) // YYYY-MM format
-      
-      const monthInvoices = recentInvoices.filter(inv => 
-        inv.createdAt.toISOString().slice(0, 7) === month
+
+      const monthInvoices = recentInvoices.filter(
+        inv => inv.createdAt.toISOString().slice(0, 7) === month
       )
-      
+
       return {
         month,
         monthName: date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
         invoiceCount: monthInvoices.length,
         totalAmount: monthInvoices.reduce((sum, inv) => sum + (inv.totalAmount || 0), 0),
-        avgAmount: monthInvoices.length > 0 
-          ? monthInvoices.reduce((sum, inv) => sum + (inv.totalAmount || 0), 0) / monthInvoices.length
-          : 0
+        avgAmount:
+          monthInvoices.length > 0
+            ? monthInvoices.reduce((sum, inv) => sum + (inv.totalAmount || 0), 0) /
+              monthInvoices.length
+            : 0,
       }
     }).reverse()
 
@@ -208,14 +209,14 @@ async function GET(
         totalInvoices,
         totalInvoiceAmount,
         totalMilestones,
-        completedMilestones
+        completedMilestones,
       },
       projectStatus: {
         active: activeProjects,
         completed: completedProjects,
         onHold: onHoldProjects,
         planning: projects.filter(p => p.status === 'PLANNING').length,
-        cancelled: projects.filter(p => p.status === 'CANCELLED').length
+        cancelled: projects.filter(p => p.status === 'CANCELLED').length,
       },
       riskAnalysis: {
         highRiskProjects,
@@ -224,26 +225,25 @@ async function GET(
         riskDistribution: {
           low: projectPerformance.filter(p => p.healthScore >= 80).length,
           medium: projectPerformance.filter(p => p.healthScore >= 60 && p.healthScore < 80).length,
-          high: projectPerformance.filter(p => p.healthScore < 60).length
-        }
+          high: projectPerformance.filter(p => p.healthScore < 60).length,
+        },
       },
       projectPerformance,
       financialTrends: monthlyTrends,
       generatedAt: new Date(),
-      generatedBy: user.name || user.email
+      generatedBy: user.name || user.email,
     }
 
     return NextResponse.json({
       success: true,
-      data: summaryData
+      data: summaryData,
     })
-
   } catch (error) {
     console.error('Error generating executive summary:', error)
     return NextResponse.json(
       {
         success: false,
-        error: 'Failed to generate executive summary'
+        error: 'Failed to generate executive summary',
       },
       { status: 500 }
     )

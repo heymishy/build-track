@@ -5,12 +5,12 @@ import { useAuth } from '@/contexts/AuthContext'
 import { ReportManager } from '@/components/reports/ReportManager'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
-import { 
-  DocumentArrowDownIcon, 
+import {
+  DocumentArrowDownIcon,
   ChartBarIcon,
   ExclamationTriangleIcon,
   ClockIcon,
-  InformationCircleIcon
+  InformationCircleIcon,
 } from '@heroicons/react/24/outline'
 
 interface Project {
@@ -55,7 +55,7 @@ export default function ReportsPage() {
     try {
       const response = await fetch('/api/projects')
       const data = await response.json()
-      
+
       if (data.success) {
         setProjects(data.projects)
       } else {
@@ -78,7 +78,7 @@ export default function ReportsPage() {
         generatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
         generatedBy: user?.name || 'System',
         format: 'pdf',
-        projectName: 'Downtown Office Complex'
+        projectName: 'Downtown Office Complex',
       },
       {
         id: '2',
@@ -86,7 +86,7 @@ export default function ReportsPage() {
         type: 'invoice',
         generatedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
         generatedBy: user?.name || 'System',
-        format: 'csv'
+        format: 'csv',
       },
       {
         id: '3',
@@ -95,8 +95,8 @@ export default function ReportsPage() {
         generatedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
         generatedBy: user?.name || 'System',
         format: 'pdf',
-        projectName: 'Residential Development Phase 2'
-      }
+        projectName: 'Residential Development Phase 2',
+      },
     ]
     setRecentReports(mockReports)
   }
@@ -107,7 +107,7 @@ export default function ReportsPage() {
       month: 'short',
       day: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     })
   }
 
@@ -252,7 +252,9 @@ export default function ReportsPage() {
                           <h4 className="text-sm font-medium text-gray-900 truncate">
                             {project.name}
                           </h4>
-                          <span className={`px-2 py-1 text-xs font-medium rounded ${getProjectStatusColor(project.status)}`}>
+                          <span
+                            className={`px-2 py-1 text-xs font-medium rounded ${getProjectStatusColor(project.status)}`}
+                          >
                             {project.status}
                           </span>
                         </div>
@@ -291,17 +293,13 @@ export default function ReportsPage() {
                     recentReports.map(report => (
                       <div key={report.id} className="p-3 border border-gray-200 rounded-lg">
                         <div className="flex items-start space-x-3">
-                          <div className="flex-shrink-0 mt-1">
-                            {getReportTypeIcon(report.type)}
-                          </div>
+                          <div className="flex-shrink-0 mt-1">{getReportTypeIcon(report.type)}</div>
                           <div className="flex-1 min-w-0">
                             <h4 className="text-sm font-medium text-gray-900 truncate">
                               {report.name}
                             </h4>
                             {report.projectName && (
-                              <p className="text-xs text-gray-600 truncate">
-                                {report.projectName}
-                              </p>
+                              <p className="text-xs text-gray-600 truncate">{report.projectName}</p>
                             )}
                             <div className="flex items-center justify-between mt-1">
                               <span className="text-xs text-gray-500">
@@ -332,7 +330,10 @@ export default function ReportsPage() {
                 <div className="space-y-3 text-sm text-gray-600">
                   <div>
                     <h4 className="font-medium text-gray-900 mb-1">PDF Reports</h4>
-                    <p>Best for presentations and formal documentation. Includes charts and formatted layouts.</p>
+                    <p>
+                      Best for presentations and formal documentation. Includes charts and formatted
+                      layouts.
+                    </p>
                   </div>
                   <div>
                     <h4 className="font-medium text-gray-900 mb-1">CSV/Excel Reports</h4>

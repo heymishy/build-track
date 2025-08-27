@@ -33,12 +33,12 @@ interface LineItemFormData {
   overheadPercent: number
 }
 
-export function AddLineItemModal({ 
-  isOpen, 
-  onClose, 
-  onComplete, 
-  projectId, 
-  trades 
+export function AddLineItemModal({
+  isOpen,
+  onClose,
+  onComplete,
+  projectId,
+  trades,
 }: AddLineItemModalProps) {
   const [formData, setFormData] = useState<LineItemFormData>({
     tradeId: '',
@@ -49,7 +49,7 @@ export function AddLineItemModal({
     laborCostEst: 0,
     equipmentCostEst: 0,
     markupPercent: 15,
-    overheadPercent: 10
+    overheadPercent: 10,
   })
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -68,7 +68,7 @@ export function AddLineItemModal({
         laborCostEst: 0,
         equipmentCostEst: 0,
         markupPercent: 15,
-        overheadPercent: 10
+        overheadPercent: 10,
       })
       setError(null)
       setShowCreateTrade(false)
@@ -87,7 +87,7 @@ export function AddLineItemModal({
   const handleInputChange = (field: keyof LineItemFormData, value: string | number) => {
     setFormData(prev => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }))
     setError(null)
   }
@@ -104,7 +104,7 @@ export function AddLineItemModal({
         body: JSON.stringify({
           name: newTradeName.trim(),
           description: `Trade created for line item: ${formData.description}`,
-          sortOrder: trades.length
+          sortOrder: trades.length,
         }),
       })
 
@@ -127,7 +127,7 @@ export function AddLineItemModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!formData.tradeId) {
       setError('Please select or create a trade')
       return
@@ -151,7 +151,7 @@ export function AddLineItemModal({
 
     try {
       setSubmitting(true)
-      
+
       // First, check if we need to create a new trade
       let tradeId = formData.tradeId
       if (showCreateTrade && newTradeName.trim()) {
@@ -174,7 +174,7 @@ export function AddLineItemModal({
           laborCostEst: formData.laborCostEst,
           equipmentCostEst: formData.equipmentCostEst,
           markupPercent: formData.markupPercent,
-          overheadPercent: formData.overheadPercent
+          overheadPercent: formData.overheadPercent,
         }),
       })
 
@@ -202,12 +202,7 @@ export function AddLineItemModal({
   }
 
   return (
-    <Modal 
-      isOpen={isOpen} 
-      onClose={onClose}
-      title="Add Line Item"
-      size="lg"
-    >
+    <Modal isOpen={isOpen} onClose={onClose} title="Add Line Item" size="lg">
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Trade Selection */}
         <div>
@@ -219,7 +214,7 @@ export function AddLineItemModal({
               <select
                 id="tradeId"
                 value={formData.tradeId}
-                onChange={(e) => handleInputChange('tradeId', e.target.value)}
+                onChange={e => handleInputChange('tradeId', e.target.value)}
                 className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required
               >
@@ -243,7 +238,7 @@ export function AddLineItemModal({
             <div className="flex space-x-2">
               <Input
                 value={newTradeName}
-                onChange={(e) => setNewTradeName(e.target.value)}
+                onChange={e => setNewTradeName(e.target.value)}
                 placeholder="Enter new trade name"
                 className="flex-1"
               />
@@ -277,7 +272,7 @@ export function AddLineItemModal({
             <Input
               id="description"
               value={formData.description}
-              onChange={(e) => handleInputChange('description', e.target.value)}
+              onChange={e => handleInputChange('description', e.target.value)}
               placeholder="Enter line item description"
               required
             />
@@ -293,7 +288,7 @@ export function AddLineItemModal({
               min="0.01"
               step="0.01"
               value={formData.quantity}
-              onChange={(e) => handleInputChange('quantity', parseFloat(e.target.value) || 0)}
+              onChange={e => handleInputChange('quantity', parseFloat(e.target.value) || 0)}
               required
             />
           </div>
@@ -305,7 +300,7 @@ export function AddLineItemModal({
             <select
               id="unit"
               value={formData.unit}
-              onChange={(e) => handleInputChange('unit', e.target.value)}
+              onChange={e => handleInputChange('unit', e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="ea">Each</option>
@@ -329,7 +324,10 @@ export function AddLineItemModal({
           <h3 className="text-sm font-medium text-gray-900 mb-3">Cost Breakdown (per unit)</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label htmlFor="materialCost" className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="materialCost"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
                 Material Cost
               </label>
               <Input
@@ -338,7 +336,9 @@ export function AddLineItemModal({
                 min="0"
                 step="0.01"
                 value={formData.materialCostEst}
-                onChange={(e) => handleInputChange('materialCostEst', parseFloat(e.target.value) || 0)}
+                onChange={e =>
+                  handleInputChange('materialCostEst', parseFloat(e.target.value) || 0)
+                }
                 placeholder="0.00"
               />
             </div>
@@ -353,13 +353,16 @@ export function AddLineItemModal({
                 min="0"
                 step="0.01"
                 value={formData.laborCostEst}
-                onChange={(e) => handleInputChange('laborCostEst', parseFloat(e.target.value) || 0)}
+                onChange={e => handleInputChange('laborCostEst', parseFloat(e.target.value) || 0)}
                 placeholder="0.00"
               />
             </div>
 
             <div>
-              <label htmlFor="equipmentCost" className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="equipmentCost"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
                 Equipment Cost
               </label>
               <Input
@@ -368,7 +371,9 @@ export function AddLineItemModal({
                 min="0"
                 step="0.01"
                 value={formData.equipmentCostEst}
-                onChange={(e) => handleInputChange('equipmentCostEst', parseFloat(e.target.value) || 0)}
+                onChange={e =>
+                  handleInputChange('equipmentCostEst', parseFloat(e.target.value) || 0)
+                }
                 placeholder="0.00"
               />
             </div>
@@ -391,7 +396,9 @@ export function AddLineItemModal({
                   max="100"
                   step="0.1"
                   value={formData.markupPercent}
-                  onChange={(e) => handleInputChange('markupPercent', parseFloat(e.target.value) || 0)}
+                  onChange={e =>
+                    handleInputChange('markupPercent', parseFloat(e.target.value) || 0)
+                  }
                 />
                 <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                   <span className="text-gray-500 text-sm">%</span>
@@ -411,7 +418,9 @@ export function AddLineItemModal({
                   max="100"
                   step="0.1"
                   value={formData.overheadPercent}
-                  onChange={(e) => handleInputChange('overheadPercent', parseFloat(e.target.value) || 0)}
+                  onChange={e =>
+                    handleInputChange('overheadPercent', parseFloat(e.target.value) || 0)
+                  }
                 />
                 <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                   <span className="text-gray-500 text-sm">%</span>
@@ -431,7 +440,7 @@ export function AddLineItemModal({
               {formatCurrency(calculateTotal())}
             </span>
           </div>
-          
+
           {formData.quantity > 1 && (
             <div className="mt-1 text-xs text-gray-600">
               Unit cost: {formatCurrency(calculateTotal() / formData.quantity)}
@@ -448,19 +457,10 @@ export function AddLineItemModal({
 
         {/* Form Actions */}
         <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={onClose}
-            disabled={submitting}
-          >
+          <Button type="button" variant="secondary" onClick={onClose} disabled={submitting}>
             Cancel
           </Button>
-          <Button
-            type="submit"
-            disabled={submitting}
-            icon={<PlusIcon className="h-4 w-4" />}
-          >
+          <Button type="submit" disabled={submitting} icon={<PlusIcon className="h-4 w-4" />}>
             {submitting ? 'Adding...' : 'Add Line Item'}
           </Button>
         </div>

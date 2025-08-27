@@ -15,14 +15,14 @@ const mockTrades = [
     id: 'trade-1',
     name: 'Foundation',
     description: 'Foundation work',
-    sortOrder: 1
+    sortOrder: 1,
   },
   {
     id: 'trade-2',
     name: 'Framing',
     description: 'Structural framing',
-    sortOrder: 2
-  }
+    sortOrder: 2,
+  },
 ]
 
 const mockOnComplete = jest.fn()
@@ -308,7 +308,7 @@ describe('AddLineItemModal', () => {
       )
 
       const materialCostInput = screen.getByLabelText(/material cost/i)
-      
+
       fireEvent.change(materialCostInput, { target: { value: '100' } })
       expect(screen.getByText('$115.00')).toBeInTheDocument() // 100 + 15% markup + 10% overhead
 
@@ -330,7 +330,9 @@ describe('AddLineItemModal', () => {
       )
 
       // Fill in form data
-      fireEvent.change(screen.getByLabelText(/description/i), { target: { value: 'Test Line Item' } })
+      fireEvent.change(screen.getByLabelText(/description/i), {
+        target: { value: 'Test Line Item' },
+      })
       fireEvent.change(screen.getByLabelText(/quantity/i), { target: { value: '2' } })
       fireEvent.change(screen.getByLabelText(/material cost/i), { target: { value: '150' } })
       fireEvent.change(screen.getByLabelText(/labor cost/i), { target: { value: '100' } })
@@ -416,7 +418,7 @@ describe('AddLineItemModal', () => {
       )
 
       const unitSelect = screen.getByLabelText(/unit/i)
-      
+
       expect(screen.getByText('Each')).toBeInTheDocument()
       expect(screen.getByText('Meter')).toBeInTheDocument()
       expect(screen.getByText('Square Meter')).toBeInTheDocument()

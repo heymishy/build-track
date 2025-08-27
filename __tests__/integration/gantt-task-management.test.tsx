@@ -27,7 +27,7 @@ const mockInitialTasks = [
     parentId: null,
     sortOrder: 1,
     createdAt: '2024-01-01T00:00:00Z',
-    updatedAt: '2024-01-15T00:00:00Z'
+    updatedAt: '2024-01-15T00:00:00Z',
   },
   {
     id: 'task-2',
@@ -45,18 +45,17 @@ const mockInitialTasks = [
     parentId: null,
     sortOrder: 2,
     createdAt: '2024-01-01T00:00:00Z',
-    updatedAt: '2024-02-01T00:00:00Z'
-  }
+    updatedAt: '2024-02-01T00:00:00Z',
+  },
 ]
 
 describe('Gantt Chart and Task Management Integration', () => {
   beforeEach(() => {
     jest.clearAllMocks()
-    ;(global.fetch as jest.Mock)
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ success: true, tasks: mockInitialTasks })
-      })
+    ;(global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ success: true, tasks: mockInitialTasks }),
+    })
   })
 
   describe('Full Task Lifecycle', () => {
@@ -65,11 +64,11 @@ describe('Gantt Chart and Task Management Integration', () => {
       ;(global.fetch as jest.Mock)
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => ({ success: true, tasks: mockInitialTasks })
+          json: async () => ({ success: true, tasks: mockInitialTasks }),
         })
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => ({ 
+          json: async () => ({
             success: true,
             task: {
               id: 'task-3',
@@ -87,14 +86,14 @@ describe('Gantt Chart and Task Management Integration', () => {
               parentId: null,
               sortOrder: 3,
               createdAt: '2024-02-16T00:00:00Z',
-              updatedAt: '2024-02-16T00:00:00Z'
-            }
-          })
+              updatedAt: '2024-02-16T00:00:00Z',
+            },
+          }),
         })
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => ({ 
-            success: true, 
+          json: async () => ({
+            success: true,
             tasks: [
               ...mockInitialTasks,
               {
@@ -113,10 +112,10 @@ describe('Gantt Chart and Task Management Integration', () => {
                 parentId: null,
                 sortOrder: 3,
                 createdAt: '2024-02-16T00:00:00Z',
-                updatedAt: '2024-02-16T00:00:00Z'
-              }
-            ]
-          })
+                updatedAt: '2024-02-16T00:00:00Z',
+              },
+            ],
+          }),
         })
 
       render(<TaskManager projectId="project-1" />)
@@ -166,7 +165,7 @@ describe('Gantt Chart and Task Management Integration', () => {
           expect.objectContaining({
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: expect.stringContaining('Electrical Installation')
+            body: expect.stringContaining('Electrical Installation'),
           })
         )
       })
@@ -184,11 +183,11 @@ describe('Gantt Chart and Task Management Integration', () => {
       ;(global.fetch as jest.Mock)
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => ({ success: true, tasks: mockInitialTasks })
+          json: async () => ({ success: true, tasks: mockInitialTasks }),
         })
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => ({ success: true })
+          json: async () => ({ success: true }),
         })
 
       render(<TaskManager projectId="project-1" />)
@@ -219,7 +218,7 @@ describe('Gantt Chart and Task Management Integration', () => {
           '/api/projects/project-1/tasks/task-2',
           expect.objectContaining({
             method: 'PUT',
-            body: expect.stringContaining('"progress":85')
+            body: expect.stringContaining('"progress":85'),
           })
         )
       })
@@ -364,7 +363,7 @@ describe('Gantt Chart and Task Management Integration', () => {
       ;(global.fetch as jest.Mock)
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => ({ success: true, tasks: mockInitialTasks })
+          json: async () => ({ success: true, tasks: mockInitialTasks }),
         })
         .mockRejectedValueOnce(new Error('API Error'))
 
@@ -397,21 +396,21 @@ describe('Gantt Chart and Task Management Integration', () => {
       ;(global.fetch as jest.Mock)
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => ({ success: true, tasks: mockInitialTasks })
+          json: async () => ({ success: true, tasks: mockInitialTasks }),
         })
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => ({ success: true }) // Update success
+          json: async () => ({ success: true }), // Update success
         })
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => ({ 
-            success: true, 
+          json: async () => ({
+            success: true,
             tasks: [
               { ...mockInitialTasks[0], progress: 100 },
-              { ...mockInitialTasks[1], progress: 85, status: 'IN_PROGRESS' }
-            ]
-          })
+              { ...mockInitialTasks[1], progress: 85, status: 'IN_PROGRESS' },
+            ],
+          }),
         })
 
       render(<TaskManager projectId="project-1" />)
@@ -447,8 +446,8 @@ describe('Gantt Chart and Task Management Integration', () => {
         id: `task-${i}`,
         name: `Task ${i}`,
         description: `Description for task ${i}`,
-        startDate: `2024-01-${String(i % 28 + 1).padStart(2, '0')}`,
-        endDate: `2024-02-${String(i % 28 + 1).padStart(2, '0')}`,
+        startDate: `2024-01-${String((i % 28) + 1).padStart(2, '0')}`,
+        endDate: `2024-02-${String((i % 28) + 1).padStart(2, '0')}`,
         duration: 14,
         progress: i % 101,
         status: i % 3 === 0 ? 'COMPLETED' : i % 3 === 1 ? 'IN_PROGRESS' : 'PENDING',
@@ -459,20 +458,23 @@ describe('Gantt Chart and Task Management Integration', () => {
         parentId: null,
         sortOrder: i,
         createdAt: '2024-01-01T00:00:00Z',
-        updatedAt: '2024-01-01T00:00:00Z'
+        updatedAt: '2024-01-01T00:00:00Z',
       }))
 
       ;(global.fetch as jest.Mock).mockResolvedValue({
         ok: true,
-        json: async () => ({ success: true, tasks: largeTasks })
+        json: async () => ({ success: true, tasks: largeTasks }),
       })
 
       const startTime = Date.now()
       render(<TaskManager projectId="project-1" />)
 
-      await waitFor(() => {
-        expect(screen.getByText('Task 0')).toBeInTheDocument()
-      }, { timeout: 5000 })
+      await waitFor(
+        () => {
+          expect(screen.getByText('Task 0')).toBeInTheDocument()
+        },
+        { timeout: 5000 }
+      )
 
       const renderTime = Date.now() - startTime
       expect(renderTime).toBeLessThan(3000) // Should render within 3 seconds
@@ -487,7 +489,7 @@ describe('Gantt Chart and Task Management Integration', () => {
 
       // Rapid filter changes should not cause lag
       const statusFilter = screen.getByLabelText(/status/i)
-      
+
       fireEvent.change(statusFilter, { target: { value: 'COMPLETED' } })
       fireEvent.change(statusFilter, { target: { value: 'IN_PROGRESS' } })
       fireEvent.change(statusFilter, { target: { value: 'PENDING' } })

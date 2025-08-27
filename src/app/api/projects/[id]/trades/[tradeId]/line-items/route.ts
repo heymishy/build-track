@@ -89,13 +89,17 @@ async function POST(
     })
 
     const totalBudget = allTrades.reduce((sum, trade) => {
-      return sum + trade.lineItems.reduce((tradeSum, item) => {
-        const baseTotal = (item.materialCostEst || 0) + (item.laborCostEst || 0) + (item.equipmentCostEst || 0)
-        const markup = baseTotal * ((item.markupPercent || 0) / 100)
-        const overhead = baseTotal * ((item.overheadPercent || 0) / 100)
-        const itemTotal = (baseTotal + markup + overhead) * (item.quantity || 1)
-        return tradeSum + itemTotal
-      }, 0)
+      return (
+        sum +
+        trade.lineItems.reduce((tradeSum, item) => {
+          const baseTotal =
+            (item.materialCostEst || 0) + (item.laborCostEst || 0) + (item.equipmentCostEst || 0)
+          const markup = baseTotal * ((item.markupPercent || 0) / 100)
+          const overhead = baseTotal * ((item.overheadPercent || 0) / 100)
+          const itemTotal = (baseTotal + markup + overhead) * (item.quantity || 1)
+          return tradeSum + itemTotal
+        }, 0)
+      )
     }, 0)
 
     // Update project total budget

@@ -30,7 +30,7 @@ const mockProject = {
 const mockReportData = {
   success: true,
   data: new Blob(['mock report data'], { type: 'application/pdf' }),
-  url: 'mock-url'
+  url: 'mock-url',
 }
 
 describe('ReportManager', () => {
@@ -118,7 +118,7 @@ describe('ReportManager', () => {
 
       const reportTypeSelect = screen.getByLabelText(/report type/i)
       const formatSelect = screen.getByLabelText(/format/i)
-      
+
       fireEvent.change(reportTypeSelect, { target: { value: 'project-summary' } })
       fireEvent.change(formatSelect, { target: { value: 'PDF' } })
 
@@ -221,8 +221,8 @@ describe('ReportManager', () => {
           type: 'project-summary',
           format: 'PDF',
           createdAt: '2024-03-15T10:00:00Z',
-          downloadUrl: 'mock-download-url'
-        }
+          downloadUrl: 'mock-download-url',
+        },
       ]
 
       ;(global.fetch as jest.Mock).mockResolvedValue({

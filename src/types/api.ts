@@ -258,7 +258,13 @@ export interface ReportConfig {
   }
 }
 
-export type ReportType = 'project-summary' | 'financial-analysis' | 'milestone-progress' | 'cost-tracking' | 'comprehensive' | 'custom'
+export type ReportType =
+  | 'project-summary'
+  | 'financial-analysis'
+  | 'milestone-progress'
+  | 'cost-tracking'
+  | 'comprehensive'
+  | 'custom'
 export type ReportFormat = 'PDF' | 'Excel' | 'CSV'
 
 // Comment Types

@@ -210,7 +210,7 @@ async function PUT(
     // Handle status updates
     if (updates.status !== undefined) {
       updateData.status = updates.status.toUpperCase().replace('-', '_')
-      
+
       // Auto-update progress based on status
       if (updates.status === 'completed' && updates.progress === undefined) {
         updateData.progress = 100
@@ -386,14 +386,11 @@ async function DELETE(
     }
 
     // Delete task and its dependencies in transaction
-    await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async tx => {
       // Delete all dependencies
       await tx.taskDependency.deleteMany({
         where: {
-          OR: [
-            { taskId },
-            { dependsOnTaskId: taskId },
-          ],
+          OR: [{ taskId }, { dependsOnTaskId: taskId }],
         },
       })
 

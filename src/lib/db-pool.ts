@@ -53,7 +53,7 @@ class DatabasePool {
       createRetryIntervalMs: parseInt(process.env.DB_RETRY_INTERVAL || '1000'),
       propagateCreateError: true,
       log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
-      ...config
+      ...config,
     }
 
     this.metrics = {
@@ -69,7 +69,7 @@ class DatabasePool {
       failedAcquires: 0,
       timedOutAcquires: 0,
       averageAcquireTime: 0,
-      averageCreateTime: 0
+      averageCreateTime: 0,
     }
 
     this.initializePool()
@@ -82,9 +82,9 @@ class DatabasePool {
         log: this.config.log as any[],
         datasources: {
           db: {
-            url: this.buildConnectionUrl()
-          }
-        }
+            url: this.buildConnectionUrl(),
+          },
+        },
       })
 
       // Add connection event listeners
@@ -97,9 +97,8 @@ class DatabasePool {
         maxConnections: this.config.maxConnections,
         minConnections: this.config.minConnections,
         acquireTimeout: this.config.acquireTimeoutMs,
-        idleTimeout: this.config.idleTimeoutMs
+        idleTimeout: this.config.idleTimeoutMs,
       })
-
     } catch (error) {
       console.error('[DB Pool] Failed to initialize database pool:', error)
       throw error
@@ -108,20 +107,26 @@ class DatabasePool {
 
   private buildConnectionUrl(): string {
     const baseUrl = process.env.DATABASE_URL || 'file:./dev.db'
-    
+
     // For PostgreSQL, add connection pool parameters
     if (baseUrl.startsWith('postgresql://') || baseUrl.startsWith('postgres://')) {
       const url = new URL(baseUrl)
-      
+
       // Add connection pool parameters
       url.searchParams.set('connection_limit', this.config.maxConnections.toString())
-      url.searchParams.set('pool_timeout', Math.floor(this.config.acquireTimeoutMs / 1000).toString())
-      url.searchParams.set('connect_timeout', Math.floor(this.config.createTimeoutMs / 1000).toString())
-      
+      url.searchParams.set(
+        'pool_timeout',
+        Math.floor(this.config.acquireTimeoutMs / 1000).toString()
+      )
+      url.searchParams.set(
+        'connect_timeout',
+        Math.floor(this.config.createTimeoutMs / 1000).toString()
+      )
+
       // Performance optimizations
       url.searchParams.set('statement_cache_size', '100')
       url.searchParams.set('prepared_statement_cache_size', '100')
-      
+
       return url.toString()
     }
 
@@ -134,31 +139,31 @@ class DatabasePool {
     // Monitor query performance
     this.prisma.$use(async (params, next) => {
       const startTime = Date.now()
-      
+
       try {
         const result = await next(params)
         const duration = Date.now() - startTime
-        
+
         // Log slow queries
         if (duration > 1000) {
           console.warn(`[DB Pool] Slow query detected (${duration}ms):`, {
             model: params.model,
             action: params.action,
-            duration
+            duration,
           })
         }
-        
+
         // Update metrics
         this.metrics.acquiredConnections++
         this.updateAverageAcquireTime(duration)
-        
+
         return result
       } catch (error) {
         this.metrics.failedAcquires++
         console.error('[DB Pool] Query failed:', {
           model: params.model,
           action: params.action,
-          error: error instanceof Error ? error.message : String(error)
+          error: error instanceof Error ? error.message : String(error),
         })
         throw error
       }
@@ -170,8 +175,8 @@ class DatabasePool {
     if (totalAcquires === 1) {
       this.metrics.averageAcquireTime = duration
     } else {
-      this.metrics.averageAcquireTime = 
-        ((this.metrics.averageAcquireTime * (totalAcquires - 1)) + duration) / totalAcquires
+      this.metrics.averageAcquireTime =
+        (this.metrics.averageAcquireTime * (totalAcquires - 1) + duration) / totalAcquires
     }
   }
 
@@ -208,27 +213,27 @@ class DatabasePool {
       return {
         healthy: false,
         latency: -1,
-        metrics: this.metrics
+        metrics: this.metrics,
       }
     }
 
     const startTime = Date.now()
-    
+
     try {
       await this.prisma.$queryRaw`SELECT 1`
       const latency = Date.now() - startTime
-      
+
       return {
         healthy: true,
         latency,
-        metrics: this.getMetrics()
+        metrics: this.getMetrics(),
       }
     } catch (error) {
       console.error('[DB Pool] Health check query failed:', error)
       return {
         healthy: false,
         latency: Date.now() - startTime,
-        metrics: this.metrics
+        metrics: this.metrics,
       }
     }
   }
@@ -243,41 +248,41 @@ class DatabasePool {
   ): Promise<T> {
     const client = await this.getClient()
     let lastError: Error | null = null
-    
+
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
         return await client.$transaction(fn, {
           maxWait: this.config.acquireTimeoutMs,
           timeout: this.config.createTimeoutMs,
-          isolationLevel: 'ReadCommitted'
+          isolationLevel: 'ReadCommitted',
         })
       } catch (error) {
         lastError = error as Error
-        
+
         // Don't retry on certain errors
         if (
           error instanceof Error &&
           (error.message.includes('Unique constraint') ||
-           error.message.includes('Foreign key constraint') ||
-           error.message.includes('Check constraint'))
+            error.message.includes('Foreign key constraint') ||
+            error.message.includes('Check constraint'))
         ) {
           throw error
         }
-        
+
         if (attempt === maxRetries) {
           break
         }
-        
+
         // Exponential backoff
         const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000)
         await new Promise(resolve => setTimeout(resolve, delay))
-        
+
         console.warn(`[DB Pool] Transaction attempt ${attempt} failed, retrying in ${delay}ms:`, {
-          error: error instanceof Error ? error.message : String(error)
+          error: error instanceof Error ? error.message : String(error),
         })
       }
     }
-    
+
     throw lastError || new Error('Transaction failed after maximum retries')
   }
 
@@ -287,61 +292,61 @@ class DatabasePool {
   ): Promise<T> {
     const client = await this.getClient()
     let lastError: Error | null = null
-    
+
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
         return await fn(client)
       } catch (error) {
         lastError = error as Error
-        
+
         // Don't retry on validation errors
         if (
           error instanceof Error &&
           (error.message.includes('Invalid') ||
-           error.message.includes('validation') ||
-           error.message.includes('required'))
+            error.message.includes('validation') ||
+            error.message.includes('required'))
         ) {
           throw error
         }
-        
+
         if (attempt === maxRetries) {
           break
         }
-        
+
         // Linear backoff for queries
         const delay = 500 * attempt
         await new Promise(resolve => setTimeout(resolve, delay))
-        
+
         console.warn(`[DB Pool] Query attempt ${attempt} failed, retrying in ${delay}ms:`, {
-          error: error instanceof Error ? error.message : String(error)
+          error: error instanceof Error ? error.message : String(error),
         })
       }
     }
-    
+
     throw lastError || new Error('Query failed after maximum retries')
   }
 
   async warmUp(): Promise<void> {
     console.log('[DB Pool] Warming up connection pool...')
-    
+
     try {
       const client = await this.getClient()
-      
+
       // Execute a few simple queries to establish connections
       const warmupQueries = [
         () => client.$queryRaw`SELECT 1`,
         () => client.user.findMany({ take: 1 }),
-        () => client.project.findMany({ take: 1 })
+        () => client.project.findMany({ take: 1 }),
       ]
-      
+
       await Promise.all(
-        warmupQueries.map(query => 
+        warmupQueries.map(query =>
           query().catch(error => {
             console.warn('[DB Pool] Warmup query failed:', error)
           })
         )
       )
-      
+
       console.log('[DB Pool] Connection pool warmed up successfully')
     } catch (error) {
       console.error('[DB Pool] Failed to warm up connection pool:', error)
@@ -351,24 +356,24 @@ class DatabasePool {
   async gracefulShutdown(): Promise<void> {
     console.log('[DB Pool] Starting graceful shutdown...')
     this.isShuttingDown = true
-    
+
     // Clear health check interval
     if (this.healthCheckInterval) {
       clearInterval(this.healthCheckInterval)
       this.healthCheckInterval = null
     }
-    
+
     // Wait for active connections to complete
     const shutdownTimeout = setTimeout(() => {
       console.warn('[DB Pool] Shutdown timeout reached, forcing close')
     }, 30000) // 30 second timeout
-    
+
     try {
       if (this.prisma) {
         await this.prisma.$disconnect()
         this.prisma = null
       }
-      
+
       clearTimeout(shutdownTimeout)
       console.log('[DB Pool] Graceful shutdown completed')
     } catch (error) {
@@ -389,7 +394,7 @@ class DatabasePool {
     return {
       maxConnections: this.config.maxConnections,
       currentConnections: this.metrics.totalConnections,
-      healthy: this.isHealthy()
+      healthy: this.isHealthy(),
     }
   }
 }
@@ -413,17 +418,17 @@ export async function getDatabase(): Promise<PrismaClient> {
 if (typeof process !== 'undefined') {
   const gracefulShutdown = async (signal: string) => {
     console.log(`[DB Pool] Received ${signal}, initiating graceful shutdown...`)
-    
+
     if (poolInstance) {
       await poolInstance.gracefulShutdown()
     }
-    
+
     process.exit(0)
   }
-  
+
   process.on('SIGTERM', () => gracefulShutdown('SIGTERM'))
   process.on('SIGINT', () => gracefulShutdown('SIGINT'))
-  
+
   // Handle unhandled promise rejections
   process.on('unhandledRejection', (reason, promise) => {
     console.error('[DB Pool] Unhandled promise rejection:', reason)

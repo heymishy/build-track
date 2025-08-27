@@ -146,12 +146,12 @@ async function GET(
       completed: allTasks.filter(t => t.status === 'COMPLETED').length,
       inProgress: allTasks.filter(t => t.status === 'IN_PROGRESS').length,
       notStarted: allTasks.filter(t => t.status === 'NOT_STARTED').length,
-      overdue: allTasks.filter(t => 
-        new Date(t.endDate) < new Date() && t.status !== 'COMPLETED'
-      ).length,
-      avgProgress: allTasks.length > 0 
-        ? Math.round(allTasks.reduce((sum, t) => sum + (t.progress || 0), 0) / allTasks.length)
-        : 0,
+      overdue: allTasks.filter(t => new Date(t.endDate) < new Date() && t.status !== 'COMPLETED')
+        .length,
+      avgProgress:
+        allTasks.length > 0
+          ? Math.round(allTasks.reduce((sum, t) => sum + (t.progress || 0), 0) / allTasks.length)
+          : 0,
     }
 
     return NextResponse.json({

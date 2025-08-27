@@ -26,13 +26,13 @@ export default function ProjectManagementPage({}: ProjectManagementPageProps) {
     try {
       setLoading(true)
       const response = await fetch(`/api/projects/${projectId}`)
-      
+
       if (!response.ok) {
         throw new Error('Failed to fetch project')
       }
 
       const data = await response.json()
-      
+
       if (!data.success) {
         throw new Error(data.error || 'Failed to fetch project')
       }
@@ -115,7 +115,8 @@ export default function ProjectManagementPage({}: ProjectManagementPageProps) {
                   Status: <span className="font-medium text-green-600">{project.status}</span>
                 </div>
                 <div className="text-sm text-gray-600">
-                  Budget: <span className="font-medium">${project.budget?.toLocaleString() || 'N/A'}</span>
+                  Budget:{' '}
+                  <span className="font-medium">${project.budget?.toLocaleString() || 'N/A'}</span>
                 </div>
               </div>
             </div>

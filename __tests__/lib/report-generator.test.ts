@@ -12,7 +12,7 @@ jest.mock('jspdf', () => {
     text: jest.fn(),
     addPage: jest.fn(),
     save: jest.fn(),
-    output: jest.fn().mockReturnValue('mock-pdf-data')
+    output: jest.fn().mockReturnValue('mock-pdf-data'),
   }))
 })
 
@@ -21,29 +21,29 @@ jest.mock('xlsx', () => ({
     json_to_sheet: jest.fn().mockReturnValue({}),
     book_new: jest.fn().mockReturnValue({}),
     book_append_sheet: jest.fn(),
-    sheet_to_csv: jest.fn().mockReturnValue('mock,csv,data')
+    sheet_to_csv: jest.fn().mockReturnValue('mock,csv,data'),
   },
-  write: jest.fn().mockReturnValue('mock-excel-data')
+  write: jest.fn().mockReturnValue('mock-excel-data'),
 }))
 
 // Mock Prisma client
 const mockPrisma = {
   project: {
-    findUnique: jest.fn()
+    findUnique: jest.fn(),
   },
   trade: {
-    findMany: jest.fn()
+    findMany: jest.fn(),
   },
   invoice: {
-    findMany: jest.fn()
+    findMany: jest.fn(),
   },
   milestone: {
-    findMany: jest.fn()
-  }
+    findMany: jest.fn(),
+  },
 }
 
 jest.mock('@/lib/prisma', () => ({
-  prisma: mockPrisma
+  prisma: mockPrisma,
 }))
 
 const mockProjectData = {
@@ -58,9 +58,7 @@ const mockProjectData = {
   createdAt: '2024-01-01T00:00:00Z',
   updatedAt: '2024-06-15T00:00:00Z',
   owner: { name: 'John Doe', email: 'john@example.com' },
-  projectUsers: [
-    { user: { name: 'Jane Smith', email: 'jane@example.com' }, role: 'CONTRACTOR' }
-  ]
+  projectUsers: [{ user: { name: 'Jane Smith', email: 'jane@example.com' }, role: 'CONTRACTOR' }],
 }
 
 const mockTradesData = [
@@ -78,9 +76,9 @@ const mockTradesData = [
         laborCostEst: 800,
         equipmentCostEst: 200,
         markupPercent: 15,
-        overheadPercent: 10
-      }
-    ]
+        overheadPercent: 10,
+      },
+    ],
   },
   {
     id: 'trade-2',
@@ -96,10 +94,10 @@ const mockTradesData = [
         laborCostEst: 1000,
         equipmentCostEst: 100,
         markupPercent: 15,
-        overheadPercent: 10
-      }
-    ]
-  }
+        overheadPercent: 10,
+      },
+    ],
+  },
 ]
 
 const mockInvoicesData = [
@@ -116,10 +114,10 @@ const mockInvoicesData = [
         description: 'Concrete materials',
         amount: 2500,
         quantity: 10,
-        unit: 'm³'
-      }
-    ]
-  }
+        unit: 'm³',
+      },
+    ],
+  },
 ]
 
 const mockMilestonesData = [
@@ -131,7 +129,7 @@ const mockMilestonesData = [
     actualDate: '2024-03-10T00:00:00Z',
     status: 'COMPLETED',
     paymentAmount: 25000,
-    percentComplete: 100
+    percentComplete: 100,
   },
   {
     id: 'milestone-2',
@@ -141,8 +139,8 @@ const mockMilestonesData = [
     actualDate: null,
     status: 'IN_PROGRESS',
     paymentAmount: 35000,
-    percentComplete: 60
-  }
+    percentComplete: 60,
+  },
 ]
 
 describe('ReportGenerator', () => {
@@ -168,8 +166,8 @@ describe('ReportGenerator', () => {
           executiveSummary: true,
           financialDetails: true,
           milestoneTracking: true,
-          costAnalysis: false
-        }
+          costAnalysis: false,
+        },
       }
 
       const result = await reportGenerator.generateProjectReport('project-1', config)
@@ -181,8 +179,8 @@ describe('ReportGenerator', () => {
         where: { id: 'project-1' },
         include: expect.objectContaining({
           owner: true,
-          projectUsers: { include: { user: true } }
-        })
+          projectUsers: { include: { user: true } },
+        }),
       })
     })
 
@@ -196,8 +194,8 @@ describe('ReportGenerator', () => {
           milestoneTracking: true,
           costAnalysis: true,
           tradeBreakdown: true,
-          invoiceDetails: true
-        }
+          invoiceDetails: true,
+        },
       }
 
       const result = await reportGenerator.generateProjectReport('project-1', config)
@@ -214,12 +212,12 @@ describe('ReportGenerator', () => {
         format: 'PDF' as const,
         dateRange: {
           startDate: '2024-01-01',
-          endDate: '2024-06-30'
+          endDate: '2024-06-30',
         },
         sections: {
           financialDetails: true,
-          costAnalysis: true
-        }
+          costAnalysis: true,
+        },
       }
 
       const result = await reportGenerator.generateProjectReport('project-1', config)
@@ -231,9 +229,9 @@ describe('ReportGenerator', () => {
             projectId: 'project-1',
             date: expect.objectContaining({
               gte: expect.any(Date),
-              lte: expect.any(Date)
-            })
-          })
+              lte: expect.any(Date),
+            }),
+          }),
         })
       )
     })
@@ -248,15 +246,15 @@ describe('ReportGenerator', () => {
           executiveSummary: true,
           financialDetails: true,
           tradeBreakdown: true,
-          invoiceDetails: true
-        }
+          invoiceDetails: true,
+        },
       }
 
       const result = await reportGenerator.generateProjectReport('project-1', config)
 
       expect(result.success).toBe(true)
       expect(result.data).toBeDefined()
-      
+
       const XLSX = require('xlsx')
       expect(XLSX.utils.json_to_sheet).toHaveBeenCalledTimes(4) // One for each section
       expect(XLSX.utils.book_append_sheet).toHaveBeenCalledTimes(4)
@@ -268,14 +266,14 @@ describe('ReportGenerator', () => {
         format: 'Excel' as const,
         sections: {
           tradeBreakdown: true,
-          costAnalysis: true
-        }
+          costAnalysis: true,
+        },
       }
 
       const result = await reportGenerator.generateProjectReport('project-1', config)
 
       expect(result.success).toBe(true)
-      
+
       const XLSX = require('xlsx')
       expect(XLSX.utils.book_append_sheet).toHaveBeenCalledWith(
         expect.anything(),
@@ -296,15 +294,15 @@ describe('ReportGenerator', () => {
         type: 'cost-tracking' as const,
         format: 'CSV' as const,
         sections: {
-          tradeBreakdown: true
-        }
+          tradeBreakdown: true,
+        },
       }
 
       const result = await reportGenerator.generateProjectReport('project-1', config)
 
       expect(result.success).toBe(true)
       expect(result.data).toBeDefined()
-      
+
       const XLSX = require('xlsx')
       expect(XLSX.utils.sheet_to_csv).toHaveBeenCalled()
     })
@@ -314,8 +312,8 @@ describe('ReportGenerator', () => {
         type: 'milestone-progress' as const,
         format: 'CSV' as const,
         sections: {
-          milestoneTracking: true
-        }
+          milestoneTracking: true,
+        },
       }
 
       const result = await reportGenerator.generateProjectReport('project-1', config)
@@ -331,18 +329,18 @@ describe('ReportGenerator', () => {
         format: 'PDF' as const,
         sections: {
           financialDetails: true,
-          costAnalysis: true
-        }
+          costAnalysis: true,
+        },
       }
 
       const result = await reportGenerator.generateProjectReport('project-1', config)
 
       expect(result.success).toBe(true)
-      
+
       // Verify that financial calculations are performed
       expect(mockPrisma.trade.findMany).toHaveBeenCalledWith({
         where: { projectId: 'project-1' },
-        include: { lineItems: true }
+        include: { lineItems: true },
       })
     })
 
@@ -351,8 +349,8 @@ describe('ReportGenerator', () => {
         type: 'milestone-progress' as const,
         format: 'Excel' as const,
         sections: {
-          milestoneTracking: true
-        }
+          milestoneTracking: true,
+        },
       }
 
       const result = await reportGenerator.generateProjectReport('project-1', config)
@@ -360,7 +358,7 @@ describe('ReportGenerator', () => {
       expect(result.success).toBe(true)
       expect(mockPrisma.milestone.findMany).toHaveBeenCalledWith({
         where: { projectId: 'project-1' },
-        orderBy: { targetDate: 'asc' }
+        orderBy: { targetDate: 'asc' },
       })
     })
 
@@ -370,8 +368,8 @@ describe('ReportGenerator', () => {
         format: 'CSV' as const,
         sections: {
           tradeBreakdown: true,
-          costAnalysis: true
-        }
+          costAnalysis: true,
+        },
       }
 
       const result = await reportGenerator.generateProjectReport('project-1', config)
@@ -408,7 +406,7 @@ describe('ReportGenerator', () => {
       })
 
       const result = await reportGenerator.generateProjectReport('project-1', {
-        format: 'PDF'
+        format: 'PDF',
       })
 
       expect(result.success).toBe(false)
@@ -422,7 +420,7 @@ describe('ReportGenerator', () => {
       })
 
       const result = await reportGenerator.generateProjectReport('project-1', {
-        format: 'Excel'
+        format: 'Excel',
       })
 
       expect(result.success).toBe(false)
@@ -450,8 +448,8 @@ describe('ReportGenerator', () => {
           executiveSummary: true,
           financialDetails: false,
           milestoneTracking: false,
-          costAnalysis: false
-        }
+          costAnalysis: false,
+        },
       }
 
       const result = await reportGenerator.generateProjectReport('project-1', config)
@@ -468,8 +466,8 @@ describe('ReportGenerator', () => {
         format: 'PDF' as const,
         title: 'Custom Project Analysis Report',
         sections: {
-          executiveSummary: true
-        }
+          executiveSummary: true,
+        },
       }
 
       const result = await reportGenerator.generateProjectReport('project-1', config)
@@ -493,8 +491,8 @@ describe('ReportGenerator', () => {
           laborCostEst: 50,
           equipmentCostEst: 25,
           markupPercent: 15,
-          overheadPercent: 10
-        }))
+          overheadPercent: 10,
+        })),
       }))
 
       mockPrisma.trade.findMany.mockResolvedValue(largeTrades)
@@ -502,7 +500,7 @@ describe('ReportGenerator', () => {
       const startTime = Date.now()
       const result = await reportGenerator.generateProjectReport('project-1', {
         format: 'Excel',
-        sections: { tradeBreakdown: true }
+        sections: { tradeBreakdown: true },
       })
       const duration = Date.now() - startTime
 
@@ -513,11 +511,11 @@ describe('ReportGenerator', () => {
     it('should minimize database queries', async () => {
       const result = await reportGenerator.generateProjectReport('project-1', {
         type: 'comprehensive',
-        format: 'PDF'
+        format: 'PDF',
       })
 
       expect(result.success).toBe(true)
-      
+
       // Should make minimal queries with proper includes
       expect(mockPrisma.project.findUnique).toHaveBeenCalledTimes(1)
       expect(mockPrisma.trade.findMany).toHaveBeenCalledTimes(1)
@@ -540,8 +538,8 @@ describe('ReportGenerator', () => {
         format: 'Excel' as const,
         sections: {
           financialDetails: true,
-          costAnalysis: true
-        }
+          costAnalysis: true,
+        },
       }
 
       const result = await reportGenerator.generateProjectReport('project-1', config)

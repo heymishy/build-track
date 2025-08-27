@@ -23,20 +23,20 @@ const mockInvoices = [
         description: 'Concrete for foundation',
         amount: 2500,
         quantity: 10,
-        unit: 'm³'
+        unit: 'm³',
       },
       {
         id: 'line-2',
         description: 'Rebar steel',
         amount: 1500,
         quantity: 500,
-        unit: 'kg'
-      }
+        unit: 'kg',
+      },
     ],
     projectId: 'project-1',
     status: 'PENDING',
     createdAt: '2024-01-15T00:00:00Z',
-    updatedAt: '2024-01-15T00:00:00Z'
+    updatedAt: '2024-01-15T00:00:00Z',
   },
   {
     id: 'invoice-2',
@@ -50,14 +50,14 @@ const mockInvoices = [
         description: 'Electrical wiring',
         amount: 2000,
         quantity: 100,
-        unit: 'm'
-      }
+        unit: 'm',
+      },
     ],
     projectId: 'project-1',
     status: 'PENDING',
     createdAt: '2024-01-20T00:00:00Z',
-    updatedAt: '2024-01-20T00:00:00Z'
-  }
+    updatedAt: '2024-01-20T00:00:00Z',
+  },
 ]
 
 const mockEstimates = [
@@ -72,7 +72,7 @@ const mockEstimates = [
     markupPercent: 15,
     overheadPercent: 10,
     tradeId: 'trade-1',
-    sortOrder: 1
+    sortOrder: 1,
   },
   {
     id: 'estimate-2',
@@ -85,7 +85,7 @@ const mockEstimates = [
     markupPercent: 15,
     overheadPercent: 10,
     tradeId: 'trade-1',
-    sortOrder: 2
+    sortOrder: 2,
   },
   {
     id: 'estimate-3',
@@ -98,8 +98,8 @@ const mockEstimates = [
     markupPercent: 15,
     overheadPercent: 10,
     tradeId: 'trade-2',
-    sortOrder: 1
-  }
+    sortOrder: 1,
+  },
 ]
 
 describe('EnhancedInvoiceMatchingService', () => {
@@ -118,10 +118,10 @@ describe('EnhancedInvoiceMatchingService', () => {
         success: true,
         matches: [
           { invoiceLineId: 'line-1', estimateId: 'estimate-1', confidence: 0.95, method: 'llm' },
-          { invoiceLineId: 'line-2', estimateId: 'estimate-2', confidence: 0.90, method: 'llm' },
-          { invoiceLineId: 'line-3', estimateId: 'estimate-3', confidence: 0.88, method: 'llm' }
+          { invoiceLineId: 'line-2', estimateId: 'estimate-2', confidence: 0.9, method: 'llm' },
+          { invoiceLineId: 'line-3', estimateId: 'estimate-3', confidence: 0.88, method: 'llm' },
         ],
-        reasoning: 'Matched based on description similarity and unit compatibility'
+        reasoning: 'Matched based on description similarity and unit compatibility',
       })
 
       const result = await service.bulkMatchInvoices(mockInvoices, mockEstimates, 'project-1')
@@ -138,9 +138,9 @@ describe('EnhancedInvoiceMatchingService', () => {
         .mockResolvedValueOnce({
           success: true,
           matches: [
-            { invoiceLineId: 'line-1', estimateId: 'estimate-1', confidence: 0.95, method: 'llm' }
+            { invoiceLineId: 'line-1', estimateId: 'estimate-1', confidence: 0.95, method: 'llm' },
           ],
-          reasoning: 'Partial LLM matching'
+          reasoning: 'Partial LLM matching',
         })
         .mockRejectedValueOnce(new Error('LLM service unavailable'))
 
@@ -156,9 +156,9 @@ describe('EnhancedInvoiceMatchingService', () => {
       mockLLMMatcher.matchInvoiceLineItems.mockResolvedValue({
         success: true,
         matches: [
-          { invoiceLineId: 'line-1', estimateId: 'estimate-1', confidence: 0.95, method: 'llm' }
+          { invoiceLineId: 'line-1', estimateId: 'estimate-1', confidence: 0.95, method: 'llm' },
         ],
-        reasoning: 'High confidence match'
+        reasoning: 'High confidence match',
       })
 
       await service.bulkMatchInvoices(mockInvoices, mockEstimates, 'project-1')
@@ -174,16 +174,16 @@ describe('EnhancedInvoiceMatchingService', () => {
       mockLLMMatcher.matchInvoiceLineItems.mockResolvedValue({
         success: true,
         matches: [
-          { invoiceLineId: 'line-1', estimateId: 'estimate-1', confidence: 0.95, method: 'llm' }
+          { invoiceLineId: 'line-1', estimateId: 'estimate-1', confidence: 0.95, method: 'llm' },
         ],
-        reasoning: 'Pattern match'
+        reasoning: 'Pattern match',
       })
 
       await service.bulkMatchInvoices(mockInvoices, mockEstimates, 'project-1')
 
       const patterns = service.getLearnedPatterns()
       expect(patterns.size).toBeGreaterThan(0)
-      
+
       const pattern = Array.from(patterns.values())[0]
       expect(pattern.successCount).toBe(1)
       expect(pattern.averageConfidence).toBe(0.95)
@@ -193,16 +193,16 @@ describe('EnhancedInvoiceMatchingService', () => {
       const matchResponse = {
         success: true,
         matches: [
-          { invoiceLineId: 'line-1', estimateId: 'estimate-1', confidence: 0.95, method: 'llm' }
+          { invoiceLineId: 'line-1', estimateId: 'estimate-1', confidence: 0.95, method: 'llm' },
         ],
-        reasoning: 'Repeated pattern'
+        reasoning: 'Repeated pattern',
       }
 
       mockLLMMatcher.matchInvoiceLineItems.mockResolvedValue(matchResponse)
 
       // First match
       await service.bulkMatchInvoices(mockInvoices, mockEstimates, 'project-1')
-      
+
       // Second match with same pattern
       await service.bulkMatchInvoices(mockInvoices, mockEstimates, 'project-1')
 
@@ -216,9 +216,9 @@ describe('EnhancedInvoiceMatchingService', () => {
       mockLLMMatcher.matchInvoiceLineItems.mockResolvedValue({
         success: true,
         matches: [
-          { invoiceLineId: 'line-1', estimateId: 'estimate-1', confidence: 0.95, method: 'llm' }
+          { invoiceLineId: 'line-1', estimateId: 'estimate-1', confidence: 0.95, method: 'llm' },
         ],
-        reasoning: 'Initial pattern'
+        reasoning: 'Initial pattern',
       })
 
       await service.bulkMatchInvoices(mockInvoices, mockEstimates, 'project-1')
@@ -238,9 +238,9 @@ describe('EnhancedInvoiceMatchingService', () => {
       mockLLMMatcher.matchInvoiceLineItems.mockResolvedValue({
         success: true,
         matches: [
-          { invoiceLineId: 'line-1', estimateId: 'estimate-1', confidence: 0.95, method: 'llm' }
+          { invoiceLineId: 'line-1', estimateId: 'estimate-1', confidence: 0.95, method: 'llm' },
         ],
-        reasoning: 'Cached result'
+        reasoning: 'Cached result',
       })
 
       // First call
@@ -256,11 +256,11 @@ describe('EnhancedInvoiceMatchingService', () => {
       mockLLMMatcher.matchInvoiceLineItems.mockResolvedValue({
         success: true,
         matches: [],
-        reasoning: 'Different inputs'
+        reasoning: 'Different inputs',
       })
 
       const differentEstimates = [
-        { ...mockEstimates[0], id: 'estimate-different', description: 'Different estimate' }
+        { ...mockEstimates[0], id: 'estimate-different', description: 'Different estimate' },
       ]
 
       await service.bulkMatchInvoices(mockInvoices, mockEstimates, 'project-1')
@@ -287,9 +287,11 @@ describe('EnhancedInvoiceMatchingService', () => {
       const result = await service.bulkMatchInvoices(mockInvoices, mockEstimates, 'project-1')
 
       // Should find some matches based on string similarity
-      expect(result.matches.some(match => 
-        match.invoiceLineId === 'line-1' && match.estimateId === 'estimate-1'
-      )).toBe(true)
+      expect(
+        result.matches.some(
+          match => match.invoiceLineId === 'line-1' && match.estimateId === 'estimate-1'
+        )
+      ).toBe(true)
     })
 
     it('should consider unit compatibility in fallback', async () => {
@@ -298,8 +300,8 @@ describe('EnhancedInvoiceMatchingService', () => {
       const result = await service.bulkMatchInvoices(mockInvoices, mockEstimates, 'project-1')
 
       // Find the concrete match (both use m³)
-      const concreteMatch = result.matches.find(match => 
-        match.invoiceLineId === 'line-1' && match.estimateId === 'estimate-1'
+      const concreteMatch = result.matches.find(
+        match => match.invoiceLineId === 'line-1' && match.estimateId === 'estimate-1'
       )
 
       expect(concreteMatch?.confidence).toBeGreaterThan(0.5) // Should have reasonable confidence
@@ -312,7 +314,7 @@ describe('EnhancedInvoiceMatchingService', () => {
       const largeInvoices = Array.from({ length: 100 }, (_, i) => ({
         ...mockInvoices[0],
         id: `invoice-${i}`,
-        lineItems: [{ ...mockInvoices[0].lineItems[0], id: `line-${i}` }]
+        lineItems: [{ ...mockInvoices[0].lineItems[0], id: `line-${i}` }],
       }))
 
       mockLLMMatcher.matchInvoiceLineItems.mockResolvedValue({
@@ -321,9 +323,9 @@ describe('EnhancedInvoiceMatchingService', () => {
           invoiceLineId: `line-${i}`,
           estimateId: 'estimate-1',
           confidence: 0.8,
-          method: 'llm' as const
+          method: 'llm' as const,
         })),
-        reasoning: 'Batch processing test'
+        reasoning: 'Batch processing test',
       })
 
       const startTime = Date.now()
@@ -339,13 +341,13 @@ describe('EnhancedInvoiceMatchingService', () => {
       mockLLMMatcher.matchInvoiceLineItems.mockResolvedValue({
         success: true,
         matches: [
-          { invoiceLineId: 'line-1', estimateId: 'estimate-1', confidence: 0.95, method: 'llm' }
+          { invoiceLineId: 'line-1', estimateId: 'estimate-1', confidence: 0.95, method: 'llm' },
         ],
-        reasoning: 'Batched call'
+        reasoning: 'Batched call',
       })
 
       await service.bulkMatchInvoices(mockInvoices, mockEstimates, 'project-1', {
-        batchSize: 10
+        batchSize: 10,
       })
 
       // Should make minimal LLM calls due to batching
@@ -388,9 +390,9 @@ describe('EnhancedInvoiceMatchingService', () => {
       mockLLMMatcher.matchInvoiceLineItems.mockResolvedValue({
         success: true,
         matches: [
-          { invoiceLineId: 'line-1', estimateId: 'estimate-1', confidence: 0.95, method: 'llm' }
+          { invoiceLineId: 'line-1', estimateId: 'estimate-1', confidence: 0.95, method: 'llm' },
         ],
-        reasoning: 'Performance test'
+        reasoning: 'Performance test',
       })
 
       const result = await service.bulkMatchInvoices(mockInvoices, mockEstimates, 'project-1')
@@ -405,9 +407,9 @@ describe('EnhancedInvoiceMatchingService', () => {
         .mockResolvedValueOnce({
           success: true,
           matches: [
-            { invoiceLineId: 'line-1', estimateId: 'estimate-1', confidence: 0.95, method: 'llm' }
+            { invoiceLineId: 'line-1', estimateId: 'estimate-1', confidence: 0.95, method: 'llm' },
           ],
-          reasoning: 'LLM match'
+          reasoning: 'LLM match',
         })
         .mockRejectedValueOnce(new Error('LLM failed'))
 

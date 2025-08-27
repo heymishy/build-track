@@ -3,8 +3,8 @@
  */
 
 import bcrypt from 'bcryptjs'
-import { prisma } from '@/lib/prisma'
-import { UserRole } from '@/generated/prisma'
+import { getDatabase } from '@/lib/db-pool'
+import { UserRole } from '@prisma/client'
 
 export interface CreateUserData {
   email: string
@@ -86,8 +86,10 @@ export async function createUser(userData: CreateUserData): Promise<AuthResult> 
   }
 
   try {
+    const db = await getDatabase()
+    
     // Check if user already exists
-    const existingUser = await prisma.user.findUnique({
+    const existingUser = await db.user.findUnique({
       where: { email },
     })
 
@@ -100,7 +102,7 @@ export async function createUser(userData: CreateUserData): Promise<AuthResult> 
 
     // Hash password and create user
     const hashedPassword = await hashPassword(password)
-    const user = await prisma.user.create({
+    const user = await db.user.create({
       data: {
         email,
         password: hashedPassword,
@@ -130,8 +132,10 @@ export async function createUser(userData: CreateUserData): Promise<AuthResult> 
  */
 export async function authenticateUser(email: string, password: string): Promise<AuthResult> {
   try {
+    const db = await getDatabase()
+    
     // Find user by email
-    const user = await prisma.user.findUnique({
+    const user = await db.user.findUnique({
       where: { email },
     })
 

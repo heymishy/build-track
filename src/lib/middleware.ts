@@ -3,7 +3,7 @@
  * Handles user permissions and project-level access control
  */
 
-import { UserRole, ProjectRole } from '@/generated/prisma'
+import { UserRole, ProjectRole } from '@prisma/client'
 import { NextRequest } from 'next/server'
 
 // Define available resources and actions

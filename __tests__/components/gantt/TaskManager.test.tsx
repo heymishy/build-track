@@ -27,7 +27,7 @@ const mockTasks = [
     parentId: null,
     sortOrder: 1,
     createdAt: '2024-01-01T00:00:00Z',
-    updatedAt: '2024-01-15T00:00:00Z'
+    updatedAt: '2024-01-15T00:00:00Z',
   },
   {
     id: 'task-2',
@@ -45,8 +45,8 @@ const mockTasks = [
     parentId: null,
     sortOrder: 2,
     createdAt: '2024-01-01T00:00:00Z',
-    updatedAt: '2024-02-01T00:00:00Z'
-  }
+    updatedAt: '2024-02-01T00:00:00Z',
+  },
 ]
 
 describe('TaskManager', () => {
