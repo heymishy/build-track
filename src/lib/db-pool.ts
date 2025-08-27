@@ -136,38 +136,9 @@ class DatabasePool {
   private setupEventListeners(): void {
     if (!this.prisma) return
 
-    // Monitor query performance
-    this.prisma.$use(async (params, next) => {
-      const startTime = Date.now()
-
-      try {
-        const result = await next(params)
-        const duration = Date.now() - startTime
-
-        // Log slow queries
-        if (duration > 1000) {
-          console.warn(`[DB Pool] Slow query detected (${duration}ms):`, {
-            model: params.model,
-            action: params.action,
-            duration,
-          })
-        }
-
-        // Update metrics
-        this.metrics.acquiredConnections++
-        this.updateAverageAcquireTime(duration)
-
-        return result
-      } catch (error) {
-        this.metrics.failedAcquires++
-        console.error('[DB Pool] Query failed:', {
-          model: params.model,
-          action: params.action,
-          error: error instanceof Error ? error.message : String(error),
-        })
-        throw error
-      }
-    })
+    // Note: Prisma middleware ($use) has been deprecated and removed in newer versions
+    // Query monitoring and metrics will be handled at the application level
+    console.log('[DB Pool] Database client initialized without middleware (deprecated in Prisma v5+)')
   }
 
   private updateAverageAcquireTime(duration: number): void {
