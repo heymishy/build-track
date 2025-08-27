@@ -13,6 +13,19 @@
     "isolatedModules": true,
     "jsx": "preserve",
     "incremental": true,
+    
+    // Enhanced strict type checking
+    "noUncheckedIndexedAccess": true,
+    // "exactOptionalPropertyTypes": true, // TODO: Enable after fixing all exact optional property issues
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true,
+    "allowUnusedLabels": false,
+    "allowUnreachableCode": false,
+    
+    // Advanced type checking
+    "useUnknownInCatchVariables": true,
+    "forceConsistentCasingInFileNames": true,
     "plugins": [
       {
         "name": "next"

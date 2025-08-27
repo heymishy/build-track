@@ -351,7 +351,12 @@ describe('MilestoneManagement', () => {
     it('should validate form inputs', async () => {
       render(<MilestoneManagement project={mockProject} />)
 
-      const addButton = screen.getByRole('button', { name: /add milestone/i })
+      // Wait for component to load and button to be available
+      await waitFor(() => {
+        expect(screen.getByText('Construction Milestones')).toBeInTheDocument()
+      })
+
+      const addButton = await screen.findByRole('button', { name: /add milestone/i })
       fireEvent.click(addButton)
 
       await waitFor(() => {

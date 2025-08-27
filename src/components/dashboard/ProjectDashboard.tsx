@@ -22,6 +22,7 @@ import { EstimateManager } from '@/components/estimates/EstimateManager'
 import { MilestoneManagement } from '@/components/projects/MilestoneManagement'
 import { CostTrackingDashboard } from '@/components/estimates/CostTrackingDashboard'
 import { ProjectAnalytics } from '@/components/analytics/ProjectAnalytics'
+import { TaskManager } from '@/components/gantt/TaskManager'
 
 interface Project {
   id: string
@@ -638,6 +639,16 @@ export function ProjectDashboard({ className = '' }: ProjectDashboardProps) {
                 >
                   Analytics
                 </button>
+                <button
+                  onClick={() => setActiveManagementTab('gantt')}
+                  className={`${
+                    activeManagementTab === 'gantt'
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  } whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm`}
+                >
+                  Project Planning
+                </button>
               </nav>
             </div>
           </Card.Header>
@@ -645,7 +656,7 @@ export function ProjectDashboard({ className = '' }: ProjectDashboardProps) {
             {activeManagementTab === 'overview' && (
               <div className="text-center py-8 text-gray-500">
                 <p className="mb-4">Project management overview for {selectedProject.name}</p>
-                <div className="grid grid-cols-2 gap-4 max-w-md mx-auto">
+                <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 max-w-2xl mx-auto">
                   <Button
                     variant="secondary"
                     onClick={() => setActiveManagementTab('estimates')}
@@ -661,6 +672,14 @@ export function ProjectDashboard({ className = '' }: ProjectDashboardProps) {
                   >
                     <ClockIcon className="h-6 w-6 mb-2" />
                     <span>Track Milestones</span>
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    onClick={() => setActiveManagementTab('gantt')}
+                    className="flex flex-col items-center p-4 h-auto"
+                  >
+                    <ChartBarIcon className="h-6 w-6 mb-2" />
+                    <span>Project Planning</span>
                   </Button>
                   <Button
                     variant="secondary"
@@ -692,6 +711,11 @@ export function ProjectDashboard({ className = '' }: ProjectDashboardProps) {
             )}
             {activeManagementTab === 'analytics' && (
               <ProjectAnalytics projectId={selectedProject.id} />
+            )}
+            {activeManagementTab === 'gantt' && (
+              <div className="min-h-[600px]">
+                <TaskManager projectId={selectedProject.id} project={selectedProject} />
+              </div>
             )}
           </Card.Body>
         </Card>

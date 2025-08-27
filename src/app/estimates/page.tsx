@@ -9,7 +9,6 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { EstimateManager } from '@/components/estimates/EstimateManager'
-import { AccuracyMeter } from '@/components/estimates/AccuracyMeter'
 import { CostTrackingDashboard } from '@/components/estimates/CostTrackingDashboard'
 import { ProjectSelector } from '@/components/projects/ProjectSelector'
 import { Card } from '@/components/ui/Card'
@@ -34,7 +33,6 @@ interface Project {
 interface EstimatesSummary {
   totalProjects: number
   projectsWithEstimates: number
-  averageAccuracy: number
   totalEstimatedValue: number
   currency: string
 }
@@ -46,7 +44,7 @@ export default function EstimatesPage() {
   const [summary, setSummary] = useState<EstimatesSummary | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState<'overview' | 'accuracy' | 'cost-tracking'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'cost-tracking'>('overview')
 
   const fetchProjects = async () => {
     try {
@@ -67,8 +65,8 @@ export default function EstimatesPage() {
         setSelectedProject(data.projects[0])
       }
 
-      // Fetch estimates accuracy data
-      await fetchEstimatesAccuracy()
+      // Fetch estimates summary data
+      await fetchEstimatesSummary()
     } catch (err) {
       console.error('Error fetching projects:', err)
       setError('Failed to load projects')
@@ -77,24 +75,20 @@ export default function EstimatesPage() {
     }
   }
 
-  const fetchEstimatesAccuracy = async () => {
+  const fetchEstimatesSummary = async () => {
     try {
-      const response = await fetch('/api/estimates/accuracy', {
-        credentials: 'include',
+      // Calculate summary from projects data
+      const projectsWithEstimates = projects.filter(p => p.totalBudget > 0).length
+      const totalEstimatedValue = projects.reduce((sum, p) => sum + p.totalBudget, 0)
+      
+      setSummary({
+        totalProjects: projects.length,
+        projectsWithEstimates,
+        totalEstimatedValue,
+        currency: 'NZD',
       })
-
-      if (response.ok) {
-        const data = await response.json()
-        setSummary({
-          totalProjects: projects.length,
-          projectsWithEstimates: data.projectsWithEstimates || 0,
-          averageAccuracy: data.averageAccuracy || 0,
-          totalEstimatedValue: data.totalEstimatedValue || 0,
-          currency: 'NZD',
-        })
-      }
     } catch (err) {
-      console.error('Error fetching estimates accuracy:', err)
+      console.error('Error calculating estimates summary:', err)
     }
   }
 
@@ -111,9 +105,6 @@ export default function EstimatesPage() {
     }).format(amount)
   }
 
-  const formatPercentage = (value: number) => {
-    return `${Math.round(value * 100)}%`
-  }
 
   if (loading) {
     return (
@@ -184,7 +175,7 @@ export default function EstimatesPage() {
 
         {/* Summary Statistics */}
         {summary && (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             <Card className="p-6">
               <div className="flex items-center">
                 <div className="flex-shrink-0">
@@ -206,20 +197,6 @@ export default function EstimatesPage() {
                   <dt className="text-sm font-medium text-gray-500">With Estimates</dt>
                   <dd className="text-2xl font-bold text-gray-900">
                     {summary.projectsWithEstimates}
-                  </dd>
-                </div>
-              </div>
-            </Card>
-
-            <Card className="p-6">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <ChartBarIcon className="h-8 w-8 text-purple-600" />
-                </div>
-                <div className="ml-4">
-                  <dt className="text-sm font-medium text-gray-500">Avg. Accuracy</dt>
-                  <dd className="text-2xl font-bold text-gray-900">
-                    {formatPercentage(summary.averageAccuracy)}
                   </dd>
                 </div>
               </div>
@@ -255,18 +232,7 @@ export default function EstimatesPage() {
               }`}
               data-testid="overview-tab"
             >
-              Overview & Management
-            </button>
-            <button
-              onClick={() => setActiveTab('accuracy')}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'accuracy'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-              data-testid="accuracy-tab"
-            >
-              Accuracy Analysis
+              Estimates & Line Items
             </button>
             <button
               onClick={() => setActiveTab('cost-tracking')}
@@ -287,17 +253,6 @@ export default function EstimatesPage() {
           <div className="space-y-6">
             {activeTab === 'overview' && (
               <EstimateManager projectId={selectedProject.id} data-testid="estimate-manager" />
-            )}
-
-            {activeTab === 'accuracy' && (
-              <div className="space-y-6">
-                <Card className="p-6">
-                  <h2 className="text-lg font-medium text-gray-900 mb-4">
-                    Estimate Accuracy Analysis
-                  </h2>
-                  <AccuracyMeter projectId={selectedProject.id} data-testid="accuracy-meter" />
-                </Card>
-              </div>
             )}
 
             {activeTab === 'cost-tracking' && (

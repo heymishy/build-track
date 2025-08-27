@@ -17,6 +17,7 @@ import {
   CogIcon,
   UsersIcon,
   ChartBarIcon,
+  DocumentArrowDownIcon,
 } from '@heroicons/react/24/outline'
 
 interface NavigationItem {
@@ -89,6 +90,12 @@ export function AppNavigation() {
       href: '/analytics',
       icon: ChartBarIcon,
       current: pathname?.startsWith('/analytics'),
+    },
+    {
+      name: 'Reports',
+      href: '/reports',
+      icon: DocumentArrowDownIcon,
+      current: pathname?.startsWith('/reports'),
     },
     {
       name: 'Settings',

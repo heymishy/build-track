@@ -6,30 +6,35 @@ This guide covers deploying BuildTrack to production with security, performance,
 
 ### Environment Setup
 
-- [ ] Production database (PostgreSQL) provisioned
-- [ ] Environment variables configured
-- [ ] API keys and secrets secured
-- [ ] Domain name configured
-- [ ] SSL certificate ready
-- [ ] CDN configured (optional)
+- [ ] Production database (PostgreSQL) provisioned with connection pooling
+- [ ] Redis cache instance configured (optional, falls back to in-memory)
+- [ ] Environment variables configured (.env.production)
+- [ ] API keys and secrets secured with strong encryption
+- [ ] Domain name configured with SSL certificate
+- [ ] CDN configured for static assets and images
+- [ ] File storage (Vercel Blob) configured
 
 ### Security Checklist
 
-- [ ] JWT secrets generated and secured
-- [ ] Database credentials secured
-- [ ] API rate limiting configured
-- [ ] CORS headers properly set
-- [ ] Security headers implemented
+- [ ] JWT secrets generated (minimum 32 characters)
+- [ ] CSRF protection enabled for all state-changing operations
+- [ ] Database credentials secured with limited privileges
+- [ ] API rate limiting configured (100 req/15min default)
+- [ ] Security headers implemented (CSP, HSTS, etc.)
+- [ ] Input validation enabled for all endpoints
 - [ ] Sensitive data logging removed
+- [ ] Content Security Policy configured
+- [ ] HTTPS enforcement enabled
 
 ### Performance Checklist
 
-- [ ] Database indexes optimized
-- [ ] Image optimization enabled
-- [ ] Bundle size analyzed
-- [ ] Caching strategies implemented
-- [ ] CDN configured for static assets
-- [ ] Database connection pooling enabled
+- [ ] Database indexes optimized (50+ strategic indexes)
+- [ ] Redis caching layer configured
+- [ ] Image optimization enabled (WebP/AVIF)
+- [ ] Bundle size analyzed and optimized (195KB first load)
+- [ ] Database connection pooling enabled (5-20 connections)
+- [ ] Webpack bundle splitting configured
+- [ ] Compression enabled (gzip/brotli)
 
 ## Environment Variables
 

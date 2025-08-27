@@ -32,6 +32,10 @@ model User {
   stageTransitions StageTransition[]
   supplierAccess   SupplierAccess[]
   
+  // Performance Indexes
+  @@index([email])
+  @@index([role])
+  @@index([createdAt])
   @@map("users")
 }
 
@@ -60,6 +64,13 @@ model Project {
   stageTransitions  StageTransition[]
   supplierUploads   InvoiceUpload[]
   
+  // Performance Indexes
+  @@index([status])
+  @@index([createdAt])
+  @@index([updatedAt])
+  @@index([startDate])
+  @@index([estimatedEndDate])
+  @@index([status, createdAt])
   @@map("projects")
 }
 
@@ -75,6 +86,10 @@ model ProjectUser {
   project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@unique([userId, projectId])
+  @@index([userId])
+  @@index([projectId])
+  @@index([role])
+  @@index([projectId, role])
   @@map("project_users")
 }
 
@@ -93,6 +108,10 @@ model Trade {
   lineItems   LineItem[]
   
   @@unique([projectId, name])
+  @@index([projectId])
+  @@index([sortOrder])
+  @@index([projectId, sortOrder])
+  @@index([createdAt])
   @@map("trades")
 }
 
@@ -120,6 +139,11 @@ model LineItem {
   trade             Trade @relation(fields: [tradeId], references: [id], onDelete: Cascade)
   invoiceItems      InvoiceLineItem[]
   
+  @@index([tradeId])
+  @@index([itemCode])
+  @@index([sortOrder])
+  @@index([tradeId, sortOrder])
+  @@index([createdAt])
   @@map("line_items")
 }
 
@@ -141,6 +165,14 @@ model Milestone {
   // Relationships
   project         Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
   
+  @@index([projectId])
+  @@index([status])
+  @@index([targetDate])
+  @@index([actualDate])
+  @@index([sortOrder])
+  @@index([projectId, status])
+  @@index([projectId, targetDate])
+  @@index([projectId, sortOrder])
   @@map("milestones")
 }
 
@@ -169,6 +201,16 @@ model Invoice {
   upload          InvoiceUpload?
   
   @@unique([projectId, invoiceNumber])
+  @@index([projectId])
+  @@index([userId])
+  @@index([status])
+  @@index([invoiceDate])
+  @@index([dueDate])
+  @@index([supplierName])
+  @@index([projectId, status])
+  @@index([projectId, invoiceDate])
+  @@index([projectId, supplierName])
+  @@index([createdAt])
   @@map("invoices")
 }
 
@@ -188,6 +230,10 @@ model InvoiceLineItem {
   invoice         Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
   lineItem        LineItem? @relation(fields: [lineItemId], references: [id])
   
+  @@index([invoiceId])
+  @@index([lineItemId])
+  @@index([category])
+  @@index([createdAt])
   @@map("invoice_line_items")
 }
 
@@ -266,6 +312,14 @@ model ProjectDocument {
   project     Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
   uploader    User @relation(fields: [uploadedBy], references: [id])
 
+  @@index([projectId])
+  @@index([uploadedBy])
+  @@index([category])
+  @@index([stage])
+  @@index([fileType])
+  @@index([projectId, category])
+  @@index([projectId, stage])
+  @@index([createdAt])
   @@map("project_documents")
 }
 
@@ -287,6 +341,12 @@ model WeeklyProgressLog {
   creator      User @relation(fields: [createdBy], references: [id])
   photos       ProgressPhoto[]
 
+  @@index([projectId])
+  @@index([createdBy])
+  @@index([weekStarting])
+  @@index([weekEnding])
+  @@index([projectId, weekStarting])
+  @@index([createdAt])
   @@map("weekly_progress_logs")
 }
 
@@ -303,6 +363,10 @@ model ProgressPhoto {
   // Relationships
   progressLog  WeeklyProgressLog @relation(fields: [logId], references: [id], onDelete: Cascade)
 
+  @@index([logId])
+  @@index([sortOrder])
+  @@index([logId, sortOrder])
+  @@index([createdAt])
   @@map("progress_photos")
 }
 
@@ -323,6 +387,13 @@ model LaborEntry {
   project    Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
   creator    User @relation(fields: [createdBy], references: [id])
 
+  @@index([projectId])
+  @@index([createdBy])
+  @@index([workDate])
+  @@index([workerRole])
+  @@index([projectId, workDate])
+  @@index([projectId, workerRole])
+  @@index([createdAt])
   @@map("labor_entries")
 }
 
@@ -347,6 +418,14 @@ model LaborInvoice {
   generator       User @relation(fields: [generatedBy], references: [id])
 
   @@unique([projectId, invoiceNumber])
+  @@index([projectId])
+  @@index([status])
+  @@index([weekStarting])
+  @@index([weekEnding])
+  @@index([generatedBy])
+  @@index([projectId, status])
+  @@index([projectId, weekStarting])
+  @@index([createdAt])
   @@map("labor_invoices")
 }
 
@@ -364,6 +443,12 @@ model StageTransition {
   project       Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
   user          User @relation(fields: [transitionedBy], references: [id])
 
+  @@index([projectId])
+  @@index([transitionedBy])
+  @@index([fromStatus])
+  @@index([toStatus])
+  @@index([projectId, createdAt])
+  @@index([createdAt])
   @@map("stage_transitions")
 }
 
@@ -381,6 +466,10 @@ model UserSettings {
   user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, key])
+  @@index([userId])
+  @@index([key])
+  @@index([encrypted])
+  @@index([createdAt])
   @@map("user_settings")
 }
 
@@ -399,6 +488,12 @@ model SupplierAccess {
   creator   User @relation(fields: [createdBy], references: [id])
   invoiceUploads InvoiceUpload[]
 
+  @@index([email])
+  @@index([type])
+  @@index([isActive])
+  @@index([createdBy])
+  @@index([isActive, type])
+  @@index([createdAt])
   @@map("supplier_access")
 }
 
@@ -423,6 +518,15 @@ model InvoiceUpload {
   project       Project? @relation(fields: [projectId], references: [id])
   invoice       Invoice? @relation(fields: [invoiceId], references: [id])
 
+  @@unique([invoiceId])
+  @@index([supplierEmail])
+  @@index([projectId])
+  @@index([status])
+  @@index([processedAt])
+  @@index([invoiceId])
+  @@index([projectId, status])
+  @@index([supplierEmail, status])
+  @@index([createdAt])
   @@map("invoice_uploads")
 }
 

@@ -8,11 +8,20 @@
     "app/api/**/*.ts": {
       "maxDuration": 30,
       "memory": 1024
+    },
+    "app/api/invoices/parse/*.ts": {
+      "maxDuration": 60,
+      "memory": 2048
+    },
+    "app/api/reports/**/*.ts": {
+      "maxDuration": 45,
+      "memory": 1536
     }
   },
   "regions": ["syd1"],
   "env": {
-    "NODE_ENV": "production"
+    "NODE_ENV": "production",
+    "PERFORMANCE_MONITORING": "true"
   },
   "headers": [
     {

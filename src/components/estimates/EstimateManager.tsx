@@ -16,7 +16,7 @@ import {
   PlusIcon,
 } from '@heroicons/react/24/outline'
 import { EstimateCreationModal } from './EstimateCreationModal'
-import { AccuracyMeter } from './AccuracyMeter'
+import { AddLineItemModal } from './AddLineItemModal'
 
 interface Trade {
   id: string
@@ -48,6 +48,7 @@ export function EstimateManager({ projectId, className = '' }: EstimateManagerPr
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [showImportModal, setShowImportModal] = useState(false)
+  const [showAddLineItemModal, setShowAddLineItemModal] = useState(false)
   const [selectedTrade, setSelectedTrade] = useState<Trade | null>(null)
   const [viewMode, setViewMode] = useState<'summary' | 'detailed'>('summary')
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
@@ -79,6 +80,11 @@ export function EstimateManager({ projectId, className = '' }: EstimateManagerPr
   const handleImportComplete = () => {
     setShowImportModal(false)
     fetchTrades() // Refresh trades after import
+  }
+
+  const handleAddLineItemComplete = () => {
+    setShowAddLineItemModal(false)
+    fetchTrades() // Refresh trades after adding line item
   }
 
   const handleDeleteEstimate = async () => {
@@ -224,20 +230,29 @@ export function EstimateManager({ projectId, className = '' }: EstimateManagerPr
               {viewMode === 'summary' ? 'Detailed View' : 'Summary View'}
             </button>
             {trades.length > 0 && (
-              <button
-                onClick={() => setShowDeleteConfirm(true)}
-                className="inline-flex items-center px-3 py-2 border border-red-300 shadow-sm text-sm leading-4 font-medium rounded-md text-red-700 bg-white hover:bg-red-50"
-              >
-                <TrashIcon className="h-4 w-4 mr-2" />
-                Delete All
-              </button>
+              <>
+                <button
+                  onClick={() => setShowAddLineItemModal(true)}
+                  className="inline-flex items-center px-3 py-2 border border-blue-300 shadow-sm text-sm leading-4 font-medium rounded-md text-blue-700 bg-blue-50 hover:bg-blue-100"
+                >
+                  <PlusIcon className="h-4 w-4 mr-2" />
+                  Add Line Item
+                </button>
+                <button
+                  onClick={() => setShowDeleteConfirm(true)}
+                  className="inline-flex items-center px-3 py-2 border border-red-300 shadow-sm text-sm leading-4 font-medium rounded-md text-red-700 bg-white hover:bg-red-50"
+                >
+                  <TrashIcon className="h-4 w-4 mr-2" />
+                  Delete All
+                </button>
+              </>
             )}
             <button
               onClick={() => setShowImportModal(true)}
               className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
             >
               <PlusIcon className="h-4 w-4 mr-2" />
-              {trades.length > 0 ? 'Add More' : 'Create'} Estimate
+              {trades.length > 0 ? 'Import More' : 'Create'} Estimate
             </button>
           </div>
         </div>
@@ -390,17 +405,6 @@ export function EstimateManager({ projectId, className = '' }: EstimateManagerPr
         )}
       </div>
 
-      {/* Accuracy Meter */}
-      {trades.length > 0 && (
-        <div className="px-6 py-4 border-t border-gray-200">
-          <AccuracyMeter
-            projectId={projectId}
-            onMeasureAccuracy={accuracy => {
-              console.log('Accuracy measured:', accuracy)
-            }}
-          />
-        </div>
-      )}
 
       {/* Estimate Creation Modal */}
       <EstimateCreationModal
@@ -409,6 +413,15 @@ export function EstimateManager({ projectId, className = '' }: EstimateManagerPr
         onComplete={handleImportComplete}
         projectId={projectId}
         allowCreateProject={false}
+      />
+
+      {/* Add Line Item Modal */}
+      <AddLineItemModal
+        isOpen={showAddLineItemModal}
+        onClose={() => setShowAddLineItemModal(false)}
+        onComplete={handleAddLineItemComplete}
+        projectId={projectId}
+        trades={trades}
       />
 
       {/* Delete Confirmation Modal */}
