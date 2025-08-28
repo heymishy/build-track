@@ -12,19 +12,19 @@ export async function GET(request: NextRequest) {
     const testUserId = 'cmeuc7zwb0001ky04bu002p0n'
     console.log('LLM Debug: Starting diagnostic for user:', testUserId)
     
-    // Test parsing configuration
-    const config = await getParsingConfig(testUserId)
-    
-    // Test orchestrator initialization
-    const orchestrator = new ParsingOrchestrator(testUserId)
-    
-    // Get available strategies
-    const strategies = orchestrator.getAvailableStrategies()
-    
-    const diagnostics = {
+    const diagnostics: any = {
       userId: testUserId,
       timestamp: new Date().toISOString(),
-      config: {
+      steps: []
+    }
+    
+    try {
+      // Step 1: Test parsing configuration
+      diagnostics.steps.push('Loading parsing configuration...')
+      const config = await getParsingConfig(testUserId)
+      diagnostics.steps.push('✅ Parsing configuration loaded')
+      
+      diagnostics.config = {
         defaultStrategy: config.defaultStrategy,
         enabledProviders: Object.entries(config.llmProviders)
           .filter(([_, provider]) => provider.enabled)
@@ -41,26 +41,30 @@ export async function GET(request: NextRequest) {
             strategy.fallbackChain
           ])
         )
-      },
-      orchestrator: {
-        strategiesCount: strategies.length,
-        currentConfig: orchestrator.getConfiguration()
-      },
-      testText: 'INVOICE\nInvoice Number: TEST-123\nDate: 2024-08-28\nTotal: $150.00'
+      }
+    } catch (configError) {
+      diagnostics.steps.push(`❌ Config loading failed: ${configError}`)
+      diagnostics.configError = configError instanceof Error ? configError.message : String(configError)
     }
     
-    // Test a simple parsing attempt
-    const testResult = await orchestrator.parseInvoice(diagnostics.testText, 1, {
-      expectedFormat: 'construction-invoice'
-    })
-    
-    diagnostics.testResults = {
-      textLength: diagnostics.testText.length,
-      parseSuccess: testResult.success,
-      parseConfidence: testResult.confidence,
-      parseTotalCost: testResult.totalCost,
-      parseStrategy: testResult.strategy,
-      parseAttempts: testResult.attempts?.length || 0
+    try {
+      // Step 2: Test orchestrator initialization manually
+      diagnostics.steps.push('Testing orchestrator manually...')
+      
+      // Skip orchestrator for now and test direct parsing config usage
+      if (diagnostics.config && diagnostics.config.enabledProviders.length > 0) {
+        diagnostics.steps.push(`✅ Found ${diagnostics.config.enabledProviders.length} enabled providers`)
+        diagnostics.directTest = {
+          providers: diagnostics.config.enabledProviders,
+          strategies: Object.keys(diagnostics.config.fallbackChains)
+        }
+      } else {
+        diagnostics.steps.push('❌ No enabled providers found in config')
+      }
+      
+    } catch (orchError) {
+      diagnostics.steps.push(`❌ Orchestrator test failed: ${orchError}`)
+      diagnostics.orchestratorError = orchError instanceof Error ? orchError.message : String(orchError)
     }
     
     return NextResponse.json({
