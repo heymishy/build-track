@@ -148,43 +148,76 @@ async function extractAlternative(pdfBuffer: Buffer): Promise<string[]> {
     if (textChunks.length > 0) {
       console.error(`🔥 ALTERNATIVE EXTRACTION: Found ${textChunks.length} text lines from PDF`)
       
-      // Try to split by page boundaries or invoice patterns
-      const pages = []
-      let currentPage = []
+      // Try multiple splitting strategies
+      let pages = []
       
+      // Strategy 1: Look for explicit page breaks and invoice headers
+      let currentPage = []
       for (const line of textChunks) {
-        // Look for page break indicators or invoice headers
-        if (line.includes('Page ') || line.includes('INVOICE') || line.includes('Invoice') || 
-            line.includes('TAX INVOICE') || line.includes('STATEMENT') || 
-            (line.includes('$') && currentPage.length > 20)) {
-          
-          // If we have accumulated content, save it as a page
-          if (currentPage.length > 5) {
-            pages.push(currentPage.join('\n'))
-            currentPage = []
-          }
+        const isPageBreak = line.includes('Page ') || line.includes('page ') ||
+                           line.includes('INVOICE') || line.includes('Invoice') || line.includes('invoice') ||
+                           line.includes('TAX INVOICE') || line.includes('STATEMENT') || line.includes('Statement') ||
+                           line.includes('RECEIPT') || line.includes('Receipt') || line.includes('BILL') ||
+                           line.includes('REMITTANCE') || line.includes('Tax Invoice') ||
+                           // More aggressive patterns
+                           (line.includes('$') && line.length < 50 && currentPage.length > 15) ||
+                           (line.includes('ABN') && currentPage.length > 10) ||
+                           (line.includes('GST') && currentPage.length > 10) ||
+                           (line.includes('Total') && line.includes('$') && currentPage.length > 15) ||
+                           (line.includes('Date:') && currentPage.length > 10)
+        
+        if (isPageBreak && currentPage.length > 3) {
+          pages.push(currentPage.join('\n'))
+          console.error(`🔥 SPLIT TRIGGER: "${line.substring(0, 50)}..." (page ${pages.length})`)
+          currentPage = []
         }
         currentPage.push(line)
       }
       
       // Don't forget the last page
-      if (currentPage.length > 5) {
+      if (currentPage.length > 3) {
         pages.push(currentPage.join('\n'))
       }
       
-      // If we couldn't split effectively, try simpler chunking
-      if (pages.length <= 1 && textChunks.length > 100) {
-        console.error(`🔥 FALLBACK: Splitting ${textChunks.length} lines into chunks`)
-        const chunkSize = Math.ceil(textChunks.length / 13) // Approximate 13 invoices
+      console.error(`🔥 STRATEGY 1: Found ${pages.length} pages via pattern matching`)
+      
+      // Strategy 2: If we still don't have enough pages, try fixed chunking
+      if (pages.length < 10 && textChunks.length > 200) {
+        console.error(`🔥 STRATEGY 2: Not enough pages (${pages.length}), trying fixed chunking`)
+        pages = []
+        const targetPages = Math.max(13, Math.ceil(textChunks.length / 100)) // At least 13 or based on content
+        const chunkSize = Math.ceil(textChunks.length / targetPages)
+        
         for (let i = 0; i < textChunks.length; i += chunkSize) {
           const chunk = textChunks.slice(i, i + chunkSize)
-          if (chunk.length > 5) {
+          if (chunk.length > 3) {
             pages.push(chunk.join('\n'))
           }
         }
+        console.error(`🔥 STRATEGY 2: Created ${pages.length} pages with ~${chunkSize} lines each`)
       }
       
-      console.error(`🔥 ALTERNATIVE RESULT: Split into ${pages.length} pages`)
+      // Strategy 3: Ensure we have at least some reasonable number of pages
+      if (pages.length < 5 && textChunks.length > 100) {
+        console.error(`🔥 STRATEGY 3: Still too few pages (${pages.length}), forcing minimum split`)
+        pages = []
+        const minChunkSize = Math.max(20, Math.floor(textChunks.length / 15)) // Smaller chunks
+        
+        for (let i = 0; i < textChunks.length; i += minChunkSize) {
+          const chunk = textChunks.slice(i, i + minChunkSize)
+          pages.push(chunk.join('\n'))
+        }
+        console.error(`🔥 STRATEGY 3: Forced ${pages.length} pages with ~${minChunkSize} lines each`)
+      }
+      
+      console.error(`🔥 ALTERNATIVE RESULT: Final ${pages.length} pages ready for invoice detection`)
+      
+      // Log first few lines of each page for debugging
+      pages.forEach((page, i) => {
+        const preview = page.split('\n').slice(0, 3).join(' | ')
+        console.error(`🔥 PAGE ${i + 1} PREVIEW: ${preview.substring(0, 100)}...`)
+      })
+      
       return pages.length > 0 ? pages : [textChunks.join('\n')]
     }
 
@@ -459,6 +492,16 @@ function isInvoicePage(text: string): boolean {
     /\bvat\s*:?\s*\$?[\d,]+\.?\d*/i,
     /\$[\d,]+\.?\d*/, // Any dollar amounts
     /\bdate\s*:?\s*\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4}/i, // Dates
+    /\babn\s*:?\s*\d+/i, // Australian Business Number
+    /\bacn\s*:?\s*\d+/i, // Australian Company Number
+    /\btfn\s*:?\s*\d+/i, // Tax File Number
+    /\bremittance\b/i,
+    /\bpayment\s*(?:advice|slip)\b/i,
+    /\bdue\s*date\b/i,
+    /\bamount\s*(?:due|owing)\b/i,
+    /\bbalance\s*(?:due|owing)\b/i,
+    /\bpay\s*by\b/i,
+    /\$\d+\.\d{2}(?:\s|$)/, // Specific currency format
   ]
 
   const negativeIndicators = [
@@ -500,13 +543,16 @@ function isInvoicePage(text: string): boolean {
   score += constructionTerms.filter(pattern => pattern.test(text)).length * 2
 
   // Need minimum score to be considered an invoice
-  const threshold = 3 // Temporarily lowered for debugging
+  const threshold = 2 // Very aggressive for 13-invoice detection
   const isInvoice = score >= threshold
 
+  console.error(`📊 Invoice detection: score=${score}, threshold=${threshold}, isInvoice=${isInvoice}`)
+  console.error(`📊 Breakdown: strong=${strongIndicators.filter(p => p.test(text)).length}, medium=${mediumIndicators.filter(p => p.test(text)).length}, weak=${weakIndicators.filter(p => p.test(text)).length}, neg=${negativeIndicators.filter(p => p.test(text)).length}, construction=${constructionTerms.filter(p => p.test(text)).length}`)
+
   if (isInvoice) {
-    console.error(`🎯 Invoice page detected with score ${score}`)
+    console.error(`🎯 Invoice page ACCEPTED with score ${score}`)
   } else {
-    console.error(`❌ Page rejected with score ${score} (threshold: ${threshold})`)
+    console.error(`❌ Invoice page REJECTED with score ${score} (below threshold ${threshold})`)
   }
 
   return isInvoice
