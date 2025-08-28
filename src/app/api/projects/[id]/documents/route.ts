@@ -22,7 +22,17 @@ async function GET(request: NextRequest, user: AuthUser, { params }: { params: P
 
     // Filter by phase/stage if specified
     if (phase) {
-      where.stage = phase
+      // Map frontend phase names to database ProjectStatus enum
+      const phaseMapping: Record<string, string> = {
+        'PLANNING': 'PLANNING',
+        'CONSTRUCTION': 'IN_PROGRESS',
+        'COMPLETION': 'COMPLETED',
+      }
+      
+      const mappedStage = phaseMapping[phase.toUpperCase()]
+      if (mappedStage) {
+        where.stage = mappedStage
+      }
     }
 
     // Get documents for the project
