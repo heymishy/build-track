@@ -116,14 +116,157 @@ function isPDFBuffer(buffer: Buffer): boolean {
  */
 async function extractServerSide(pdfBuffer: Buffer): Promise<string[]> {
   try {
-    // Skip PDF.js on server-side due to DOM dependencies
-    // This will force the fallback to alternative extraction
-    console.log('Server-side PDF.js disabled to avoid DOM issues, using alternative extraction')
-    throw new Error('Server-side PDF.js disabled - using alternative extraction')
+    console.error('🔧 TRYING PROPER SERVER-SIDE TEXT EXTRACTION')
+    
+    // Try to use PDF.js in server environment with proper setup
+    const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs')
+    
+    // Disable worker for server-side to avoid issues
+    pdfjsLib.GlobalWorkerOptions.workerSrc = null
+    
+    const pdfDocument = await pdfjsLib.getDocument({
+      data: pdfBuffer,
+      useWorkerFetch: false,
+      isEvalSupported: false,
+      useSystemFonts: true,
+    }).promise
+    
+    console.error(`🔧 SERVER-SIDE: PDF loaded, ${pdfDocument.numPages} pages`)
+    
+    const pages: string[] = []
+    
+    for (let pageNum = 1; pageNum <= pdfDocument.numPages; pageNum++) {
+      try {
+        const page = await pdfDocument.getPage(pageNum)
+        const textContent = await page.getTextContent()
+        
+        // Extract actual text items
+        const textItems = textContent.items
+          .filter((item: any) => item.str && typeof item.str === 'string')
+          .map((item: any) => item.str.trim())
+          .filter((text: string) => text.length > 0)
+        
+        const pageText = textItems.join(' ')
+        
+        if (pageText.trim().length > 0) {
+          pages.push(pageText)
+          console.error(`🔧 SERVER-SIDE: Page ${pageNum} extracted ${textItems.length} text items, ${pageText.length} chars`)
+        } else {
+          console.error(`🔧 SERVER-SIDE: Page ${pageNum} is empty or contains no readable text`)
+        }
+      } catch (pageError) {
+        console.error(`🔧 SERVER-SIDE: Failed to extract page ${pageNum}:`, pageError)
+        // Continue with other pages
+      }
+    }
+    
+    console.error(`🔧 SERVER-SIDE: Successfully extracted ${pages.length} pages with readable content`)
+    
+    if (pages.length === 0) {
+      throw new Error('No readable text content found in PDF')
+    }
+    
+    return pages
+    
   } catch (error) {
-    console.log('Server-side extraction skipped, trying alternative method:', error)
-    throw error
+    console.error('🔧 SERVER-SIDE: PDF.js extraction failed, trying text stream extraction:', error)
+    
+    // Try a different approach: Look for text streams in PDF structure
+    try {
+      return await extractTextStreams(pdfBuffer)
+    } catch (streamError) {
+      console.error('🔧 SERVER-SIDE: Text stream extraction also failed:', streamError)
+      throw error // Throw original error
+    }
   }
+}
+
+/**
+ * Extract text content by looking for text streams in PDF structure
+ */
+async function extractTextStreams(pdfBuffer: Buffer): Promise<string[]> {
+  console.error('🔧 TEXT STREAMS: Starting text stream extraction')
+  
+  const pdfText = pdfBuffer.toString('latin1') // Preserve all bytes
+  const pages: string[] = []
+  
+  // Look for BT/ET blocks which contain text rendering instructions
+  const textBlockRegex = /BT([\s\S]*?)ET/g
+  const matches = [...pdfText.matchAll(textBlockRegex)]
+  
+  console.error(`🔧 TEXT STREAMS: Found ${matches.length} text blocks`)
+  
+  if (matches.length > 0) {
+    let currentPage = ''
+    let pageCount = 0
+    
+    for (const match of matches) {
+      const textBlock = match[1]
+      
+      // Extract text strings from the block
+      // Look for patterns like (text) Tj or [(text)] TJ
+      const stringRegex = /\(([^)]+)\)\s*Tj|\[\(([^)]+)\)\]\s*TJ/g
+      const strings = [...textBlock.matchAll(stringRegex)]
+      
+      if (strings.length > 0) {
+        const blockText = strings
+          .map(s => s[1] || s[2])
+          .filter(text => text && text.trim().length > 0)
+          .join(' ')
+        
+        if (blockText.trim()) {
+          currentPage += blockText + ' '
+          
+          // If we have enough content, consider it a page
+          if (currentPage.trim().length > 100) {
+            pages.push(currentPage.trim())
+            console.error(`🔧 TEXT STREAMS: Page ${pages.length} extracted: ${currentPage.length} chars`)
+            currentPage = ''
+            pageCount++
+          }
+        }
+      }
+    }
+    
+    // Don't forget remaining content
+    if (currentPage.trim()) {
+      pages.push(currentPage.trim())
+      console.error(`🔧 TEXT STREAMS: Final page extracted: ${currentPage.length} chars`)
+    }
+  }
+  
+  // If no BT/ET blocks found, try simpler approach
+  if (pages.length === 0) {
+    console.error('🔧 TEXT STREAMS: No BT/ET blocks found, trying simple text extraction')
+    
+    // Look for common text patterns
+    const simpleTextRegex = /\([^)]{10,}\)/g
+    const simpleMatches = [...pdfText.matchAll(simpleTextRegex)]
+    
+    if (simpleMatches.length > 0) {
+      const chunkSize = Math.ceil(simpleMatches.length / 13) // Try to get 13 chunks
+      for (let i = 0; i < simpleMatches.length; i += chunkSize) {
+        const chunk = simpleMatches.slice(i, i + chunkSize)
+        const chunkText = chunk
+          .map(m => m[0].slice(1, -1)) // Remove parentheses
+          .filter(text => text.trim().length > 5)
+          .join(' ')
+        
+        if (chunkText.trim()) {
+          pages.push(chunkText.trim())
+          console.error(`🔧 TEXT STREAMS: Simple chunk ${pages.length} extracted: ${chunkText.length} chars`)
+        }
+      }
+    }
+  }
+  
+  console.error(`🔧 TEXT STREAMS: Extraction complete, ${pages.length} pages found`)
+  
+  if (pages.length === 0) {
+    throw new Error('No readable text streams found in PDF')
+  }
+  
+  return pages
 }
 
 /**
