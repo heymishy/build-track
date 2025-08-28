@@ -47,7 +47,7 @@ export interface MultiInvoiceResult {
  * Supports both client and server-side extraction with intelligent fallbacks
  */
 export async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string[]> {
-  console.log('PDF buffer size:', pdfBuffer.length, 'bytes')
+  console.log('extractTextFromPDF: Starting with buffer size:', pdfBuffer.length, 'bytes')
 
   // Validate PDF buffer
   if (!pdfBuffer || pdfBuffer.length === 0) {
@@ -56,15 +56,17 @@ export async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string[]> {
 
   // Check for PDF header
   if (!isPDFBuffer(pdfBuffer)) {
-    console.warn('Buffer does not appear to be a valid PDF file')
+    console.warn('extractTextFromPDF: Buffer does not appear to be a valid PDF file')
   }
 
   try {
     // Try server-side extraction first (more reliable)
     if (typeof window === 'undefined') {
+      console.log('extractTextFromPDF: Trying server-side extraction')
       return await extractServerSide(pdfBuffer)
     } else {
       // Client-side extraction
+      console.log('extractTextFromPDF: Trying client-side extraction')
       const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs')
       pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js'
       return await extractWithPdfJs(pdfBuffer, pdfjsLib)
@@ -74,12 +76,18 @@ export async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string[]> {
 
     try {
       // Try alternative extraction method
-      return await extractAlternative(pdfBuffer)
+      console.log('extractTextFromPDF: Trying alternative extraction')
+      const altResult = await extractAlternative(pdfBuffer)
+      console.log('extractTextFromPDF: Alternative extraction succeeded, pages:', altResult.length)
+      return altResult
     } catch (alternativeError) {
       console.warn('Alternative extraction failed:', alternativeError)
 
       // Final fallback with structured content
-      return generateEnhancedFallback(pdfBuffer, error as Error)
+      console.log('extractTextFromPDF: Using fallback content generation')
+      const fallbackResult = generateEnhancedFallback(pdfBuffer, error as Error)
+      console.log('extractTextFromPDF: Fallback generated, pages:', fallbackResult.length)
+      return fallbackResult
     }
   }
 }
@@ -263,7 +271,9 @@ export async function parseMultipleInvoices(
   pdfBuffer: Buffer,
   userId?: string
 ): Promise<MultiInvoiceResult> {
+  console.log(`parseMultipleInvoices: Starting with buffer size ${pdfBuffer.length} bytes, userId: ${userId}`)
   const pages = await extractTextFromPDF(pdfBuffer)
+  console.log(`parseMultipleInvoices: Extracted ${pages.length} pages`)
   const invoices: ParsedInvoice[] = []
   const orchestrator = new ParsingOrchestrator(userId)
 
