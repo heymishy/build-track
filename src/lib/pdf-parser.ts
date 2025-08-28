@@ -6,6 +6,7 @@
 
 import { applyLearnedPatterns, getTrainingStats as getServerTrainingStats } from './server-training'
 import { ParsingOrchestrator, ParsingResult } from './llm-parsers/parsing-orchestrator'
+import { prisma } from './prisma'
 
 export interface InvoiceLineItem {
   description: string
@@ -117,40 +118,42 @@ function isPDFBuffer(buffer: Buffer): boolean {
 async function extractServerSide(pdfBuffer: Buffer): Promise<string[]> {
   try {
     console.error('🔧 TRYING PROPER SERVER-SIDE TEXT EXTRACTION')
-    
+
     // Try to use PDF.js in server environment with proper setup
     const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs')
-    
+
     // Disable worker for server-side to avoid issues
     pdfjsLib.GlobalWorkerOptions.workerSrc = null
-    
+
     const pdfDocument = await pdfjsLib.getDocument({
       data: pdfBuffer,
       useWorkerFetch: false,
       isEvalSupported: false,
       useSystemFonts: true,
     }).promise
-    
+
     console.error(`🔧 SERVER-SIDE: PDF loaded, ${pdfDocument.numPages} pages`)
-    
+
     const pages: string[] = []
-    
+
     for (let pageNum = 1; pageNum <= pdfDocument.numPages; pageNum++) {
       try {
         const page = await pdfDocument.getPage(pageNum)
         const textContent = await page.getTextContent()
-        
+
         // Extract actual text items
         const textItems = textContent.items
           .filter((item: any) => item.str && typeof item.str === 'string')
           .map((item: any) => item.str.trim())
           .filter((text: string) => text.length > 0)
-        
+
         const pageText = textItems.join(' ')
-        
+
         if (pageText.trim().length > 0) {
           pages.push(pageText)
-          console.error(`🔧 SERVER-SIDE: Page ${pageNum} extracted ${textItems.length} text items, ${pageText.length} chars`)
+          console.error(
+            `🔧 SERVER-SIDE: Page ${pageNum} extracted ${textItems.length} text items, ${pageText.length} chars`
+          )
         } else {
           console.error(`🔧 SERVER-SIDE: Page ${pageNum} is empty or contains no readable text`)
         }
@@ -159,18 +162,19 @@ async function extractServerSide(pdfBuffer: Buffer): Promise<string[]> {
         // Continue with other pages
       }
     }
-    
-    console.error(`🔧 SERVER-SIDE: Successfully extracted ${pages.length} pages with readable content`)
-    
+
+    console.error(
+      `🔧 SERVER-SIDE: Successfully extracted ${pages.length} pages with readable content`
+    )
+
     if (pages.length === 0) {
       throw new Error('No readable text content found in PDF')
     }
-    
+
     return pages
-    
   } catch (error) {
     console.error('🔧 SERVER-SIDE: PDF.js extraction failed, trying text stream extraction:', error)
-    
+
     // Try a different approach: Look for text streams in PDF structure
     try {
       return await extractTextStreams(pdfBuffer)
@@ -186,86 +190,88 @@ async function extractServerSide(pdfBuffer: Buffer): Promise<string[]> {
  */
 async function extractTextStreams(pdfBuffer: Buffer): Promise<string[]> {
   console.error('🔧 TEXT STREAMS: Starting text stream extraction')
-  
+
   const pdfText = pdfBuffer.toString('latin1') // Preserve all bytes
   const pages: string[] = []
-  
+
   // Look for BT/ET blocks which contain text rendering instructions
   const textBlockRegex = /BT([\s\S]*?)ET/g
   const matches = [...pdfText.matchAll(textBlockRegex)]
-  
+
   console.error(`🔧 TEXT STREAMS: Found ${matches.length} text blocks`)
-  
+
   if (matches.length > 0) {
     let currentPage = ''
     let pageCount = 0
-    
+
     for (const match of matches) {
       const textBlock = match[1]
-      
+
       // Extract text strings from the block
       // Look for patterns like (text) Tj or [(text)] TJ
       const stringRegex = /\(([^)]+)\)\s*Tj|\[\(([^)]+)\)\]\s*TJ/g
       const strings = [...textBlock.matchAll(stringRegex)]
-      
+
       if (strings.length > 0) {
         const blockText = strings
           .map(s => s[1] || s[2])
           .filter(text => text && text.trim().length > 0)
           .join(' ')
-        
+
         if (blockText.trim()) {
           currentPage += blockText + ' '
-          
+
           // If we have enough content, consider it a page
           if (currentPage.trim().length > 100) {
             pages.push(currentPage.trim())
-            console.error(`🔧 TEXT STREAMS: Page ${pages.length} extracted: ${currentPage.length} chars`)
+            console.error(
+              `🔧 TEXT STREAMS: Page ${pages.length} extracted: ${currentPage.length} chars`
+            )
             currentPage = ''
             pageCount++
           }
         }
       }
     }
-    
+
     // Don't forget remaining content
     if (currentPage.trim()) {
       pages.push(currentPage.trim())
       console.error(`🔧 TEXT STREAMS: Final page extracted: ${currentPage.length} chars`)
     }
   }
-  
+
   // If no BT/ET blocks found, try decompressed stream extraction
   if (pages.length === 0) {
     console.error('🔧 TEXT STREAMS: No BT/ET blocks found, trying decompressed stream extraction')
-    
+
     try {
       // Look for FlateDecode streams and try to decompress them
       const streamRegex = /stream\s*([\s\S]*?)\s*endstream/g
       const streamMatches = [...pdfText.matchAll(streamRegex)]
-      
+
       console.error(`🔧 TEXT STREAMS: Found ${streamMatches.length} PDF streams`)
-      
+
       if (streamMatches.length > 0) {
         const chunkSize = Math.ceil(streamMatches.length / 13) // Aim for 13 chunks
-        
+
         for (let i = 0; i < streamMatches.length; i += chunkSize) {
           const chunk = streamMatches.slice(i, i + chunkSize)
           let chunkText = ''
-          
+
           for (const match of chunk) {
             const streamData = match[1]
-            
+
             // Try to extract readable text from the stream
             // Look for text-like patterns in the stream data
             const textPatterns = [
-              /[A-Za-z]{3,}/g,  // Words with 3+ letters
-              /\$\d+\.?\d*/g,   // Dollar amounts
+              /[A-Za-z]{3,}/g, // Words with 3+ letters
+              /\$\d+\.?\d*/g, // Dollar amounts
               /\d{1,2}\/\d{1,2}\/\d{4}/g, // Dates
               /[A-Z][a-z]+ [A-Z][a-z]+/g, // Names
-              /\b[A-Z]{2,}\b/g  // Abbreviations
+              /\b[A-Z]{2,}\b/g, // Abbreviations
             ]
-            
+
             for (const pattern of textPatterns) {
               const matches = streamData.match(pattern)
               if (matches) {
@@ -273,7 +279,7 @@ async function extractTextStreams(pdfBuffer: Buffer): Promise<string[]> {
               }
             }
           }
-          
+
           // Also look for parenthesized text in this chunk
           const parenMatches = chunk.flatMap(m => [...m[1].matchAll(/\(([^)]{3,})\)/g)])
           if (parenMatches.length > 0) {
@@ -283,24 +289,26 @@ async function extractTextStreams(pdfBuffer: Buffer): Promise<string[]> {
               .join(' ')
             chunkText += parenText + ' '
           }
-          
+
           if (chunkText.trim().length > 10) {
             pages.push(chunkText.trim())
-            console.error(`🔧 TEXT STREAMS: Decompressed chunk ${pages.length}: ${chunkText.length} chars`)
+            console.error(
+              `🔧 TEXT STREAMS: Decompressed chunk ${pages.length}: ${chunkText.length} chars`
+            )
           }
         }
       }
     } catch (streamError) {
       console.error('🔧 TEXT STREAMS: Stream decompression failed:', streamError)
     }
-    
+
     // Final fallback: simple text patterns
     if (pages.length === 0) {
       console.error('🔧 TEXT STREAMS: Falling back to simple text patterns')
-      
+
       const simpleTextRegex = /\([^)]{5,}\)/g
       const simpleMatches = [...pdfText.matchAll(simpleTextRegex)]
-      
+
       if (simpleMatches.length > 0) {
         const chunkSize = Math.ceil(simpleMatches.length / 13)
         for (let i = 0; i < simpleMatches.length; i += chunkSize) {
@@ -309,22 +317,24 @@ async function extractTextStreams(pdfBuffer: Buffer): Promise<string[]> {
             .map(m => m[0].slice(1, -1))
             .filter(text => text.trim().length > 3)
             .join(' ')
-          
+
           if (chunkText.trim()) {
             pages.push(chunkText.trim())
-            console.error(`🔧 TEXT STREAMS: Simple fallback chunk ${pages.length}: ${chunkText.length} chars`)
+            console.error(
+              `🔧 TEXT STREAMS: Simple fallback chunk ${pages.length}: ${chunkText.length} chars`
+            )
           }
         }
       }
     }
   }
-  
+
   console.error(`🔧 TEXT STREAMS: Extraction complete, ${pages.length} pages found`)
-  
+
   if (pages.length === 0) {
     throw new Error('No readable text streams found in PDF')
   }
-  
+
   return pages
 }
 
@@ -349,25 +359,34 @@ async function extractAlternative(pdfBuffer: Buffer): Promise<string[]> {
 
     if (textChunks.length > 0) {
       console.error(`🔥 ALTERNATIVE EXTRACTION: Found ${textChunks.length} text lines from PDF`)
-      
+
       // Try multiple splitting strategies
       let pages = []
-      
+
       // Strategy 1: Look for explicit page breaks and invoice headers
       let currentPage = []
       for (const line of textChunks) {
-        const isPageBreak = line.includes('Page ') || line.includes('page ') ||
-                           line.includes('INVOICE') || line.includes('Invoice') || line.includes('invoice') ||
-                           line.includes('TAX INVOICE') || line.includes('STATEMENT') || line.includes('Statement') ||
-                           line.includes('RECEIPT') || line.includes('Receipt') || line.includes('BILL') ||
-                           line.includes('REMITTANCE') || line.includes('Tax Invoice') ||
-                           // More aggressive patterns
-                           (line.includes('$') && line.length < 50 && currentPage.length > 15) ||
-                           (line.includes('ABN') && currentPage.length > 10) ||
-                           (line.includes('GST') && currentPage.length > 10) ||
-                           (line.includes('Total') && line.includes('$') && currentPage.length > 15) ||
-                           (line.includes('Date:') && currentPage.length > 10)
-        
+        const isPageBreak =
+          line.includes('Page ') ||
+          line.includes('page ') ||
+          line.includes('INVOICE') ||
+          line.includes('Invoice') ||
+          line.includes('invoice') ||
+          line.includes('TAX INVOICE') ||
+          line.includes('STATEMENT') ||
+          line.includes('Statement') ||
+          line.includes('RECEIPT') ||
+          line.includes('Receipt') ||
+          line.includes('BILL') ||
+          line.includes('REMITTANCE') ||
+          line.includes('Tax Invoice') ||
+          // More aggressive patterns
+          (line.includes('$') && line.length < 50 && currentPage.length > 15) ||
+          (line.includes('ABN') && currentPage.length > 10) ||
+          (line.includes('GST') && currentPage.length > 10) ||
+          (line.includes('Total') && line.includes('$') && currentPage.length > 15) ||
+          (line.includes('Date:') && currentPage.length > 10)
+
         if (isPageBreak && currentPage.length > 3) {
           pages.push(currentPage.join('\n'))
           console.error(`🔥 SPLIT TRIGGER: "${line.substring(0, 50)}..." (page ${pages.length})`)
@@ -375,21 +394,21 @@ async function extractAlternative(pdfBuffer: Buffer): Promise<string[]> {
         }
         currentPage.push(line)
       }
-      
+
       // Don't forget the last page
       if (currentPage.length > 3) {
         pages.push(currentPage.join('\n'))
       }
-      
+
       console.error(`🔥 STRATEGY 1: Found ${pages.length} pages via pattern matching`)
-      
+
       // Strategy 2: If we still don't have enough pages, try fixed chunking
       if (pages.length < 10 && textChunks.length > 200) {
         console.error(`🔥 STRATEGY 2: Not enough pages (${pages.length}), trying fixed chunking`)
         pages = []
         const targetPages = Math.max(13, Math.ceil(textChunks.length / 100)) // At least 13 or based on content
         const chunkSize = Math.ceil(textChunks.length / targetPages)
-        
+
         for (let i = 0; i < textChunks.length; i += chunkSize) {
           const chunk = textChunks.slice(i, i + chunkSize)
           if (chunk.length > 3) {
@@ -398,28 +417,32 @@ async function extractAlternative(pdfBuffer: Buffer): Promise<string[]> {
         }
         console.error(`🔥 STRATEGY 2: Created ${pages.length} pages with ~${chunkSize} lines each`)
       }
-      
+
       // Strategy 3: Ensure we have at least some reasonable number of pages
       if (pages.length < 5 && textChunks.length > 100) {
         console.error(`🔥 STRATEGY 3: Still too few pages (${pages.length}), forcing minimum split`)
         pages = []
         const minChunkSize = Math.max(20, Math.floor(textChunks.length / 15)) // Smaller chunks
-        
+
         for (let i = 0; i < textChunks.length; i += minChunkSize) {
           const chunk = textChunks.slice(i, i + minChunkSize)
           pages.push(chunk.join('\n'))
         }
-        console.error(`🔥 STRATEGY 3: Forced ${pages.length} pages with ~${minChunkSize} lines each`)
+        console.error(
+          `🔥 STRATEGY 3: Forced ${pages.length} pages with ~${minChunkSize} lines each`
+        )
       }
-      
-      console.error(`🔥 ALTERNATIVE RESULT: Final ${pages.length} pages ready for invoice detection`)
-      
+
+      console.error(
+        `🔥 ALTERNATIVE RESULT: Final ${pages.length} pages ready for invoice detection`
+      )
+
       // Log first few lines of each page for debugging
       pages.forEach((page, i) => {
         const preview = page.split('\n').slice(0, 3).join(' | ')
         console.error(`🔥 PAGE ${i + 1} PREVIEW: ${preview.substring(0, 100)}...`)
       })
-      
+
       return pages.length > 0 ? pages : [textChunks.join('\n')]
     }
 
@@ -550,7 +573,9 @@ async function extractWithPdfJs(pdfBuffer: Buffer, pdfjsLib: any): Promise<strin
  */
 export async function parseMultipleInvoices(
   pdfBuffer: Buffer,
-  userId?: string
+  userId?: string,
+  saveToDatabase: boolean = false,
+  projectId?: string
 ): Promise<MultiInvoiceResult> {
   const timestamp = new Date().toISOString()
   console.error(
@@ -618,6 +643,11 @@ export async function parseMultipleInvoices(
           totalConfidence += result.confidence
           if (result.metadata?.llmUsed) llmUsages++
           strategy = result.strategy
+          
+          // Save to database immediately if requested
+          if (saveToDatabase && userId) {
+            await saveInvoiceToDatabase(result.invoice, userId, projectId)
+          }
         } else {
           // Fallback to traditional parsing
           const fallbackInvoice = await parseInvoiceFromTextTraditional(pageText, i + 1)
@@ -628,6 +658,11 @@ export async function parseMultipleInvoices(
           ) {
             invoices.push(fallbackInvoice)
             totalConfidence += fallbackInvoice.confidence || 0.5
+            
+            // Save to database immediately if requested
+            if (saveToDatabase && userId) {
+              await saveInvoiceToDatabase(fallbackInvoice, userId, projectId)
+            }
           }
         }
       } catch (error) {
@@ -643,6 +678,11 @@ export async function parseMultipleInvoices(
         if (fallbackInvoice.invoiceNumber || fallbackInvoice.total || fallbackInvoice.vendorName) {
           invoices.push(fallbackInvoice)
           totalConfidence += fallbackInvoice.confidence || 0.5
+          
+          // Save to database immediately if requested
+          if (saveToDatabase && userId) {
+            await saveInvoiceToDatabase(fallbackInvoice, userId, projectId)
+          }
         }
       }
     }
@@ -748,8 +788,12 @@ function isInvoicePage(text: string): boolean {
   const threshold = 0 // Accept everything - we have good 13-page splitting now
   const isInvoice = score >= threshold
 
-  console.error(`📊 Invoice detection: score=${score}, threshold=${threshold}, isInvoice=${isInvoice}`)
-  console.error(`📊 Breakdown: strong=${strongIndicators.filter(p => p.test(text)).length}, medium=${mediumIndicators.filter(p => p.test(text)).length}, weak=${weakIndicators.filter(p => p.test(text)).length}, neg=${negativeIndicators.filter(p => p.test(text)).length}, construction=${constructionTerms.filter(p => p.test(text)).length}`)
+  console.error(
+    `📊 Invoice detection: score=${score}, threshold=${threshold}, isInvoice=${isInvoice}`
+  )
+  console.error(
+    `📊 Breakdown: strong=${strongIndicators.filter(p => p.test(text)).length}, medium=${mediumIndicators.filter(p => p.test(text)).length}, weak=${weakIndicators.filter(p => p.test(text)).length}, neg=${negativeIndicators.filter(p => p.test(text)).length}, construction=${constructionTerms.filter(p => p.test(text)).length}`
+  )
 
   if (isInvoice) {
     console.error(`🎯 Invoice page ACCEPTED with score ${score}`)
@@ -1281,4 +1325,57 @@ function extractLineItems(text: string): InvoiceLineItem[] {
   }
 
   return lineItems
+}
+
+/**
+ * Helper function to save a parsed invoice to the database immediately
+ */
+async function saveInvoiceToDatabase(
+  parsedInvoice: ParsedInvoice, 
+  userId: string, 
+  projectId?: string
+): Promise<void> {
+  try {
+    // Get user's project if not provided
+    let targetProjectId = projectId
+    if (!targetProjectId) {
+      const userProject = await prisma.project.findFirst({
+        where: {
+          users: {
+            some: { userId }
+          }
+        },
+        orderBy: { createdAt: 'desc' }
+      })
+      targetProjectId = userProject?.id || null
+      console.error(`💾 Auto-selected project: ${userProject?.name} (ID: ${targetProjectId})`)
+    }
+    
+    const invoiceData = {
+      number: parsedInvoice.invoiceNumber || `AUTO-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+      supplierName: parsedInvoice.vendorName || 'Unknown Supplier',
+      totalAmount: parsedInvoice.total || parsedInvoice.amount || 0,
+      taxAmount: parsedInvoice.tax || 0,
+      invoiceDate: parsedInvoice.date ? new Date(parsedInvoice.date) : new Date(),
+      description: parsedInvoice.description || 'Parsed from PDF',
+      status: 'PENDING' as const,
+      userId,
+      projectId: targetProjectId,
+      rawText: parsedInvoice.rawText?.substring(0, 5000) || '', // Limit text size
+    }
+    
+    const savedInvoice = await prisma.invoice.create({
+      data: invoiceData
+    })
+    
+    console.error(`💾 SAVED: ${savedInvoice.id} - ${invoiceData.supplierName} - $${invoiceData.totalAmount}`)
+    
+  } catch (saveError) {
+    console.error(`💾 FAILED to save invoice:`, saveError)
+    console.error(`💾 Invoice data:`, {
+      vendor: parsedInvoice.vendorName,
+      total: parsedInvoice.total,
+      number: parsedInvoice.invoiceNumber
+    })
+  }
 }

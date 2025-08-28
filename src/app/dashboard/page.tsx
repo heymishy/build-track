@@ -95,17 +95,17 @@ function DashboardContent() {
 
         const endpoint = `/api/invoices/parse?t=${Date.now()}`
         console.log('🔥 FRONTEND: Using endpoint:', endpoint)
-        
+
         const response = await fetch(endpoint, {
           method: 'POST',
           body: formData,
           headers: {
             'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
-            'Pragma': 'no-cache',
-            'Expires': '0',
+            Pragma: 'no-cache',
+            Expires: '0',
             'X-Requested-With': 'XMLHttpRequest',
-            'X-Cache-Bypass': Date.now().toString()
-          }
+            'X-Cache-Bypass': Date.now().toString(),
+          },
         })
 
         const result = await response.json()

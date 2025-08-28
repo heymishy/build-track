@@ -64,57 +64,24 @@ async function POST(request: NextRequest, user: AuthUser) {
     try {
       console.error('🚀 API ROUTE: Starting PDF multi-invoice parsing with enhanced logging...')
       console.error('DEBUG: parseMultipleInvoices function type:', typeof parseMultipleInvoices)
-      result = await parseMultipleInvoices(buffer, user.id)
+      // Get the user's project for database saving
+      const userProject = await prisma.project.findFirst({
+        where: {
+          users: {
+            some: { userId: user.id }
+          }
+        },
+        orderBy: { createdAt: 'desc' }
+      })
+      
+      console.error(`💾 Found project for user: ${userProject?.name} (ID: ${userProject?.id})`)
+      
+      // Call parseMultipleInvoices with database saving enabled
+      result = await parseMultipleInvoices(buffer, user.id, true, userProject?.id)
       console.error('PDF parsing completed:', result.summary)
       
-      // Save parsed invoices to database
-      if (result.invoices && result.invoices.length > 0) {
-        console.error(`💾 Saving ${result.invoices.length} parsed invoices to database`)
-        
-        // Get the user's default project (or the first project)
-        const userProject = await prisma.project.findFirst({
-          where: {
-            users: {
-              some: { userId: user.id }
-            }
-          },
-          orderBy: { createdAt: 'desc' }
-        })
-        
-        console.error(`💾 Found project for user: ${userProject?.name} (ID: ${userProject?.id})`)
-        
-        // Save each parsed invoice
-        let savedCount = 0
-        for (const parsedInvoice of result.invoices) {
-          try {
-            const invoiceData = {
-              number: parsedInvoice.invoiceNumber || `AUTO-${Date.now()}-${savedCount + 1}`,
-              supplierName: parsedInvoice.vendorName || 'Unknown Supplier',
-              totalAmount: parsedInvoice.total || parsedInvoice.amount || 0,
-              taxAmount: parsedInvoice.tax || 0,
-              invoiceDate: parsedInvoice.date ? new Date(parsedInvoice.date) : new Date(),
-              description: parsedInvoice.description || 'Parsed from PDF',
-              status: 'PENDING' as const,
-              userId: user.id,
-              projectId: userProject?.id || null,
-              rawText: parsedInvoice.rawText?.substring(0, 5000) || '', // Limit text size
-            }
-            
-            const savedInvoice = await prisma.invoice.create({
-              data: invoiceData
-            })
-            
-            console.error(`💾 Saved invoice: ${savedInvoice.id} - ${invoiceData.supplierName} - $${invoiceData.totalAmount}`)
-            savedCount++
-            
-          } catch (saveError) {
-            console.error(`💾 Failed to save parsed invoice:`, saveError)
-          }
-        }
-        
-        console.error(`💾 Successfully saved ${savedCount}/${result.invoices.length} invoices to database`)
-        result.summary = `Found and saved ${savedCount} invoice(s) to your project. Total amount: $${result.totalAmount.toFixed(2)}`
-      }
+      // Update summary to reflect database saving
+      result.summary = `Found and saved ${result.totalInvoices} invoice(s) to your project. Total amount: $${result.totalAmount.toFixed(2)}`
       
     } catch (error) {
       console.error('PDF parsing error:', error)
