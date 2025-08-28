@@ -93,9 +93,17 @@ function DashboardContent() {
         const formData = new FormData()
         formData.append('file', file)
 
-        const response = await fetch('/api/invoices/parse-v2', {
+        const endpoint = `/api/invoices/parse-v2?t=${Date.now()}`
+        console.log('🔥 FRONTEND: Using endpoint:', endpoint)
+        
+        const response = await fetch(endpoint, {
           method: 'POST',
           body: formData,
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0'
+          }
         })
 
         const result = await response.json()
