@@ -24,9 +24,11 @@ export class SettingsService {
   }
 
   async getSettings(): Promise<StoredSettings> {
+    console.log(`Settings service: Loading settings for user ${this.userId}`)
     const settings = await prisma.userSettings.findMany({
       where: { userId: this.userId },
     })
+    console.log(`Settings service: Found ${settings.length} settings for user ${this.userId}`)
 
     const result: StoredSettings = {
       apiKeys: {},

@@ -42,6 +42,7 @@ export class ParsingOrchestrator {
   }
 
   private async initialize() {
+    console.log('Orchestrator initializing with userId:', this.userId)
     this.config = await getParsingConfig(this.userId)
 
     console.log('Orchestrator initialized with strategy:', this.config.defaultStrategy)

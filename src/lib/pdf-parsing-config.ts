@@ -224,7 +224,7 @@ export async function getParsingConfig(userId?: string): Promise<ParsingConfig> 
       storedSettings = await getUserSettings(userId)
       console.log(`PDF parsing config loaded for user ${userId}:`, {
         hasApiKeys: storedSettings?.apiKeys ? Object.keys(storedSettings.apiKeys).length : 0,
-        strategy: storedSettings?.defaultStrategy || 'not set'
+        strategy: storedSettings?.defaultStrategy || 'not set',
       })
     } catch (error) {
       console.error('Failed to load user settings:', error)
@@ -319,9 +319,9 @@ export async function getParsingConfig(userId?: string): Promise<ParsingConfig> 
       .map(([name, provider]) => ({
         name,
         hasApiKey: !!provider.apiKey,
-        model: provider.model
+        model: provider.model,
       })),
-    fallbackChain: config.strategies[config.defaultStrategy]?.fallbackChain || []
+    fallbackChain: config.strategies[config.defaultStrategy]?.fallbackChain || [],
   })
 
   return config

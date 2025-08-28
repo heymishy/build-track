@@ -138,7 +138,9 @@ class DatabasePool {
 
     // Note: Prisma middleware ($use) has been deprecated and removed in newer versions
     // Query monitoring and metrics will be handled at the application level
-    console.log('[DB Pool] Database client initialized without middleware (deprecated in Prisma v5+)')
+    console.log(
+      '[DB Pool] Database client initialized without middleware (deprecated in Prisma v5+)'
+    )
   }
 
   private updateAverageAcquireTime(duration: number): void {

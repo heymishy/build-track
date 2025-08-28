@@ -7,7 +7,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getDatabase } from '@/lib/db-pool'
 import { withAuth, AuthUser } from '@/lib/middleware'
 
-async function GET(request: NextRequest, user: AuthUser, { params }: { params: Promise<{ id: string }> }) {
+async function GET(
+  request: NextRequest,
+  user: AuthUser,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
     const { id: projectId } = await params
     const { searchParams } = new URL(request.url)
@@ -24,11 +28,11 @@ async function GET(request: NextRequest, user: AuthUser, { params }: { params: P
     if (phase) {
       // Map frontend phase names to database ProjectStatus enum
       const phaseMapping: Record<string, string> = {
-        'PLANNING': 'PLANNING',
-        'CONSTRUCTION': 'IN_PROGRESS',
-        'COMPLETION': 'COMPLETED',
+        PLANNING: 'PLANNING',
+        CONSTRUCTION: 'IN_PROGRESS',
+        COMPLETION: 'COMPLETED',
       }
-      
+
       const mappedStage = phaseMapping[phase.toUpperCase()]
       if (mappedStage) {
         where.stage = mappedStage
@@ -57,13 +61,15 @@ async function GET(request: NextRequest, user: AuthUser, { params }: { params: P
       documents,
       count: documents.length,
     })
-
   } catch (error) {
     console.error('Documents API error:', error)
-    return NextResponse.json({
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to fetch documents',
-    }, { status: 500 })
+    return NextResponse.json(
+      {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to fetch documents',
+      },
+      { status: 500 }
+    )
   }
 }
 

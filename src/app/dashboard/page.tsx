@@ -104,9 +104,10 @@ function DashboardContent() {
           const processedCount = result.result?.totalInvoices || 0
           setUploadStatus({
             type: 'success',
-            message: processedCount > 0 
-              ? `Successfully processed ${processedCount} invoice${processedCount === 1 ? '' : 's'} from ${file.name}`
-              : `File ${file.name} processed but no invoices found. Please check the PDF content.`,
+            message:
+              processedCount > 0
+                ? `Successfully processed ${processedCount} invoice${processedCount === 1 ? '' : 's'} from ${file.name}`
+                : `File ${file.name} processed but no invoices found. Please check the PDF content.`,
           })
 
           // Reload projects after successful upload
@@ -222,7 +223,9 @@ function DashboardContent() {
             <Card className="mb-6">
               <Card.Body
                 className={`p-8 text-center border-2 border-dashed rounded-lg transition-colors ${
-                  isDragging ? 'border-blue-400 bg-blue-50' : 'border-gray-300 hover:border-gray-400'
+                  isDragging
+                    ? 'border-blue-400 bg-blue-50'
+                    : 'border-gray-300 hover:border-gray-400'
                 }`}
                 onDrop={handleDrop}
                 onDragOver={handleDragOver}

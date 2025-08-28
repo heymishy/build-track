@@ -96,17 +96,16 @@ function isPDFBuffer(buffer: Buffer): boolean {
 }
 
 /**
- * Server-side PDF extraction with simplified approach
+ * Server-side PDF extraction with Canvas polyfill
  */
 async function extractServerSide(pdfBuffer: Buffer): Promise<string[]> {
   try {
-    // Import pdfjs-dist for server-side use
-    const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs')
-    
-    // No worker needed for server-side
-    return await extractWithPdfJs(pdfBuffer, pdfjsLib)
+    // Skip PDF.js on server-side due to DOM dependencies
+    // This will force the fallback to alternative extraction
+    console.log('Server-side PDF.js disabled to avoid DOM issues, using alternative extraction')
+    throw new Error('Server-side PDF.js disabled - using alternative extraction')
   } catch (error) {
-    console.log('Server-side extraction failed, trying alternative method:', error)
+    console.log('Server-side extraction skipped, trying alternative method:', error)
     throw error
   }
 }
@@ -118,23 +117,23 @@ async function extractAlternative(pdfBuffer: Buffer): Promise<string[]> {
   try {
     // Try to extract any readable text from the buffer
     const bufferText = pdfBuffer.toString('utf8')
-    
+
     // Look for text patterns that might be readable content
     const textChunks = []
     const lines = bufferText.split(/[\r\n]+/)
-    
+
     for (const line of lines) {
       // Filter out binary data and keep readable text
       if (line.length > 5 && /[a-zA-Z]/.test(line) && !/[\x00-\x08\x0B\x0C\x0E-\x1F]/.test(line)) {
         textChunks.push(line.trim())
       }
     }
-    
+
     if (textChunks.length > 0) {
       console.log(`Alternative extraction found ${textChunks.length} text lines`)
       return [textChunks.join('\n')]
     }
-    
+
     throw new Error('No readable text found in PDF buffer')
   } catch (error) {
     console.error('Alternative extraction method failed:', error)

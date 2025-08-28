@@ -168,31 +168,34 @@ export function DocumentManager({ projectId, phase, compact = false }: DocumentM
       }
 
       // Fetch documents from API
-      const response = await fetch(`/api/projects/${projectId}/documents${phase ? `?phase=${phase}` : ''}`)
-      
+      const response = await fetch(
+        `/api/projects/${projectId}/documents${phase ? `?phase=${phase}` : ''}`
+      )
+
       if (!response.ok) {
         throw new Error(`Failed to fetch documents: ${response.status}`)
       }
 
       const result = await response.json()
-      
+
       if (result.success) {
         // Map database documents to component format
-        const documents = result.documents?.map((doc: any) => ({
-          id: doc.id,
-          filename: doc.fileName,
-          originalName: doc.name,
-          fileType: doc.fileType,
-          fileSize: doc.fileSize,
-          category: doc.category,
-          phase: doc.stage,
-          uploadDate: new Date(doc.createdAt),
-          uploadedBy: doc.uploader?.name || 'Unknown',
-          description: doc.description,
-          version: 1,
-          tags: [],
-          url: doc.fileUrl,
-        })) || []
+        const documents =
+          result.documents?.map((doc: any) => ({
+            id: doc.id,
+            filename: doc.fileName,
+            originalName: doc.name,
+            fileType: doc.fileType,
+            fileSize: doc.fileSize,
+            category: doc.category,
+            phase: doc.stage,
+            uploadDate: new Date(doc.createdAt),
+            uploadedBy: doc.uploader?.name || 'Unknown',
+            description: doc.description,
+            version: 1,
+            tags: [],
+            url: doc.fileUrl,
+          })) || []
 
         setDocuments(documents)
       } else {

@@ -30,14 +30,14 @@
   "shortcuts": [
     {
       "name": "Dashboard",
-      "short_name": "Dashboard", 
+      "short_name": "Dashboard",
       "description": "View project dashboard",
       "url": "/dashboard"
     },
     {
       "name": "Invoices",
       "short_name": "Invoices",
-      "description": "Manage invoices", 
+      "description": "Manage invoices",
       "url": "/invoices"
     },
     {

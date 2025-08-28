@@ -13,34 +13,38 @@ export async function POST(request: NextRequest) {
     const allDocuments = await db.projectDocument.findMany({
       include: {
         project: {
-          select: { name: true }
-        }
-      }
+          select: { name: true },
+        },
+      },
     })
 
-    console.log('Found documents:', allDocuments.map(d => ({
-      id: d.id,
-      name: d.name,
-      fileName: d.fileName,
-      project: d.project?.name,
-      createdAt: d.createdAt
-    })))
+    console.log(
+      'Found documents:',
+      allDocuments.map(d => ({
+        id: d.id,
+        name: d.name,
+        fileName: d.fileName,
+        project: d.project?.name,
+        createdAt: d.createdAt,
+      }))
+    )
 
     // Delete sample documents that look like dummy data
-    const sampleDocuments = allDocuments.filter(doc => 
-      doc.fileName.includes('Architectural Plans v2.pdf') ||
-      doc.fileName.includes('Building Permit - City Council.pdf') ||
-      doc.name.includes('Architectural Plans') ||
-      doc.name.includes('Building Permit')
+    const sampleDocuments = allDocuments.filter(
+      doc =>
+        doc.fileName.includes('Architectural Plans v2.pdf') ||
+        doc.fileName.includes('Building Permit - City Council.pdf') ||
+        doc.name.includes('Architectural Plans') ||
+        doc.name.includes('Building Permit')
     )
 
     if (sampleDocuments.length > 0) {
       const deleteResult = await db.projectDocument.deleteMany({
         where: {
           id: {
-            in: sampleDocuments.map(d => d.id)
-          }
-        }
+            in: sampleDocuments.map(d => d.id),
+          },
+        },
       })
 
       console.log(`Deleted ${deleteResult.count} sample documents`)
@@ -52,7 +56,7 @@ export async function POST(request: NextRequest) {
           name: d.name,
           fileName: d.fileName,
           size: d.fileSize,
-        }))
+        })),
       })
     } else {
       return NextResponse.json({
@@ -62,16 +66,18 @@ export async function POST(request: NextRequest) {
           name: d.name,
           fileName: d.fileName,
           size: d.fileSize,
-          project: d.project?.name
-        }))
+          project: d.project?.name,
+        })),
       })
     }
-
   } catch (error) {
     console.error('Cleanup error:', error)
-    return NextResponse.json({
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
-    }, { status: 500 })
+    return NextResponse.json(
+      {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      },
+      { status: 500 }
+    )
   }
 }
