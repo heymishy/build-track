@@ -11,9 +11,9 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
 const ALLOWED_FILE_TYPE = 'application/pdf'
 
 async function POST(request: NextRequest, user: AuthUser) {
-  console.log('🚀🚀🚀 PDF parse API called - ENHANCED LOGGING ACTIVE 🚀🚀🚀')
+  console.error('🚀🚀🚀 PDF parse API called - ENHANCED LOGGING ACTIVE 🚀🚀🚀')
   const startMemory = process.memoryUsage()
-  console.log('Initial memory usage:', {
+  console.error('Initial memory usage:', {
     rss: Math.round(startMemory.rss / 1024 / 1024) + 'MB',
     heapUsed: Math.round(startMemory.heapUsed / 1024 / 1024) + 'MB',
   })
@@ -60,9 +60,10 @@ async function POST(request: NextRequest, user: AuthUser) {
     // Parse multiple invoices from PDF
     let result
     try {
-      console.log('🚀 API ROUTE: Starting PDF multi-invoice parsing with enhanced logging...')
+      console.error('🚀 API ROUTE: Starting PDF multi-invoice parsing with enhanced logging...')
+      console.error('DEBUG: parseMultipleInvoices function type:', typeof parseMultipleInvoices)
       result = await parseMultipleInvoices(buffer, user.id)
-      console.log('PDF parsing completed:', result.summary)
+      console.error('PDF parsing completed:', result.summary)
     } catch (error) {
       console.error('PDF parsing error:', error)
       return NextResponse.json(

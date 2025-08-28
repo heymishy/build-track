@@ -272,8 +272,8 @@ export async function parseMultipleInvoices(
   userId?: string
 ): Promise<MultiInvoiceResult> {
   const timestamp = new Date().toISOString()
-  console.log(`🚀🚀🚀 ENHANCED LOGGING ACTIVE - parseMultipleInvoices called at ${timestamp} 🚀🚀🚀`)
-  console.log(
+  console.error(`🚀🚀🚀 ENHANCED LOGGING ACTIVE - parseMultipleInvoices called at ${timestamp} 🚀🚀🚀`)
+  console.error(
     `parseMultipleInvoices: Starting with buffer size ${pdfBuffer.length} bytes, userId: ${userId}`
   )
   const pages = await extractTextFromPDF(pdfBuffer)
