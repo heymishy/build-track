@@ -277,9 +277,14 @@ export async function parseMultipleInvoices(
     `parseMultipleInvoices: Starting with buffer size ${pdfBuffer.length} bytes, userId: ${userId}`
   )
   const pages = await extractTextFromPDF(pdfBuffer)
-  console.log(`parseMultipleInvoices: Extracted ${pages.length} pages`)
+  console.error(`parseMultipleInvoices: Extracted ${pages.length} pages`)
   const invoices: ParsedInvoice[] = []
-  console.log(`Creating ParsingOrchestrator with userId: ${userId}`)
+  console.error(`Creating ParsingOrchestrator with userId: ${userId}`)
+  
+  // Log first page content for debugging
+  if (pages.length > 0) {
+    console.error(`First page content (first 500 chars): "${pages[0].substring(0, 500)}"`)
+  }
   const orchestrator = new ParsingOrchestrator(userId)
   console.log(`ParsingOrchestrator created successfully`)
 
@@ -301,7 +306,8 @@ export async function parseMultipleInvoices(
 
     // Check if this page contains invoice indicators
     const isInvoice = isInvoicePage(pageText)
-    console.log(`Page ${i + 1}: isInvoicePage = ${isInvoice}`)
+    console.error(`Page ${i + 1}: isInvoicePage = ${isInvoice}`)
+    console.error(`Page ${i + 1}: Page content sample: "${pageText.substring(0, 200)}"...`)
 
     if (isInvoice) {
       try {
