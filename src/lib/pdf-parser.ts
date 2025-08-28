@@ -275,12 +275,19 @@ export async function parseMultipleInvoices(
   for (let i = 0; i < pages.length; i++) {
     const pageText = pages[i]
 
+    console.log(`Page ${i + 1}: text length = ${pageText.trim().length}`)
+    console.log(`Page ${i + 1}: first 200 chars: "${pageText.substring(0, 200)}"`)
+
     if (pageText.trim().length === 0) {
+      console.log(`Page ${i + 1}: Skipping empty page`)
       continue // Skip empty pages
     }
 
     // Check if this page contains invoice indicators
-    if (isInvoicePage(pageText)) {
+    const isInvoice = isInvoicePage(pageText)
+    console.log(`Page ${i + 1}: isInvoicePage = ${isInvoice}`)
+    
+    if (isInvoice) {
       try {
         // Try LLM-powered parsing first
         const result = await orchestrator.parseInvoice(pageText, i + 1, {
