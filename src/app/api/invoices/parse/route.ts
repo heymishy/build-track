@@ -60,7 +60,7 @@ async function POST(request: NextRequest, user: AuthUser) {
     // Parse multiple invoices from PDF
     let result
     try {
-      console.log('Starting PDF multi-invoice parsing...')
+      console.log('🚀 API ROUTE: Starting PDF multi-invoice parsing with enhanced logging...')
       result = await parseMultipleInvoices(buffer, user.id)
       console.log('PDF parsing completed:', result.summary)
     } catch (error) {
