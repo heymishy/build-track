@@ -11,7 +11,7 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
 const ALLOWED_FILE_TYPE = 'application/pdf'
 
 async function POST(request: NextRequest, user: AuthUser) {
-  console.log('PDF parse API called')
+  console.log('🚀🚀🚀 PDF parse API called - ENHANCED LOGGING ACTIVE 🚀🚀🚀')
   const startMemory = process.memoryUsage()
   console.log('Initial memory usage:', {
     rss: Math.round(startMemory.rss / 1024 / 1024) + 'MB',
