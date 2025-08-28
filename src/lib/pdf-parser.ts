@@ -146,8 +146,46 @@ async function extractAlternative(pdfBuffer: Buffer): Promise<string[]> {
     }
 
     if (textChunks.length > 0) {
-      console.log(`Alternative extraction found ${textChunks.length} text lines`)
-      return [textChunks.join('\n')]
+      console.error(`🔥 ALTERNATIVE EXTRACTION: Found ${textChunks.length} text lines from PDF`)
+      
+      // Try to split by page boundaries or invoice patterns
+      const pages = []
+      let currentPage = []
+      
+      for (const line of textChunks) {
+        // Look for page break indicators or invoice headers
+        if (line.includes('Page ') || line.includes('INVOICE') || line.includes('Invoice') || 
+            line.includes('TAX INVOICE') || line.includes('STATEMENT') || 
+            (line.includes('$') && currentPage.length > 20)) {
+          
+          // If we have accumulated content, save it as a page
+          if (currentPage.length > 5) {
+            pages.push(currentPage.join('\n'))
+            currentPage = []
+          }
+        }
+        currentPage.push(line)
+      }
+      
+      // Don't forget the last page
+      if (currentPage.length > 5) {
+        pages.push(currentPage.join('\n'))
+      }
+      
+      // If we couldn't split effectively, try simpler chunking
+      if (pages.length <= 1 && textChunks.length > 100) {
+        console.error(`🔥 FALLBACK: Splitting ${textChunks.length} lines into chunks`)
+        const chunkSize = Math.ceil(textChunks.length / 13) // Approximate 13 invoices
+        for (let i = 0; i < textChunks.length; i += chunkSize) {
+          const chunk = textChunks.slice(i, i + chunkSize)
+          if (chunk.length > 5) {
+            pages.push(chunk.join('\n'))
+          }
+        }
+      }
+      
+      console.error(`🔥 ALTERNATIVE RESULT: Split into ${pages.length} pages`)
+      return pages.length > 0 ? pages : [textChunks.join('\n')]
     }
 
     throw new Error('No readable text found in PDF buffer')
