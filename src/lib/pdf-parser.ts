@@ -745,7 +745,7 @@ function isInvoicePage(text: string): boolean {
   score += constructionTerms.filter(pattern => pattern.test(text)).length * 2
 
   // Need minimum score to be considered an invoice
-  const threshold = 1 // Lowest threshold - all pages scoring exactly 1
+  const threshold = 0 // Accept everything - we have good 13-page splitting now
   const isInvoice = score >= threshold
 
   console.error(`📊 Invoice detection: score=${score}, threshold=${threshold}, isInvoice=${isInvoice}`)
