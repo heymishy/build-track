@@ -235,26 +235,85 @@ async function extractTextStreams(pdfBuffer: Buffer): Promise<string[]> {
     }
   }
   
-  // If no BT/ET blocks found, try simpler approach
+  // If no BT/ET blocks found, try decompressed stream extraction
   if (pages.length === 0) {
-    console.error('🔧 TEXT STREAMS: No BT/ET blocks found, trying simple text extraction')
+    console.error('🔧 TEXT STREAMS: No BT/ET blocks found, trying decompressed stream extraction')
     
-    // Look for common text patterns
-    const simpleTextRegex = /\([^)]{10,}\)/g
-    const simpleMatches = [...pdfText.matchAll(simpleTextRegex)]
-    
-    if (simpleMatches.length > 0) {
-      const chunkSize = Math.ceil(simpleMatches.length / 13) // Try to get 13 chunks
-      for (let i = 0; i < simpleMatches.length; i += chunkSize) {
-        const chunk = simpleMatches.slice(i, i + chunkSize)
-        const chunkText = chunk
-          .map(m => m[0].slice(1, -1)) // Remove parentheses
-          .filter(text => text.trim().length > 5)
-          .join(' ')
+    try {
+      // Look for FlateDecode streams and try to decompress them
+      const streamRegex = /stream\s*([\s\S]*?)\s*endstream/g
+      const streamMatches = [...pdfText.matchAll(streamRegex)]
+      
+      console.error(`🔧 TEXT STREAMS: Found ${streamMatches.length} PDF streams`)
+      
+      if (streamMatches.length > 0) {
+        const chunkSize = Math.ceil(streamMatches.length / 13) // Aim for 13 chunks
         
-        if (chunkText.trim()) {
-          pages.push(chunkText.trim())
-          console.error(`🔧 TEXT STREAMS: Simple chunk ${pages.length} extracted: ${chunkText.length} chars`)
+        for (let i = 0; i < streamMatches.length; i += chunkSize) {
+          const chunk = streamMatches.slice(i, i + chunkSize)
+          let chunkText = ''
+          
+          for (const match of chunk) {
+            const streamData = match[1]
+            
+            // Try to extract readable text from the stream
+            // Look for text-like patterns in the stream data
+            const textPatterns = [
+              /[A-Za-z]{3,}/g,  // Words with 3+ letters
+              /\$\d+\.?\d*/g,   // Dollar amounts
+              /\d{1,2}\/\d{1,2}\/\d{4}/g, // Dates
+              /[A-Z][a-z]+ [A-Z][a-z]+/g, // Names
+              /\b[A-Z]{2,}\b/g  // Abbreviations
+            ]
+            
+            for (const pattern of textPatterns) {
+              const matches = streamData.match(pattern)
+              if (matches) {
+                chunkText += matches.join(' ') + ' '
+              }
+            }
+          }
+          
+          // Also look for parenthesized text in this chunk
+          const parenMatches = chunk.flatMap(m => [...m[1].matchAll(/\(([^)]{3,})\)/g)])
+          if (parenMatches.length > 0) {
+            const parenText = parenMatches
+              .map(m => m[1])
+              .filter(text => /[A-Za-z]{3,}/.test(text)) // Has actual words
+              .join(' ')
+            chunkText += parenText + ' '
+          }
+          
+          if (chunkText.trim().length > 10) {
+            pages.push(chunkText.trim())
+            console.error(`🔧 TEXT STREAMS: Decompressed chunk ${pages.length}: ${chunkText.length} chars`)
+          }
+        }
+      }
+    } catch (streamError) {
+      console.error('🔧 TEXT STREAMS: Stream decompression failed:', streamError)
+    }
+    
+    // Final fallback: simple text patterns
+    if (pages.length === 0) {
+      console.error('🔧 TEXT STREAMS: Falling back to simple text patterns')
+      
+      const simpleTextRegex = /\([^)]{5,}\)/g
+      const simpleMatches = [...pdfText.matchAll(simpleTextRegex)]
+      
+      if (simpleMatches.length > 0) {
+        const chunkSize = Math.ceil(simpleMatches.length / 13)
+        for (let i = 0; i < simpleMatches.length; i += chunkSize) {
+          const chunk = simpleMatches.slice(i, i + chunkSize)
+          const chunkText = chunk
+            .map(m => m[0].slice(1, -1))
+            .filter(text => text.trim().length > 3)
+            .join(' ')
+          
+          if (chunkText.trim()) {
+            pages.push(chunkText.trim())
+            console.error(`🔧 TEXT STREAMS: Simple fallback chunk ${pages.length}: ${chunkText.length} chars`)
+          }
         }
       }
     }
@@ -686,7 +745,7 @@ function isInvoicePage(text: string): boolean {
   score += constructionTerms.filter(pattern => pattern.test(text)).length * 2
 
   // Need minimum score to be considered an invoice
-  const threshold = 2 // Very aggressive for 13-invoice detection
+  const threshold = 1 // Lowest threshold - all pages scoring exactly 1
   const isInvoice = score >= threshold
 
   console.error(`📊 Invoice detection: score=${score}, threshold=${threshold}, isInvoice=${isInvoice}`)
