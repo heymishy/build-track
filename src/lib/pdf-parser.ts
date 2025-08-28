@@ -76,9 +76,10 @@ export async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string[]> {
 
     try {
       // Try alternative extraction method
-      console.log('extractTextFromPDF: Trying alternative extraction')
+      console.error('🔧 extractTextFromPDF: Trying alternative extraction')
       const altResult = await extractAlternative(pdfBuffer)
-      console.log('extractTextFromPDF: Alternative extraction succeeded, pages:', altResult.length)
+      console.error(`🔧 extractTextFromPDF: Alternative extraction succeeded, pages: ${altResult.length}`)
+      console.error(`🔧 Alternative extraction page lengths: ${altResult.map(p => p.length).slice(0, 10).join(', ')}${altResult.length > 10 ? '...' : ''}`)
       return altResult
     } catch (alternativeError) {
       console.warn('Alternative extraction failed:', alternativeError)
@@ -277,13 +278,17 @@ export async function parseMultipleInvoices(
     `parseMultipleInvoices: Starting with buffer size ${pdfBuffer.length} bytes, userId: ${userId}`
   )
   const pages = await extractTextFromPDF(pdfBuffer)
-  console.error(`parseMultipleInvoices: Extracted ${pages.length} pages`)
+  console.error(`🔍 CRITICAL: parseMultipleInvoices extracted ${pages.length} pages from PDF`)
   const invoices: ParsedInvoice[] = []
   console.error(`Creating ParsingOrchestrator with userId: ${userId}`)
   
-  // Log first page content for debugging
-  if (pages.length > 0) {
-    console.error(`First page content (first 500 chars): "${pages[0].substring(0, 500)}"`)
+  // Log all pages for debugging multi-page issue
+  for (let i = 0; i < Math.min(pages.length, 5); i++) {
+    console.error(`Page ${i + 1} content (first 200 chars): "${pages[i].substring(0, 200)}..."`)
+    console.error(`Page ${i + 1} total length: ${pages[i].length} chars`)
+  }
+  if (pages.length > 5) {
+    console.error(`... and ${pages.length - 5} more pages`)
   }
   const orchestrator = new ParsingOrchestrator(userId)
   console.log(`ParsingOrchestrator created successfully`)
