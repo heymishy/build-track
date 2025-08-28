@@ -101,10 +101,12 @@ function DashboardContent() {
         const result = await response.json()
 
         if (result.success) {
-          const processedCount = result.result?.totalInvoices || 1
+          const processedCount = result.result?.totalInvoices || 0
           setUploadStatus({
             type: 'success',
-            message: `Successfully processed ${processedCount} invoice${processedCount === 1 ? '' : 's'} from ${file.name}`,
+            message: processedCount > 0 
+              ? `Successfully processed ${processedCount} invoice${processedCount === 1 ? '' : 's'} from ${file.name}`
+              : `File ${file.name} processed but no invoices found. Please check the PDF content.`,
           })
 
           // Reload projects after successful upload

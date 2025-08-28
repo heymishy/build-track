@@ -222,11 +222,16 @@ export async function getParsingConfig(userId?: string): Promise<ParsingConfig> 
     try {
       const { getUserSettings } = await import('@/lib/settings-service')
       storedSettings = await getUserSettings(userId)
+      console.log(`PDF parsing config loaded for user ${userId}:`, {
+        hasApiKeys: storedSettings?.apiKeys ? Object.keys(storedSettings.apiKeys).length : 0,
+        strategy: storedSettings?.defaultStrategy || 'not set'
+      })
     } catch (error) {
       console.error('Failed to load user settings:', error)
       storedSettings = null
     }
   } else {
+    console.log('No userId provided, using fallback settings')
     // Fallback to in-memory settings for backward compatibility
     try {
       const settingsStore = await import('@/lib/settings-store')
@@ -305,6 +310,19 @@ export async function getParsingConfig(userId?: string): Promise<ParsingConfig> 
   if (process.env.PDF_PARSING_STRATEGY) {
     config.defaultStrategy = process.env.PDF_PARSING_STRATEGY as ParsingStrategy['name']
   }
+
+  // Log final configuration for debugging
+  console.log('Final PDF parsing configuration:', {
+    strategy: config.defaultStrategy,
+    enabledProviders: Object.entries(config.llmProviders)
+      .filter(([_, provider]) => provider.enabled)
+      .map(([name, provider]) => ({
+        name,
+        hasApiKey: !!provider.apiKey,
+        model: provider.model
+      })),
+    fallbackChain: config.strategies[config.defaultStrategy]?.fallbackChain || []
+  })
 
   return config
 }
