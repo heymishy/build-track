@@ -2,17 +2,16 @@
  * Temporary diagnostic endpoint to verify LLM configuration
  */
 
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { getParsingConfig } from '@/lib/pdf-parsing-config'
-import { ParsingOrchestrator } from '@/lib/llm-parsers/parsing-orchestrator'
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     // Use a test user ID for debugging
     const testUserId = 'cmeuc7zwb0001ky04bu002p0n'
     console.log('LLM Debug: Starting diagnostic for user:', testUserId)
 
-    const diagnostics: any = {
+    const diagnostics: Record<string, unknown> = {
       userId: testUserId,
       timestamp: new Date().toISOString(),
       steps: [],
@@ -27,7 +26,7 @@ export async function GET(request: NextRequest) {
       diagnostics.config = {
         defaultStrategy: config.defaultStrategy,
         enabledProviders: Object.entries(config.llmProviders)
-          .filter(([_, provider]) => provider.enabled)
+          .filter(([, provider]) => provider.enabled)
           .map(([name, provider]) => ({
             name,
             hasApiKey: !!provider.apiKey,

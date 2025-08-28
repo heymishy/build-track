@@ -277,7 +277,9 @@ export async function parseMultipleInvoices(
   const pages = await extractTextFromPDF(pdfBuffer)
   console.log(`parseMultipleInvoices: Extracted ${pages.length} pages`)
   const invoices: ParsedInvoice[] = []
+  console.log(`Creating ParsingOrchestrator with userId: ${userId}`)
   const orchestrator = new ParsingOrchestrator(userId)
+  console.log(`ParsingOrchestrator created successfully`)
 
   let totalCost = 0
   let llmUsages = 0
@@ -302,9 +304,17 @@ export async function parseMultipleInvoices(
     if (isInvoice) {
       try {
         // Try LLM-powered parsing first
+        console.log(`Page ${i + 1}: Attempting LLM parsing with orchestrator`)
         const result = await orchestrator.parseInvoice(pageText, i + 1, {
           expectedFormat: 'construction-invoice',
           projectContext: 'Multi-page PDF processing',
+        })
+        console.log(`Page ${i + 1}: LLM parsing result:`, {
+          success: result.success,
+          confidence: result.confidence,
+          strategy: result.strategy,
+          hasInvoice: !!result.invoice,
+          llmUsed: result.metadata?.llmUsed
         })
 
         if (result.success && result.invoice) {
@@ -326,7 +336,13 @@ export async function parseMultipleInvoices(
           }
         }
       } catch (error) {
-        console.warn(`LLM parsing failed for page ${i + 1}, using traditional method:`, error)
+        console.error(`LLM parsing failed for page ${i + 1}, using traditional method:`, error)
+        console.error(`Error details:`, {
+          message: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined,
+          userId,
+          pageLength: pageText.length
+        })
         // Fallback to traditional parsing
         const fallbackInvoice = await parseInvoiceFromTextTraditional(pageText, i + 1)
         if (fallbackInvoice.invoiceNumber || fallbackInvoice.total || fallbackInvoice.vendorName) {
