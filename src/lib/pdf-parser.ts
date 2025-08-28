@@ -271,6 +271,7 @@ export async function parseMultipleInvoices(
   pdfBuffer: Buffer,
   userId?: string
 ): Promise<MultiInvoiceResult> {
+  console.log('🚀 ENHANCED LOGGING ACTIVE - parseMultipleInvoices called')
   console.log(
     `parseMultipleInvoices: Starting with buffer size ${pdfBuffer.length} bytes, userId: ${userId}`
   )
