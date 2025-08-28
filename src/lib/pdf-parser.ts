@@ -448,13 +448,13 @@ function isInvoicePage(text: string): boolean {
   score += constructionTerms.filter(pattern => pattern.test(text)).length * 2
 
   // Need minimum score to be considered an invoice
-  const threshold = 8
+  const threshold = 3  // Temporarily lowered for debugging
   const isInvoice = score >= threshold
 
   if (isInvoice) {
-    console.log(`Invoice page detected with score ${score}`)
+    console.error(`🎯 Invoice page detected with score ${score}`)
   } else {
-    console.log(`Page rejected with score ${score} (threshold: ${threshold})`)
+    console.error(`❌ Page rejected with score ${score} (threshold: ${threshold})`)
   }
 
   return isInvoice
