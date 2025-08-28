@@ -271,7 +271,9 @@ export async function parseMultipleInvoices(
   pdfBuffer: Buffer,
   userId?: string
 ): Promise<MultiInvoiceResult> {
-  console.log(`parseMultipleInvoices: Starting with buffer size ${pdfBuffer.length} bytes, userId: ${userId}`)
+  console.log(
+    `parseMultipleInvoices: Starting with buffer size ${pdfBuffer.length} bytes, userId: ${userId}`
+  )
   const pages = await extractTextFromPDF(pdfBuffer)
   console.log(`parseMultipleInvoices: Extracted ${pages.length} pages`)
   const invoices: ParsedInvoice[] = []
@@ -296,7 +298,7 @@ export async function parseMultipleInvoices(
     // Check if this page contains invoice indicators
     const isInvoice = isInvoicePage(pageText)
     console.log(`Page ${i + 1}: isInvoicePage = ${isInvoice}`)
-    
+
     if (isInvoice) {
       try {
         // Try LLM-powered parsing first

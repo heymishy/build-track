@@ -38,10 +38,12 @@ export class ParsingOrchestrator {
 
   constructor(userId?: string) {
     this.userId = userId
-    this.initialize()
+    // Don't call initialize here - it will be called when needed
   }
 
   private async initialize() {
+    // If already initialized, don't do it again
+    if (this.config) return
     console.log('Orchestrator initializing with userId:', this.userId)
     this.config = await getParsingConfig(this.userId)
 
@@ -90,7 +92,25 @@ export class ParsingOrchestrator {
     context?: LLMParseRequest['context']
   ): Promise<ParsingResult> {
     const startTime = Date.now()
-    await this.initialize() // Ensure config is loaded
+
+    // Ensure configuration is loaded before proceeding
+    if (!this.config) {
+      console.log('ParsingOrchestrator: Config not loaded, initializing now')
+      await this.initialize()
+    }
+
+    if (!this.config) {
+      console.error('ParsingOrchestrator: Failed to load configuration')
+      return {
+        success: false,
+        confidence: 0,
+        totalCost: 0,
+        processingTime: Date.now() - startTime,
+        strategy: 'unknown',
+        attempts: [],
+        metadata: { llmUsed: false, fallbackTriggered: false, traditionalUsed: false },
+      }
+    }
 
     const strategy = this.config.strategies[this.config.defaultStrategy]
     const attempts: ParsingResult['attempts'] = []
@@ -294,6 +314,23 @@ export class ParsingOrchestrator {
     pageNumber?: number,
     context?: LLMParseRequest['context']
   ): Promise<ParsingResult> {
+    if (!this.config) {
+      await this.initialize()
+    }
+
+    if (!this.config) {
+      console.error('ParsingOrchestrator: Failed to load configuration for strategy parsing')
+      return {
+        success: false,
+        confidence: 0,
+        totalCost: 0,
+        processingTime: 0,
+        strategy: strategyName,
+        attempts: [],
+        metadata: { llmUsed: false, fallbackTriggered: false, traditionalUsed: false },
+      }
+    }
+
     const originalStrategy = this.config.defaultStrategy
     this.config.defaultStrategy = strategyName as ParsingStrategy['name']
 
@@ -306,17 +343,32 @@ export class ParsingOrchestrator {
   }
 
   // Get available strategies
-  getAvailableStrategies(): ParsingStrategy[] {
-    return Object.values(this.config.strategies)
+  async getAvailableStrategies(): Promise<ParsingStrategy[]> {
+    if (!this.config) {
+      await this.initialize()
+    }
+    return this.config ? Object.values(this.config.strategies) : []
   }
 
   // Get current configuration
-  getConfiguration() {
+  async getConfiguration() {
+    if (!this.config) {
+      await this.initialize()
+    }
     return this.config
   }
 
   // Cost and usage tracking
   async estimateCost(text: string, strategyName?: string): Promise<number> {
+    if (!this.config) {
+      await this.initialize()
+    }
+
+    if (!this.config) {
+      console.error('ParsingOrchestrator: Failed to load configuration for cost estimation')
+      return 0
+    }
+
     const strategy = strategyName
       ? this.config.strategies[strategyName]
       : this.config.strategies[this.config.defaultStrategy]
