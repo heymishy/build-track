@@ -7,8 +7,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { withAuth, AuthUser } from '@/lib/middleware'
 import { parseMultipleInvoices } from '@/lib/pdf-parser'
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
+const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB  
 const ALLOWED_FILE_TYPE = 'application/pdf'
+const CACHE_BUST = Date.now() // Force rebuild: 1725070756000
 
 async function POST(request: NextRequest, user: AuthUser) {
   console.error('🚀🚀🚀 PDF parse API called - ENHANCED LOGGING ACTIVE 🚀🚀🚀')
