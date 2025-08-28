@@ -78,8 +78,15 @@ export async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string[]> {
       // Try alternative extraction method
       console.error('🔧 extractTextFromPDF: Trying alternative extraction')
       const altResult = await extractAlternative(pdfBuffer)
-      console.error(`🔧 extractTextFromPDF: Alternative extraction succeeded, pages: ${altResult.length}`)
-      console.error(`🔧 Alternative extraction page lengths: ${altResult.map(p => p.length).slice(0, 10).join(', ')}${altResult.length > 10 ? '...' : ''}`)
+      console.error(
+        `🔧 extractTextFromPDF: Alternative extraction succeeded, pages: ${altResult.length}`
+      )
+      console.error(
+        `🔧 Alternative extraction page lengths: ${altResult
+          .map(p => p.length)
+          .slice(0, 10)
+          .join(', ')}${altResult.length > 10 ? '...' : ''}`
+      )
       return altResult
     } catch (alternativeError) {
       console.warn('Alternative extraction failed:', alternativeError)
@@ -273,7 +280,9 @@ export async function parseMultipleInvoices(
   userId?: string
 ): Promise<MultiInvoiceResult> {
   const timestamp = new Date().toISOString()
-  console.error(`🚀🚀🚀 ENHANCED LOGGING ACTIVE - parseMultipleInvoices called at ${timestamp} 🚀🚀🚀`)
+  console.error(
+    `🚀🚀🚀 ENHANCED LOGGING ACTIVE - parseMultipleInvoices called at ${timestamp} 🚀🚀🚀`
+  )
   console.error(
     `parseMultipleInvoices: Starting with buffer size ${pdfBuffer.length} bytes, userId: ${userId}`
   )
@@ -281,7 +290,7 @@ export async function parseMultipleInvoices(
   console.error(`🔍 CRITICAL: parseMultipleInvoices extracted ${pages.length} pages from PDF`)
   const invoices: ParsedInvoice[] = []
   console.error(`Creating ParsingOrchestrator with userId: ${userId}`)
-  
+
   // Log all pages for debugging multi-page issue
   for (let i = 0; i < Math.min(pages.length, 5); i++) {
     console.error(`Page ${i + 1} content (first 200 chars): "${pages[i].substring(0, 200)}..."`)
@@ -327,7 +336,7 @@ export async function parseMultipleInvoices(
           confidence: result.confidence,
           strategy: result.strategy,
           hasInvoice: !!result.invoice,
-          llmUsed: result.metadata?.llmUsed
+          llmUsed: result.metadata?.llmUsed,
         })
 
         if (result.success && result.invoice) {
@@ -354,7 +363,7 @@ export async function parseMultipleInvoices(
           message: error instanceof Error ? error.message : String(error),
           stack: error instanceof Error ? error.stack : undefined,
           userId,
-          pageLength: pageText.length
+          pageLength: pageText.length,
         })
         // Fallback to traditional parsing
         const fallbackInvoice = await parseInvoiceFromTextTraditional(pageText, i + 1)
@@ -453,7 +462,7 @@ function isInvoicePage(text: string): boolean {
   score += constructionTerms.filter(pattern => pattern.test(text)).length * 2
 
   // Need minimum score to be considered an invoice
-  const threshold = 3  // Temporarily lowered for debugging
+  const threshold = 3 // Temporarily lowered for debugging
   const isInvoice = score >= threshold
 
   if (isInvoice) {

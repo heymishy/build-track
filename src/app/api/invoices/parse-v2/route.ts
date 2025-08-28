@@ -1,6 +1,6 @@
 /**
- * API Route: /api/invoices/parse
- * Handles PDF invoice upload and parsing
+ * API Route: /api/invoices/parse-v2
+ * NEW endpoint to bypass Vercel caching issues
  */
 
 import { NextRequest, NextResponse } from 'next/server'
@@ -9,22 +9,17 @@ import { parseMultipleInvoices } from '@/lib/pdf-parser'
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
 const ALLOWED_FILE_TYPE = 'application/pdf'
-// const CACHE_BUST = Date.now() // Force rebuild: 1725070756000
 
 async function POST(request: NextRequest, user: AuthUser) {
-  console.error('🚀🚀🚀 PDF parse API called - ENHANCED LOGGING ACTIVE 🚀🚀🚀')
-  const startMemory = process.memoryUsage()
-  console.error('Initial memory usage:', {
-    rss: Math.round(startMemory.rss / 1024 / 1024) + 'MB',
-    heapUsed: Math.round(startMemory.heapUsed / 1024 / 1024) + 'MB',
-  })
+  console.error('🚀🚀🚀 NEW PARSE-V2 API CALLED - CACHE BYPASS ACTIVE 🚀🚀🚀')
+  console.error('Current timestamp:', new Date().toISOString())
 
   try {
     // Parse the form data
     const formData = await request.formData()
     const file = formData.get('file') as File
 
-    console.log('File received:', file?.name, 'Size:', file?.size)
+    console.error('File received via V2 API:', file?.name, 'Size:', file?.size)
 
     // Validate file presence
     if (!file) {
@@ -48,25 +43,18 @@ async function POST(request: NextRequest, user: AuthUser) {
     }
 
     // Convert file to buffer
-    console.log('Converting file to buffer...')
+    console.error('V2 API: Converting file to buffer...')
     const arrayBuffer = await file.arrayBuffer()
     const buffer = Buffer.from(arrayBuffer)
-
-    const bufferMemory = process.memoryUsage()
-    console.log('After buffer conversion:', {
-      rss: Math.round(bufferMemory.rss / 1024 / 1024) + 'MB',
-      heapUsed: Math.round(bufferMemory.heapUsed / 1024 / 1024) + 'MB',
-    })
 
     // Parse multiple invoices from PDF
     let result
     try {
-      console.error('🚀 API ROUTE: Starting PDF multi-invoice parsing with enhanced logging...')
-      console.error('DEBUG: parseMultipleInvoices function type:', typeof parseMultipleInvoices)
+      console.error('🎯 V2 API: Starting PDF multi-invoice parsing...')
       result = await parseMultipleInvoices(buffer, user.id)
-      console.error('PDF parsing completed:', result.summary)
+      console.error('🎯 V2 API: PDF parsing completed:', result.summary)
     } catch (error) {
-      console.error('PDF parsing error:', error)
+      console.error('V2 API: PDF parsing error:', error)
       return NextResponse.json(
         {
           success: false,
@@ -81,6 +69,7 @@ async function POST(request: NextRequest, user: AuthUser) {
       result,
       filename: file.name,
       fileSize: file.size,
+      apiVersion: 'v2',
     }
 
     // Add warning if no invoices were found
@@ -94,37 +83,16 @@ async function POST(request: NextRequest, user: AuthUser) {
 
     return NextResponse.json(response)
   } catch (error) {
-    console.error('Invoice parsing API error:', error)
+    console.error('V2 Invoice parsing API error:', error)
     return NextResponse.json(
       {
         success: false,
         error: 'Internal server error',
+        apiVersion: 'v2',
       },
       { status: 500 }
     )
   }
-}
-
-// Handle unsupported methods
-export async function GET() {
-  return NextResponse.json(
-    { success: false, error: 'Method not allowed. Use POST to upload a PDF file.' },
-    { status: 405 }
-  )
-}
-
-export async function PUT() {
-  return NextResponse.json(
-    { success: false, error: 'Method not allowed. Use POST to upload a PDF file.' },
-    { status: 405 }
-  )
-}
-
-export async function DELETE() {
-  return NextResponse.json(
-    { success: false, error: 'Method not allowed. Use POST to upload a PDF file.' },
-    { status: 405 }
-  )
 }
 
 // Apply authentication middleware

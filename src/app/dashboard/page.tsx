@@ -93,7 +93,7 @@ function DashboardContent() {
         const formData = new FormData()
         formData.append('file', file)
 
-        const response = await fetch('/api/invoices/parse', {
+        const response = await fetch('/api/invoices/parse-v2', {
           method: 'POST',
           body: formData,
         })
