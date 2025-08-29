@@ -61,24 +61,20 @@ export async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string[]> {
   }
 
   try {
-    // TEMPORARY FIX: Skip problematic server-side extraction
-    // The server-side method fails with DOMMatrix errors
-    console.error('🔧 SKIPPING BROKEN SERVER-SIDE EXTRACTION')
-    console.error('🔧 USING ALTERNATIVE EXTRACTION DIRECTLY')
-    return await extractAlternative(pdfBuffer)
+    // Use client-side PDF.js extraction which is more reliable
+    console.error('🔧 USING CLIENT-SIDE PDF.js EXTRACTION')
+    const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs')
+    pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js'
+    return await extractWithPdfJs(pdfBuffer, pdfjsLib)
   } catch (error) {
-    console.warn('Alternative extraction failed:', error)
+    console.warn('Client-side PDF.js extraction failed:', error)
 
     try {
-      // Try client-side as backup if alternative fails
-      console.error('🔧 TRYING CLIENT-SIDE AS BACKUP')
-      const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs')
-      pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js'
-      const result = await extractWithPdfJs(pdfBuffer, pdfjsLib)
-      console.error('🔧 CLIENT-SIDE EXTRACTION SUCCESS, pages:', result.length)
-      return result
-    } catch (clientError) {
-      console.warn('Client-side extraction also failed:', clientError)
+      // Try alternative extraction as backup (may produce lower quality text)
+      console.error('🔧 TRYING ALTERNATIVE EXTRACTION AS BACKUP')
+      return await extractAlternative(pdfBuffer)
+    } catch (alternativeError) {
+      console.warn('Alternative extraction also failed:', alternativeError)
 
       // Final fallback with structured content
       console.log('extractTextFromPDF: Using fallback content generation')
