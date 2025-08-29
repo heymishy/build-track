@@ -61,36 +61,24 @@ export async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string[]> {
   }
 
   try {
-    // Try server-side extraction first (more reliable)
-    if (typeof window === 'undefined') {
-      console.log('extractTextFromPDF: Trying server-side extraction')
-      return await extractServerSide(pdfBuffer)
-    } else {
-      // Client-side extraction
-      console.log('extractTextFromPDF: Trying client-side extraction')
-      const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs')
-      pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js'
-      return await extractWithPdfJs(pdfBuffer, pdfjsLib)
-    }
+    // TEMPORARY FIX: Skip problematic server-side extraction
+    // The server-side method fails with DOMMatrix errors
+    console.error('🔧 SKIPPING BROKEN SERVER-SIDE EXTRACTION')
+    console.error('🔧 USING ALTERNATIVE EXTRACTION DIRECTLY')
+    return await extractAlternative(pdfBuffer)
   } catch (error) {
-    console.warn('Primary PDF.js extraction failed:', error)
+    console.warn('Alternative extraction failed:', error)
 
     try {
-      // Try alternative extraction method
-      console.error('🔧 extractTextFromPDF: Trying alternative extraction')
-      const altResult = await extractAlternative(pdfBuffer)
-      console.error(
-        `🔧 extractTextFromPDF: Alternative extraction succeeded, pages: ${altResult.length}`
-      )
-      console.error(
-        `🔧 Alternative extraction page lengths: ${altResult
-          .map(p => p.length)
-          .slice(0, 10)
-          .join(', ')}${altResult.length > 10 ? '...' : ''}`
-      )
-      return altResult
-    } catch (alternativeError) {
-      console.warn('Alternative extraction failed:', alternativeError)
+      // Try client-side as backup if alternative fails
+      console.error('🔧 TRYING CLIENT-SIDE AS BACKUP')
+      const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs')
+      pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js'
+      const result = await extractWithPdfJs(pdfBuffer, pdfjsLib)
+      console.error('🔧 CLIENT-SIDE EXTRACTION SUCCESS, pages:', result.length)
+      return result
+    } catch (clientError) {
+      console.warn('Client-side extraction also failed:', clientError)
 
       // Final fallback with structured content
       console.log('extractTextFromPDF: Using fallback content generation')
@@ -643,7 +631,7 @@ export async function parseMultipleInvoices(
           totalConfidence += result.confidence
           if (result.metadata?.llmUsed) llmUsages++
           strategy = result.strategy
-          
+
           // Save to database immediately if requested
           if (saveToDatabase && userId) {
             await saveInvoiceToDatabase(result.invoice, userId, projectId)
@@ -658,7 +646,7 @@ export async function parseMultipleInvoices(
           ) {
             invoices.push(fallbackInvoice)
             totalConfidence += fallbackInvoice.confidence || 0.5
-            
+
             // Save to database immediately if requested
             if (saveToDatabase && userId) {
               await saveInvoiceToDatabase(fallbackInvoice, userId, projectId)
@@ -678,7 +666,7 @@ export async function parseMultipleInvoices(
         if (fallbackInvoice.invoiceNumber || fallbackInvoice.total || fallbackInvoice.vendorName) {
           invoices.push(fallbackInvoice)
           totalConfidence += fallbackInvoice.confidence || 0.5
-          
+
           // Save to database immediately if requested
           if (saveToDatabase && userId) {
             await saveInvoiceToDatabase(fallbackInvoice, userId, projectId)
@@ -1331,8 +1319,8 @@ function extractLineItems(text: string): InvoiceLineItem[] {
  * Helper function to save a parsed invoice to the database immediately
  */
 async function saveInvoiceToDatabase(
-  parsedInvoice: ParsedInvoice, 
-  userId: string, 
+  parsedInvoice: ParsedInvoice,
+  userId: string,
   projectId?: string
 ): Promise<void> {
   try {
@@ -1342,17 +1330,19 @@ async function saveInvoiceToDatabase(
       const userProject = await prisma.project.findFirst({
         where: {
           users: {
-            some: { userId }
-          }
+            some: { userId },
+          },
         },
-        orderBy: { createdAt: 'desc' }
+        orderBy: { createdAt: 'desc' },
       })
       targetProjectId = userProject?.id || null
       console.error(`💾 Auto-selected project: ${userProject?.name} (ID: ${targetProjectId})`)
     }
-    
+
     const invoiceData = {
-      invoiceNumber: parsedInvoice.invoiceNumber || `AUTO-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+      invoiceNumber:
+        parsedInvoice.invoiceNumber ||
+        `AUTO-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
       supplierName: parsedInvoice.vendorName || 'Unknown Supplier',
       totalAmount: parsedInvoice.total || parsedInvoice.amount || 0,
       gstAmount: parsedInvoice.tax || 0,
@@ -1362,19 +1352,20 @@ async function saveInvoiceToDatabase(
       projectId: targetProjectId,
       notes: parsedInvoice.description || 'Parsed from PDF',
     }
-    
+
     const savedInvoice = await prisma.invoice.create({
-      data: invoiceData
+      data: invoiceData,
     })
-    
-    console.error(`💾 SAVED: ${savedInvoice.id} - ${invoiceData.supplierName} - $${invoiceData.totalAmount}`)
-    
+
+    console.error(
+      `💾 SAVED: ${savedInvoice.id} - ${invoiceData.supplierName} - $${invoiceData.totalAmount}`
+    )
   } catch (saveError) {
     console.error(`💾 FAILED to save invoice:`, saveError)
     console.error(`💾 Invoice data:`, {
       vendor: parsedInvoice.vendorName,
       total: parsedInvoice.total,
-      number: parsedInvoice.invoiceNumber
+      number: parsedInvoice.invoiceNumber,
     })
   }
 }
