@@ -1352,16 +1352,15 @@ async function saveInvoiceToDatabase(
     }
     
     const invoiceData = {
-      number: parsedInvoice.invoiceNumber || `AUTO-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+      invoiceNumber: parsedInvoice.invoiceNumber || `AUTO-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
       supplierName: parsedInvoice.vendorName || 'Unknown Supplier',
       totalAmount: parsedInvoice.total || parsedInvoice.amount || 0,
-      taxAmount: parsedInvoice.tax || 0,
+      gstAmount: parsedInvoice.tax || 0,
       invoiceDate: parsedInvoice.date ? new Date(parsedInvoice.date) : new Date(),
-      description: parsedInvoice.description || 'Parsed from PDF',
       status: 'PENDING' as const,
       userId,
       projectId: targetProjectId,
-      rawText: parsedInvoice.rawText?.substring(0, 5000) || '', // Limit text size
+      notes: parsedInvoice.description || 'Parsed from PDF',
     }
     
     const savedInvoice = await prisma.invoice.create({
