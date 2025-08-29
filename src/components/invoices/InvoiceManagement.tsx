@@ -23,6 +23,7 @@ import { InvoiceApprovalModal } from './InvoiceApprovalModal'
 import { InvoiceCategorySummary } from './InvoiceCategorySummary'
 import { ParsedInvoice, MultiInvoiceResult } from '@/lib/pdf-parser'
 import ClientOnlyPdfViewer from './ClientOnlyPdfViewer'
+import ExtractionQualityDisplay from './ExtractionQualityDisplay'
 
 interface Invoice {
   id: string
@@ -521,6 +522,13 @@ export function InvoiceManagement({
                 </div>
               </div>
             )}
+
+            {/* PDF Extraction Quality Display */}
+            {pendingParsedInvoices.qualityMetrics && (
+              <div className="px-6 py-4 border-b">
+                <ExtractionQualityDisplay result={pendingParsedInvoices} />
+              </div>
+            )}
             {pendingParsedInvoices.invoices.map((invoice, index) => (
               <div key={`pending-${index}`} className="px-6 py-4 hover:bg-orange-50">
                 <div className="flex items-center justify-between">
@@ -823,7 +831,7 @@ export function InvoiceManagement({
                   <p className="text-sm text-gray-600 mb-4">
                     Visual representation of the original invoice for verification (50% scale)
                   </p>
-                  
+
                   {pdfFileData ? (
                     <div className="space-y-4">
                       <div className="border border-gray-200 rounded-lg overflow-hidden bg-gray-50">
@@ -849,7 +857,7 @@ export function InvoiceManagement({
                       <input
                         type="file"
                         accept=".pdf"
-                        onChange={(e) => {
+                        onChange={e => {
                           const file = e.target.files?.[0]
                           if (file) {
                             setPdfFileData(file)

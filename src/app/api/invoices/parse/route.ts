@@ -68,21 +68,71 @@ async function POST(request: NextRequest, user: AuthUser) {
       const userProject = await prisma.project.findFirst({
         where: {
           users: {
-            some: { userId: user.id }
-          }
+            some: { userId: user.id },
+          },
         },
-        orderBy: { createdAt: 'desc' }
+        orderBy: { createdAt: 'desc' },
       })
-      
+
       console.error(`💾 Found project for user: ${userProject?.name} (ID: ${userProject?.id})`)
-      
+
       // Call parseMultipleInvoices with database saving enabled
       result = await parseMultipleInvoices(buffer, user.id, true, userProject?.id)
       console.error('PDF parsing completed:', result.summary)
-      
-      // Update summary to reflect database saving
-      result.summary = `Found and saved ${result.totalInvoices} invoice(s) to your project. Total amount: $${result.totalAmount.toFixed(2)}`
-      
+
+      // Log quality metrics for monitoring
+      if (result.qualityMetrics) {
+        const metrics = result.qualityMetrics
+        console.error('📊 QUALITY METRICS:', {
+          overallAccuracy: `${(metrics.overallAccuracy * 100).toFixed(1)}%`,
+          extractionQuality: `${(metrics.extractionQuality * 100).toFixed(1)}%`,
+          parsingSuccess: `${(metrics.parsingSuccess * 100).toFixed(1)}%`,
+          dataCompleteness: `${(metrics.dataCompleteness * 100).toFixed(1)}%`,
+          corruptionDetected: metrics.corruptionDetected,
+          issuesFound: metrics.issuesFound.length,
+          recommendedAction: metrics.recommendedAction || 'None',
+        })
+
+        // Log individual invoice quality scores
+        result.invoices.forEach((invoice, index) => {
+          if (invoice.validationScore !== undefined) {
+            console.error(
+              `📄 Invoice ${index + 1} quality: ${(invoice.validationScore * 100).toFixed(1)}% (${invoice.invoiceNumber || 'No number'})`
+            )
+          }
+        })
+
+        // Log warning if quality is poor
+        if (metrics.overallAccuracy < 0.6) {
+          console.warn(
+            `⚠️ LOW QUALITY EXTRACTION: ${(metrics.overallAccuracy * 100).toFixed(1)}% accuracy`
+          )
+          console.warn(`⚠️ Issues found: ${metrics.issuesFound.join(', ')}`)
+        }
+
+        // Log success if quality is excellent
+        if (metrics.overallAccuracy >= 0.8 && !metrics.corruptionDetected) {
+          console.log(
+            `✅ HIGH QUALITY EXTRACTION: ${(metrics.overallAccuracy * 100).toFixed(1)}% accuracy, no corruption`
+          )
+        }
+      }
+
+      // Update summary to reflect database saving and quality
+      let enhancedSummary = `Found and saved ${result.totalInvoices} invoice(s) to your project. Total amount: $${result.totalAmount.toFixed(2)}`
+
+      if (result.qualityMetrics) {
+        const accuracy = Math.round(result.qualityMetrics.overallAccuracy * 100)
+        if (accuracy >= 80) {
+          enhancedSummary += ` ✅ Quality: ${accuracy}%`
+        } else if (accuracy >= 60) {
+          enhancedSummary += ` ⚠️ Quality: ${accuracy}%`
+        } else {
+          enhancedSummary += ` ❌ Quality: ${accuracy}% - Please review`
+        }
+      }
+
+      result.summary = enhancedSummary
     } catch (error) {
       console.error('PDF parsing error:', error)
       return NextResponse.json(
@@ -101,16 +151,47 @@ async function POST(request: NextRequest, user: AuthUser) {
       fileSize: file.size,
     }
 
-    // Add warning if no invoices were found
+    // Add warnings based on quality and parsing results
+    const warnings: string[] = []
+
     if (result.totalInvoices === 0) {
-      return NextResponse.json({
-        ...response,
-        warning:
-          'PDF processed but no invoices found. Please check if the PDF contains valid invoice data.',
-      })
+      warnings.push(
+        'PDF processed but no invoices found. Please check if the PDF contains valid invoice data.'
+      )
     }
 
-    return NextResponse.json(response)
+    if (result.qualityMetrics) {
+      const metrics = result.qualityMetrics
+
+      if (metrics.overallAccuracy < 0.4) {
+        warnings.push(
+          'Very low extraction quality detected. Consider manual processing or using a different PDF.'
+        )
+      } else if (metrics.overallAccuracy < 0.6) {
+        warnings.push(
+          'Low extraction quality detected. Please review all extracted data carefully.'
+        )
+      }
+
+      if (metrics.corruptionDetected) {
+        warnings.push('Text corruption detected in PDF. Some data may be inaccurate.')
+      }
+
+      if (metrics.dataCompleteness < 0.7) {
+        warnings.push('Incomplete data extraction. Some invoice fields may be missing.')
+      }
+
+      if (metrics.recommendedAction) {
+        warnings.push(`Recommendation: ${metrics.recommendedAction}`)
+      }
+    }
+
+    const responseWithWarnings = {
+      ...response,
+      ...(warnings.length > 0 && { warnings }),
+    }
+
+    return NextResponse.json(responseWithWarnings)
   } catch (error) {
     console.error('Invoice parsing API error:', error)
     return NextResponse.json(

@@ -15,6 +15,14 @@ export interface InvoiceLineItem {
   total: number
 }
 
+export interface ExtractionQuality {
+  textClarity: number // 0-1: How clean/readable is extracted text
+  structureDetection: number // 0-1: How well structured data was identified
+  completeness: number // 0-1: How complete the extraction appears
+  corruptionIndicators: string[] // List of corruption patterns detected
+  warnings: string[] // Extraction warnings
+}
+
 export interface ParsedInvoice {
   invoiceNumber: string | null
   date: string | null
@@ -28,6 +36,15 @@ export interface ParsedInvoice {
   confidence?: number
   rawText?: string
   trainingId?: string
+  // Enhanced QA fields
+  extractionQuality?: ExtractionQuality
+  validationScore?: number // 0-1: Overall validation score
+  fieldScores?: {
+    invoiceNumber: number
+    date: number
+    vendorName: number
+    amounts: number
+  }
 }
 
 export interface MultiInvoiceResult {
@@ -41,457 +58,33 @@ export interface MultiInvoiceResult {
     averageConfidence: number
     strategy: string
   }
+  // Enhanced QA metrics
+  qualityMetrics?: {
+    overallAccuracy: number // 0-1: Overall accuracy score
+    extractionQuality: number // 0-1: Text extraction quality
+    parsingSuccess: number // 0-1: Parsing success rate
+    dataCompleteness: number // 0-1: How complete the data is
+    corruptionDetected: boolean
+    issuesFound: string[] // List of quality issues
+    recommendedAction?: string // What to do if quality is low
+  }
 }
 
 /**
- * Extract text from PDF buffer using pdfjs-dist with enhanced error handling
- * Supports both client and server-side extraction with intelligent fallbacks
+ * Extract text from PDF buffer using pdfjs-dist, returning page-by-page text
  */
 export async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string[]> {
-  console.log('extractTextFromPDF: Starting with buffer size:', pdfBuffer.length, 'bytes')
-
-  // Validate PDF buffer
-  if (!pdfBuffer || pdfBuffer.length === 0) {
-    throw new Error('Invalid PDF buffer: empty or null')
-  }
-
-  // Check for PDF header
-  if (!isPDFBuffer(pdfBuffer)) {
-    console.warn('extractTextFromPDF: Buffer does not appear to be a valid PDF file')
-  }
-
   try {
-    // Use client-side PDF.js extraction which is more reliable
-    console.error('🔧 USING CLIENT-SIDE PDF.js EXTRACTION')
-    const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs')
-    pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js'
-    return await extractWithPdfJs(pdfBuffer, pdfjsLib)
-  } catch (error) {
-    console.warn('Client-side PDF.js extraction failed:', error)
+    console.log('PDF buffer size:', pdfBuffer.length, 'bytes')
 
-    try {
-      // Try alternative extraction as backup (may produce lower quality text)
-      console.error('🔧 TRYING ALTERNATIVE EXTRACTION AS BACKUP')
-      return await extractAlternative(pdfBuffer)
-    } catch (alternativeError) {
-      console.warn('Alternative extraction also failed:', alternativeError)
-
-      // Final fallback with structured content
-      console.log('extractTextFromPDF: Using fallback content generation')
-      const fallbackResult = generateEnhancedFallback(pdfBuffer, error as Error)
-      console.log('extractTextFromPDF: Fallback generated, pages:', fallbackResult.length)
-      return fallbackResult
-    }
-  }
-}
-
-/**
- * Check if buffer contains a valid PDF file
- */
-function isPDFBuffer(buffer: Buffer): boolean {
-  if (buffer.length < 5) return false
-
-  // Check PDF header signature
-  const header = buffer.toString('ascii', 0, 5)
-  return header === '%PDF-'
-}
-
-/**
- * Server-side PDF extraction with Canvas polyfill
- */
-async function extractServerSide(pdfBuffer: Buffer): Promise<string[]> {
-  try {
-    console.error('🔧 TRYING PROPER SERVER-SIDE TEXT EXTRACTION')
-
-    // Try to use PDF.js in server environment with proper setup
+    // Dynamic import of pdfjs-dist legacy build for server-side usage
     const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs')
 
-    // Disable worker for server-side to avoid issues
-    pdfjsLib.GlobalWorkerOptions.workerSrc = null
-
-    const pdfDocument = await pdfjsLib.getDocument({
-      data: pdfBuffer,
-      useWorkerFetch: false,
-      isEvalSupported: false,
-      useSystemFonts: true,
-    }).promise
-
-    console.error(`🔧 SERVER-SIDE: PDF loaded, ${pdfDocument.numPages} pages`)
-
-    const pages: string[] = []
-
-    for (let pageNum = 1; pageNum <= pdfDocument.numPages; pageNum++) {
-      try {
-        const page = await pdfDocument.getPage(pageNum)
-        const textContent = await page.getTextContent()
-
-        // Extract actual text items
-        const textItems = textContent.items
-          .filter((item: any) => item.str && typeof item.str === 'string')
-          .map((item: any) => item.str.trim())
-          .filter((text: string) => text.length > 0)
-
-        const pageText = textItems.join(' ')
-
-        if (pageText.trim().length > 0) {
-          pages.push(pageText)
-          console.error(
-            `🔧 SERVER-SIDE: Page ${pageNum} extracted ${textItems.length} text items, ${pageText.length} chars`
-          )
-        } else {
-          console.error(`🔧 SERVER-SIDE: Page ${pageNum} is empty or contains no readable text`)
-        }
-      } catch (pageError) {
-        console.error(`🔧 SERVER-SIDE: Failed to extract page ${pageNum}:`, pageError)
-        // Continue with other pages
-      }
+    // Set worker source for Node.js environment
+    if (typeof window === 'undefined') {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'pdfjs-dist/legacy/build/pdf.worker.mjs'
     }
 
-    console.error(
-      `🔧 SERVER-SIDE: Successfully extracted ${pages.length} pages with readable content`
-    )
-
-    if (pages.length === 0) {
-      throw new Error('No readable text content found in PDF')
-    }
-
-    return pages
-  } catch (error) {
-    console.error('🔧 SERVER-SIDE: PDF.js extraction failed, trying text stream extraction:', error)
-
-    // Try a different approach: Look for text streams in PDF structure
-    try {
-      return await extractTextStreams(pdfBuffer)
-    } catch (streamError) {
-      console.error('🔧 SERVER-SIDE: Text stream extraction also failed:', streamError)
-      throw error // Throw original error
-    }
-  }
-}
-
-/**
- * Extract text content by looking for text streams in PDF structure
- */
-async function extractTextStreams(pdfBuffer: Buffer): Promise<string[]> {
-  console.error('🔧 TEXT STREAMS: Starting text stream extraction')
-
-  const pdfText = pdfBuffer.toString('latin1') // Preserve all bytes
-  const pages: string[] = []
-
-  // Look for BT/ET blocks which contain text rendering instructions
-  const textBlockRegex = /BT([\s\S]*?)ET/g
-  const matches = [...pdfText.matchAll(textBlockRegex)]
-
-  console.error(`🔧 TEXT STREAMS: Found ${matches.length} text blocks`)
-
-  if (matches.length > 0) {
-    let currentPage = ''
-    let pageCount = 0
-
-    for (const match of matches) {
-      const textBlock = match[1]
-
-      // Extract text strings from the block
-      // Look for patterns like (text) Tj or [(text)] TJ
-      const stringRegex = /\(([^)]+)\)\s*Tj|\[\(([^)]+)\)\]\s*TJ/g
-      const strings = [...textBlock.matchAll(stringRegex)]
-
-      if (strings.length > 0) {
-        const blockText = strings
-          .map(s => s[1] || s[2])
-          .filter(text => text && text.trim().length > 0)
-          .join(' ')
-
-        if (blockText.trim()) {
-          currentPage += blockText + ' '
-
-          // If we have enough content, consider it a page
-          if (currentPage.trim().length > 100) {
-            pages.push(currentPage.trim())
-            console.error(
-              `🔧 TEXT STREAMS: Page ${pages.length} extracted: ${currentPage.length} chars`
-            )
-            currentPage = ''
-            pageCount++
-          }
-        }
-      }
-    }
-
-    // Don't forget remaining content
-    if (currentPage.trim()) {
-      pages.push(currentPage.trim())
-      console.error(`🔧 TEXT STREAMS: Final page extracted: ${currentPage.length} chars`)
-    }
-  }
-
-  // If no BT/ET blocks found, try decompressed stream extraction
-  if (pages.length === 0) {
-    console.error('🔧 TEXT STREAMS: No BT/ET blocks found, trying decompressed stream extraction')
-
-    try {
-      // Look for FlateDecode streams and try to decompress them
-      const streamRegex = /stream\s*([\s\S]*?)\s*endstream/g
-      const streamMatches = [...pdfText.matchAll(streamRegex)]
-
-      console.error(`🔧 TEXT STREAMS: Found ${streamMatches.length} PDF streams`)
-
-      if (streamMatches.length > 0) {
-        const chunkSize = Math.ceil(streamMatches.length / 13) // Aim for 13 chunks
-
-        for (let i = 0; i < streamMatches.length; i += chunkSize) {
-          const chunk = streamMatches.slice(i, i + chunkSize)
-          let chunkText = ''
-
-          for (const match of chunk) {
-            const streamData = match[1]
-
-            // Try to extract readable text from the stream
-            // Look for text-like patterns in the stream data
-            const textPatterns = [
-              /[A-Za-z]{3,}/g, // Words with 3+ letters
-              /\$\d+\.?\d*/g, // Dollar amounts
-              /\d{1,2}\/\d{1,2}\/\d{4}/g, // Dates
-              /[A-Z][a-z]+ [A-Z][a-z]+/g, // Names
-              /\b[A-Z]{2,}\b/g, // Abbreviations
-            ]
-
-            for (const pattern of textPatterns) {
-              const matches = streamData.match(pattern)
-              if (matches) {
-                chunkText += matches.join(' ') + ' '
-              }
-            }
-          }
-
-          // Also look for parenthesized text in this chunk
-          const parenMatches = chunk.flatMap(m => [...m[1].matchAll(/\(([^)]{3,})\)/g)])
-          if (parenMatches.length > 0) {
-            const parenText = parenMatches
-              .map(m => m[1])
-              .filter(text => /[A-Za-z]{3,}/.test(text)) // Has actual words
-              .join(' ')
-            chunkText += parenText + ' '
-          }
-
-          if (chunkText.trim().length > 10) {
-            pages.push(chunkText.trim())
-            console.error(
-              `🔧 TEXT STREAMS: Decompressed chunk ${pages.length}: ${chunkText.length} chars`
-            )
-          }
-        }
-      }
-    } catch (streamError) {
-      console.error('🔧 TEXT STREAMS: Stream decompression failed:', streamError)
-    }
-
-    // Final fallback: simple text patterns
-    if (pages.length === 0) {
-      console.error('🔧 TEXT STREAMS: Falling back to simple text patterns')
-
-      const simpleTextRegex = /\([^)]{5,}\)/g
-      const simpleMatches = [...pdfText.matchAll(simpleTextRegex)]
-
-      if (simpleMatches.length > 0) {
-        const chunkSize = Math.ceil(simpleMatches.length / 13)
-        for (let i = 0; i < simpleMatches.length; i += chunkSize) {
-          const chunk = simpleMatches.slice(i, i + chunkSize)
-          const chunkText = chunk
-            .map(m => m[0].slice(1, -1))
-            .filter(text => text.trim().length > 3)
-            .join(' ')
-
-          if (chunkText.trim()) {
-            pages.push(chunkText.trim())
-            console.error(
-              `🔧 TEXT STREAMS: Simple fallback chunk ${pages.length}: ${chunkText.length} chars`
-            )
-          }
-        }
-      }
-    }
-  }
-
-  console.error(`🔧 TEXT STREAMS: Extraction complete, ${pages.length} pages found`)
-
-  if (pages.length === 0) {
-    throw new Error('No readable text streams found in PDF')
-  }
-
-  return pages
-}
-
-/**
- * Alternative extraction using basic text scanning
- */
-async function extractAlternative(pdfBuffer: Buffer): Promise<string[]> {
-  try {
-    // Try to extract any readable text from the buffer
-    const bufferText = pdfBuffer.toString('utf8')
-
-    // Look for text patterns that might be readable content
-    const textChunks = []
-    const lines = bufferText.split(/[\r\n]+/)
-
-    for (const line of lines) {
-      // Filter out binary data and keep readable text
-      if (line.length > 5 && /[a-zA-Z]/.test(line) && !/[\x00-\x08\x0B\x0C\x0E-\x1F]/.test(line)) {
-        textChunks.push(line.trim())
-      }
-    }
-
-    if (textChunks.length > 0) {
-      console.error(`🔥 ALTERNATIVE EXTRACTION: Found ${textChunks.length} text lines from PDF`)
-
-      // Try multiple splitting strategies
-      let pages = []
-
-      // Strategy 1: Look for explicit page breaks and invoice headers
-      let currentPage = []
-      for (const line of textChunks) {
-        const isPageBreak =
-          line.includes('Page ') ||
-          line.includes('page ') ||
-          line.includes('INVOICE') ||
-          line.includes('Invoice') ||
-          line.includes('invoice') ||
-          line.includes('TAX INVOICE') ||
-          line.includes('STATEMENT') ||
-          line.includes('Statement') ||
-          line.includes('RECEIPT') ||
-          line.includes('Receipt') ||
-          line.includes('BILL') ||
-          line.includes('REMITTANCE') ||
-          line.includes('Tax Invoice') ||
-          // More aggressive patterns
-          (line.includes('$') && line.length < 50 && currentPage.length > 15) ||
-          (line.includes('ABN') && currentPage.length > 10) ||
-          (line.includes('GST') && currentPage.length > 10) ||
-          (line.includes('Total') && line.includes('$') && currentPage.length > 15) ||
-          (line.includes('Date:') && currentPage.length > 10)
-
-        if (isPageBreak && currentPage.length > 3) {
-          pages.push(currentPage.join('\n'))
-          console.error(`🔥 SPLIT TRIGGER: "${line.substring(0, 50)}..." (page ${pages.length})`)
-          currentPage = []
-        }
-        currentPage.push(line)
-      }
-
-      // Don't forget the last page
-      if (currentPage.length > 3) {
-        pages.push(currentPage.join('\n'))
-      }
-
-      console.error(`🔥 STRATEGY 1: Found ${pages.length} pages via pattern matching`)
-
-      // Strategy 2: If we still don't have enough pages, try fixed chunking
-      if (pages.length < 10 && textChunks.length > 200) {
-        console.error(`🔥 STRATEGY 2: Not enough pages (${pages.length}), trying fixed chunking`)
-        pages = []
-        const targetPages = Math.max(13, Math.ceil(textChunks.length / 100)) // At least 13 or based on content
-        const chunkSize = Math.ceil(textChunks.length / targetPages)
-
-        for (let i = 0; i < textChunks.length; i += chunkSize) {
-          const chunk = textChunks.slice(i, i + chunkSize)
-          if (chunk.length > 3) {
-            pages.push(chunk.join('\n'))
-          }
-        }
-        console.error(`🔥 STRATEGY 2: Created ${pages.length} pages with ~${chunkSize} lines each`)
-      }
-
-      // Strategy 3: Ensure we have at least some reasonable number of pages
-      if (pages.length < 5 && textChunks.length > 100) {
-        console.error(`🔥 STRATEGY 3: Still too few pages (${pages.length}), forcing minimum split`)
-        pages = []
-        const minChunkSize = Math.max(20, Math.floor(textChunks.length / 15)) // Smaller chunks
-
-        for (let i = 0; i < textChunks.length; i += minChunkSize) {
-          const chunk = textChunks.slice(i, i + minChunkSize)
-          pages.push(chunk.join('\n'))
-        }
-        console.error(
-          `🔥 STRATEGY 3: Forced ${pages.length} pages with ~${minChunkSize} lines each`
-        )
-      }
-
-      console.error(
-        `🔥 ALTERNATIVE RESULT: Final ${pages.length} pages ready for invoice detection`
-      )
-
-      // Log first few lines of each page for debugging
-      pages.forEach((page, i) => {
-        const preview = page.split('\n').slice(0, 3).join(' | ')
-        console.error(`🔥 PAGE ${i + 1} PREVIEW: ${preview.substring(0, 100)}...`)
-      })
-
-      return pages.length > 0 ? pages : [textChunks.join('\n')]
-    }
-
-    throw new Error('No readable text found in PDF buffer')
-  } catch (error) {
-    console.error('Alternative extraction method failed:', error)
-    throw error
-  }
-}
-
-/**
- * Enhanced fallback content generation with LLM-compatible structure
- */
-function generateEnhancedFallback(pdfBuffer: Buffer, originalError: Error): string[] {
-  const errorInfo = `Error: ${originalError.message.slice(0, 100)}`
-  const timestamp = new Date().toISOString()
-  const fileSizeKB = (pdfBuffer.length / 1024).toFixed(1)
-
-  // Generate structured content that LLM can still parse for basic info
-  return [
-    `INVOICE PROCESSING FALLBACK
-    
-FILE: PDF Document (${fileSizeKB} KB)
-PROCESSING STATUS: Manual Review Required
-ERROR: ${errorInfo}
-TIMESTAMP: ${timestamp}
-
-INVOICE TEMPLATE FOR MANUAL ENTRY:
-Invoice Number: MANUAL-${Date.now().toString().slice(-6)}
-Date: ${new Date().toLocaleDateString('en-NZ')}
-Vendor: [Please enter vendor name]
-Description: PDF processing fallback - manual entry required
-
-CONSTRUCTION INVOICE - SAMPLE STRUCTURE:
-Line Items:
-1. Materials - Quantity: 1 @ $1.00 = $1.00
-2. Labor - Hours: 1 @ $1.00 = $1.00
-3. Equipment - Days: 1 @ $1.00 = $1.00
-
-Subtotal: $3.00
-Tax (15%): $0.45
-Total: $3.45
-
-INSTRUCTIONS:
-- Replace sample amounts with actual values from PDF
-- Add additional line items as needed
-- Verify all calculations
-- Update vendor and description information
-
-PROCESSING NOTE: This document requires manual data entry due to PDF extraction limitations.`,
-  ]
-}
-
-/**
- * Legacy fallback for backward compatibility
- */
-function generateFallbackContent(pdfBuffer: Buffer): string[] {
-  return generateEnhancedFallback(pdfBuffer, new Error('Legacy fallback'))
-}
-
-/**
- * Extract text using PDF.js when available
- */
-async function extractWithPdfJs(pdfBuffer: Buffer, pdfjsLib: any): Promise<string[]> {
-  try {
     // Convert Buffer to Uint8Array for PDF.js
     const uint8Array = new Uint8Array(pdfBuffer)
 
@@ -553,6 +146,246 @@ async function extractWithPdfJs(pdfBuffer: Buffer, pdfjsLib: any): Promise<strin
 }
 
 /**
+ * Assess the quality of extracted text from PDF
+ */
+function assessExtractionQuality(extractedText: string): ExtractionQuality {
+  const corruptionIndicators: string[] = []
+  const warnings: string[] = []
+
+  // Check for known corruption patterns
+  const corruptionPatterns = [
+    { pattern: /\b[A-Z][a-z]L\b/g, name: 'Character substitution (RmL pattern)' },
+    { pattern: /\bEcG\b/g, name: 'Font encoding issues' },
+    { pattern: /Unicode \d+ \d+ R/g, name: 'Unicode reference corruption' },
+    { pattern: /[^\x20-\x7E\n\r\t]/g, name: 'Non-printable characters' },
+    { pattern: /\b[A-Z]{3,}\s+[A-Z]{3,}\s+[A-Z]{3,}/g, name: 'Excessive uppercase sequences' },
+    { pattern: /\b\d+\s+\d+\s+obj\b/g, name: 'PDF object references' },
+    { pattern: /stream\s*\n[\s\S]*?\nendstream/g, name: 'PDF stream data' },
+  ]
+
+  for (const { pattern, name } of corruptionPatterns) {
+    const matches = extractedText.match(pattern)
+    if (matches && matches.length > 0) {
+      corruptionIndicators.push(`${name}: ${matches.length} instances`)
+    }
+  }
+
+  // Calculate text clarity (0-1 scale)
+  const totalChars = extractedText.length
+  const readableChars = extractedText.replace(/[^\x20-\x7E\n\r\t]/g, '').length
+  const textClarity = totalChars > 0 ? readableChars / totalChars : 0
+
+  // Check for structure indicators
+  const structurePatterns = [
+    /invoice/i,
+    /\$[\d,]+\.?\d*/,
+    /\b\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4}/,
+    /total/i,
+    /amount/i,
+  ]
+  const structureScore =
+    structurePatterns.filter(pattern => pattern.test(extractedText)).length /
+    structurePatterns.length
+
+  // Assess completeness based on expected content
+  const expectedElements = [
+    { pattern: /invoice.*number/i, name: 'Invoice number field' },
+    { pattern: /date/i, name: 'Date field' },
+    { pattern: /\$\d+/g, name: 'Dollar amounts' },
+    { pattern: /total/i, name: 'Total field' },
+  ]
+
+  let elementsFound = 0
+  for (const element of expectedElements) {
+    if (element.pattern.test(extractedText)) {
+      elementsFound++
+    } else {
+      warnings.push(`Missing ${element.name}`)
+    }
+  }
+  const completeness = elementsFound / expectedElements.length
+
+  // Quality warnings
+  if (textClarity < 0.8) {
+    warnings.push(`Low text clarity: ${(textClarity * 100).toFixed(1)}%`)
+  }
+  if (corruptionIndicators.length > 0) {
+    warnings.push(`Text corruption detected: ${corruptionIndicators.length} types`)
+  }
+  if (extractedText.length < 50) {
+    warnings.push('Very short extracted text - possible extraction failure')
+  }
+
+  return {
+    textClarity,
+    structureDetection: structureScore,
+    completeness,
+    corruptionIndicators,
+    warnings,
+  }
+}
+
+/**
+ * Calculate field-specific accuracy scores
+ */
+function calculateFieldScores(invoice: ParsedInvoice): {
+  invoiceNumber: number
+  date: number
+  vendorName: number
+  amounts: number
+} {
+  return {
+    invoiceNumber: invoice.invoiceNumber
+      ? /^[A-Z0-9\-_\/]+$/i.test(invoice.invoiceNumber) && invoice.invoiceNumber.length >= 3
+        ? 1
+        : 0.5
+      : 0,
+    date: invoice.date ? (!isNaN(new Date(invoice.date).getTime()) ? 1 : 0.3) : 0,
+    vendorName: invoice.vendorName
+      ? invoice.vendorName !== 'Unknown Supplier' && invoice.vendorName.length > 2
+        ? 1
+        : 0.3
+      : 0,
+    amounts:
+      invoice.total || invoice.amount ? ((invoice.total || invoice.amount)! > 0 ? 1 : 0.2) : 0,
+  }
+}
+
+/**
+ * Calculate overall validation score for an invoice
+ */
+function calculateValidationScore(invoice: ParsedInvoice, fieldScores: any): number {
+  const weights = {
+    invoiceNumber: 0.2,
+    date: 0.2,
+    vendorName: 0.3,
+    amounts: 0.3,
+  }
+
+  return (
+    fieldScores.invoiceNumber * weights.invoiceNumber +
+    fieldScores.date * weights.date +
+    fieldScores.vendorName * weights.vendorName +
+    fieldScores.amounts * weights.amounts
+  )
+}
+
+/**
+ * Enhance an invoice with quality metrics and validation scores
+ */
+function enhanceInvoiceWithQuality(invoice: ParsedInvoice, rawText: string): ParsedInvoice {
+  const extractionQuality = assessExtractionQuality(rawText)
+  const fieldScores = calculateFieldScores(invoice)
+  const validationScore = calculateValidationScore(invoice, fieldScores)
+
+  return {
+    ...invoice,
+    extractionQuality,
+    fieldScores,
+    validationScore,
+    rawText: rawText, // Ensure raw text is included for QA
+  }
+}
+
+/**
+ * Calculate overall quality metrics for multiple invoices
+ */
+function calculateOverallQualityMetrics(
+  invoices: ParsedInvoice[],
+  pages: string[]
+): {
+  overallAccuracy: number
+  extractionQuality: number
+  parsingSuccess: number
+  dataCompleteness: number
+  corruptionDetected: boolean
+  issuesFound: string[]
+  recommendedAction?: string
+} {
+  if (invoices.length === 0) {
+    return {
+      overallAccuracy: 0,
+      extractionQuality: 0,
+      parsingSuccess: 0,
+      dataCompleteness: 0,
+      corruptionDetected: true,
+      issuesFound: ['No invoices parsed successfully'],
+      recommendedAction: 'Check PDF quality and try manual processing',
+    }
+  }
+
+  // Calculate averages
+  const avgValidationScore =
+    invoices.reduce((sum, inv) => sum + (inv.validationScore || 0), 0) / invoices.length
+  const avgExtractionQuality =
+    invoices.reduce(
+      (sum, inv) =>
+        sum +
+        ((inv.extractionQuality?.textClarity || 0) +
+          (inv.extractionQuality?.structureDetection || 0) +
+          (inv.extractionQuality?.completeness || 0)) /
+          3,
+      0
+    ) / invoices.length
+
+  const parsingSuccess = invoices.length / Math.max(pages.length, 1)
+
+  // Check for corruption across all invoices
+  const corruptionDetected = invoices.some(
+    inv =>
+      inv.extractionQuality?.corruptionIndicators &&
+      inv.extractionQuality.corruptionIndicators.length > 0
+  )
+
+  // Collect all issues
+  const issuesFound: string[] = []
+  invoices.forEach((inv, i) => {
+    if (inv.extractionQuality?.warnings) {
+      inv.extractionQuality.warnings.forEach(warning =>
+        issuesFound.push(`Page ${i + 1}: ${warning}`)
+      )
+    }
+    if (inv.validationScore && inv.validationScore < 0.5) {
+      issuesFound.push(
+        `Page ${i + 1}: Low validation score (${(inv.validationScore * 100).toFixed(0)}%)`
+      )
+    }
+  })
+
+  // Data completeness based on expected vs actual fields
+  const totalExpectedFields = invoices.length * 4 // invoiceNumber, date, vendor, amount
+  const totalFoundFields = invoices.reduce((sum, inv) => {
+    let found = 0
+    if (inv.invoiceNumber) found++
+    if (inv.date) found++
+    if (inv.vendorName && inv.vendorName !== 'Unknown Supplier') found++
+    if (inv.total || inv.amount) found++
+    return sum + found
+  }, 0)
+  const dataCompleteness = totalFoundFields / totalExpectedFields
+
+  // Recommend actions based on quality
+  let recommendedAction: string | undefined
+  if (avgValidationScore < 0.3) {
+    recommendedAction = 'Quality very low - consider manual processing or different PDF'
+  } else if (avgValidationScore < 0.6) {
+    recommendedAction = 'Review extracted data carefully before proceeding'
+  } else if (corruptionDetected) {
+    recommendedAction = 'Text corruption detected - verify critical fields manually'
+  }
+
+  return {
+    overallAccuracy: avgValidationScore,
+    extractionQuality: avgExtractionQuality,
+    parsingSuccess,
+    dataCompleteness,
+    corruptionDetected,
+    issuesFound: [...new Set(issuesFound)], // Remove duplicates
+    recommendedAction,
+  }
+}
+
+/**
  * Parse multiple invoices from a multi-page PDF with LLM support
  */
 export async function parseMultipleInvoices(
@@ -561,28 +394,9 @@ export async function parseMultipleInvoices(
   saveToDatabase: boolean = false,
   projectId?: string
 ): Promise<MultiInvoiceResult> {
-  const timestamp = new Date().toISOString()
-  console.error(
-    `🚀🚀🚀 ENHANCED LOGGING ACTIVE - parseMultipleInvoices called at ${timestamp} 🚀🚀🚀`
-  )
-  console.error(
-    `parseMultipleInvoices: Starting with buffer size ${pdfBuffer.length} bytes, userId: ${userId}`
-  )
   const pages = await extractTextFromPDF(pdfBuffer)
-  console.error(`🔍 CRITICAL: parseMultipleInvoices extracted ${pages.length} pages from PDF`)
   const invoices: ParsedInvoice[] = []
-  console.error(`Creating ParsingOrchestrator with userId: ${userId}`)
-
-  // Log all pages for debugging multi-page issue
-  for (let i = 0; i < Math.min(pages.length, 5); i++) {
-    console.error(`Page ${i + 1} content (first 200 chars): "${pages[i].substring(0, 200)}..."`)
-    console.error(`Page ${i + 1} total length: ${pages[i].length} chars`)
-  }
-  if (pages.length > 5) {
-    console.error(`... and ${pages.length - 5} more pages`)
-  }
   const orchestrator = new ParsingOrchestrator(userId)
-  console.log(`ParsingOrchestrator created successfully`)
 
   let totalCost = 0
   let llmUsages = 0
@@ -592,37 +406,23 @@ export async function parseMultipleInvoices(
   for (let i = 0; i < pages.length; i++) {
     const pageText = pages[i]
 
-    console.log(`Page ${i + 1}: text length = ${pageText.trim().length}`)
-    console.log(`Page ${i + 1}: first 200 chars: "${pageText.substring(0, 200)}"`)
-
     if (pageText.trim().length === 0) {
-      console.log(`Page ${i + 1}: Skipping empty page`)
       continue // Skip empty pages
     }
 
     // Check if this page contains invoice indicators
-    const isInvoice = isInvoicePage(pageText)
-    console.error(`Page ${i + 1}: isInvoicePage = ${isInvoice}`)
-    console.error(`Page ${i + 1}: Page content sample: "${pageText.substring(0, 200)}"...`)
-
-    if (isInvoice) {
+    if (isInvoicePage(pageText)) {
       try {
         // Try LLM-powered parsing first
-        console.log(`Page ${i + 1}: Attempting LLM parsing with orchestrator`)
         const result = await orchestrator.parseInvoice(pageText, i + 1, {
           expectedFormat: 'construction-invoice',
           projectContext: 'Multi-page PDF processing',
         })
-        console.log(`Page ${i + 1}: LLM parsing result:`, {
-          success: result.success,
-          confidence: result.confidence,
-          strategy: result.strategy,
-          hasInvoice: !!result.invoice,
-          llmUsed: result.metadata?.llmUsed,
-        })
 
         if (result.success && result.invoice) {
-          invoices.push(result.invoice)
+          // Enhance invoice with quality metrics
+          const enhancedInvoice = enhanceInvoiceWithQuality(result.invoice, pageText)
+          invoices.push(enhancedInvoice)
           totalCost += result.totalCost
           totalConfidence += result.confidence
           if (result.metadata?.llmUsed) llmUsages++
@@ -630,7 +430,7 @@ export async function parseMultipleInvoices(
 
           // Save to database immediately if requested
           if (saveToDatabase && userId) {
-            await saveInvoiceToDatabase(result.invoice, userId, projectId)
+            await saveInvoiceToDatabase(enhancedInvoice, userId, projectId)
           }
         } else {
           // Fallback to traditional parsing
@@ -640,32 +440,30 @@ export async function parseMultipleInvoices(
             fallbackInvoice.total ||
             fallbackInvoice.vendorName
           ) {
-            invoices.push(fallbackInvoice)
-            totalConfidence += fallbackInvoice.confidence || 0.5
+            // Enhance invoice with quality metrics
+            const enhancedInvoice = enhanceInvoiceWithQuality(fallbackInvoice, pageText)
+            invoices.push(enhancedInvoice)
+            totalConfidence += enhancedInvoice.confidence || 0.5
 
             // Save to database immediately if requested
             if (saveToDatabase && userId) {
-              await saveInvoiceToDatabase(fallbackInvoice, userId, projectId)
+              await saveInvoiceToDatabase(enhancedInvoice, userId, projectId)
             }
           }
         }
       } catch (error) {
-        console.error(`LLM parsing failed for page ${i + 1}, using traditional method:`, error)
-        console.error(`Error details:`, {
-          message: error instanceof Error ? error.message : String(error),
-          stack: error instanceof Error ? error.stack : undefined,
-          userId,
-          pageLength: pageText.length,
-        })
+        console.warn(`LLM parsing failed for page ${i + 1}, using traditional method:`, error)
         // Fallback to traditional parsing
         const fallbackInvoice = await parseInvoiceFromTextTraditional(pageText, i + 1)
         if (fallbackInvoice.invoiceNumber || fallbackInvoice.total || fallbackInvoice.vendorName) {
-          invoices.push(fallbackInvoice)
-          totalConfidence += fallbackInvoice.confidence || 0.5
+          // Enhance invoice with quality metrics
+          const enhancedInvoice = enhanceInvoiceWithQuality(fallbackInvoice, pageText)
+          invoices.push(enhancedInvoice)
+          totalConfidence += enhancedInvoice.confidence || 0.5
 
           // Save to database immediately if requested
           if (saveToDatabase && userId) {
-            await saveInvoiceToDatabase(fallbackInvoice, userId, projectId)
+            await saveInvoiceToDatabase(enhancedInvoice, userId, projectId)
           }
         }
       }
@@ -674,118 +472,49 @@ export async function parseMultipleInvoices(
 
   const totalAmount = invoices.reduce((sum, invoice) => sum + (invoice.total || 0), 0)
   const averageConfidence = invoices.length > 0 ? totalConfidence / invoices.length : 0
+  const qualityMetrics = calculateOverallQualityMetrics(invoices, pages)
+
+  // Enhanced summary with quality information
+  let summary = `Found ${invoices.length} invoice(s) across ${pages.length} page(s). Total amount: $${totalAmount.toFixed(2)}`
+  if (qualityMetrics.overallAccuracy < 0.7) {
+    summary += ` ⚠️ Quality score: ${(qualityMetrics.overallAccuracy * 100).toFixed(0)}%`
+  }
+  if (qualityMetrics.corruptionDetected) {
+    summary += ` 🚨 Text corruption detected`
+  }
 
   return {
     invoices,
     totalInvoices: invoices.length,
     totalAmount,
-    summary: `Found ${invoices.length} invoice(s) across ${pages.length} page(s). Total amount: $${totalAmount.toFixed(2)}`,
+    summary,
     parsingStats: {
       llmUsed: llmUsages > 0,
       totalCost,
       averageConfidence,
       strategy,
     },
+    qualityMetrics,
   }
 }
 
 /**
- * Enhanced invoice page detection with scoring system
+ * Check if a page contains invoice content
  */
 function isInvoicePage(text: string): boolean {
-  const strongIndicators = [
-    /\binvoice\s*(?:number|#|no\.?)\s*:?\s*[A-Z0-9\-_]+/i, // Invoice number pattern
-    /\btotal\s*(?:amount\s*)?due\s*:?\s*\$?[\d,]+\.?\d*/i, // Total amount due
-    /\bamount\s*(?:owing|due)\s*:?\s*\$?[\d,]+\.?\d*/i, // Amount owing/due
-    /\bpay.*(?:by|before)\s*:?\s*\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4}/i, // Payment date
+  const invoiceIndicators = [
+    /invoice/i,
+    /bill/i,
+    /receipt/i,
+    /statement/i,
+    /total\s*(?:amount|due)/i,
+    /amount\s*due/i,
+    /pay.*(?:by|before)/i,
+    /invoice\s*(?:number|#|no)/i,
+    /\$[\d,]+\.?\d*/, // Dollar amounts
   ]
 
-  const mediumIndicators = [
-    /\binvoice\b/i,
-    /\bbill(?:ing)?\b/i,
-    /\breceipt\b/i,
-    /\bstatement\b/i,
-    /\bpurchase\s*order\b/i,
-    /\bquotation\b/i,
-    /\btax\s*invoice\b/i,
-    /\bdelivery\s*note\b/i,
-  ]
-
-  const weakIndicators = [
-    /\bsubtotal\s*:?\s*\$?[\d,]+\.?\d*/i,
-    /\btax\s*(?:\(\d+%\))?\s*:?\s*\$?[\d,]+\.?\d*/i,
-    /\bgst\s*:?\s*\$?[\d,]+\.?\d*/i,
-    /\bvat\s*:?\s*\$?[\d,]+\.?\d*/i,
-    /\$[\d,]+\.?\d*/, // Any dollar amounts
-    /\bdate\s*:?\s*\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4}/i, // Dates
-    /\babn\s*:?\s*\d+/i, // Australian Business Number
-    /\bacn\s*:?\s*\d+/i, // Australian Company Number
-    /\btfn\s*:?\s*\d+/i, // Tax File Number
-    /\bremittance\b/i,
-    /\bpayment\s*(?:advice|slip)\b/i,
-    /\bdue\s*date\b/i,
-    /\bamount\s*(?:due|owing)\b/i,
-    /\bbalance\s*(?:due|owing)\b/i,
-    /\bpay\s*by\b/i,
-    /\$\d+\.\d{2}(?:\s|$)/, // Specific currency format
-  ]
-
-  const negativeIndicators = [
-    /\bterms\s*(?:and|&)\s*conditions\b/i,
-    /\bprivacy\s*policy\b/i,
-    /\buser\s*manual\b/i,
-    /\btable\s*of\s*contents\b/i,
-  ]
-
-  // Scoring system
-  let score = 0
-
-  // Strong indicators (high confidence)
-  score += strongIndicators.filter(pattern => pattern.test(text)).length * 10
-
-  // Medium indicators
-  score += mediumIndicators.filter(pattern => pattern.test(text)).length * 5
-
-  // Weak indicators
-  score += weakIndicators.filter(pattern => pattern.test(text)).length * 1
-
-  // Negative scoring
-  score -= negativeIndicators.filter(pattern => pattern.test(text)).length * 3
-
-  // Additional scoring for construction-specific terms
-  const constructionTerms = [
-    /\bmaterials?\b/i,
-    /\blabou?r\b/i,
-    /\bequipment\b/i,
-    /\brental\b/i,
-    /\bconstruction\b/i,
-    /\bcontractor\b/i,
-    /\bbuilding\b/i,
-    /\bconcrete\b/i,
-    /\bsteel\b/i,
-    /\btimber\b/i,
-  ]
-
-  score += constructionTerms.filter(pattern => pattern.test(text)).length * 2
-
-  // Need minimum score to be considered an invoice
-  const threshold = 0 // Accept everything - we have good 13-page splitting now
-  const isInvoice = score >= threshold
-
-  console.error(
-    `📊 Invoice detection: score=${score}, threshold=${threshold}, isInvoice=${isInvoice}`
-  )
-  console.error(
-    `📊 Breakdown: strong=${strongIndicators.filter(p => p.test(text)).length}, medium=${mediumIndicators.filter(p => p.test(text)).length}, weak=${weakIndicators.filter(p => p.test(text)).length}, neg=${negativeIndicators.filter(p => p.test(text)).length}, construction=${constructionTerms.filter(p => p.test(text)).length}`
-  )
-
-  if (isInvoice) {
-    console.error(`🎯 Invoice page ACCEPTED with score ${score}`)
-  } else {
-    console.error(`❌ Invoice page REJECTED with score ${score} (below threshold ${threshold})`)
-  }
-
-  return isInvoice
+  return invoiceIndicators.some(pattern => pattern.test(text))
 }
 
 /**
@@ -940,44 +669,21 @@ export async function parseSingleInvoiceFromPDF(
 }
 
 /**
- * Enhanced invoice number extraction with validation
+ * Extract invoice number from text
  */
 function extractInvoiceNumber(text: string): string | null {
-  // Comprehensive patterns for invoice numbers
+  // Common patterns for invoice numbers
   const patterns = [
-    // Standard invoice patterns
-    /\binvoice\s*#:?\s*([A-Z0-9\-_\/]+)/i,
-    /\binvoice\s*(?:number|no\.?|num):?\s*([A-Z0-9\-_\/]+)/i,
-    /\btax\s*invoice\s*(?:#|number|no\.?)?:?\s*([A-Z0-9\-_\/]+)/i,
-
-    // Short forms
-    /\binv\.?\s*(?:#|number|no\.?|num)?:?\s*([A-Z0-9\-_\/]+)/i,
-    /\bin\.?\s*(?:#|number|no\.?)?:?\s*([A-Z0-9\-_\/]+)/i,
-
-    // Reference patterns
-    /\b(?:reference|ref\.?)\s*(?:#|number|no\.?)?:?\s*([A-Z0-9\-_\/]+)/i,
-    /\bdocument\s*(?:#|number|no\.?)?:?\s*([A-Z0-9\-_\/]+)/i,
-
-    // Common invoice formats
-    /\b(INV[-_]?\d{4,8})\b/i, // INV-12345, INV12345
-    /\b(I\d{4,8})\b/, // I12345
-    /\b(\d{4,8}[-_][A-Z]{2,4})\b/i, // 12345-INV, 12345_ABC
-    /\b([A-Z]{2,4}[-_]?\d{4,8})\b/i, // ABC-12345, ABC12345
-
-    // Date-based invoice numbers
-    /\b(\d{4}[-\/]\d{2}[-\/]\d{2}[-_]\d{3,6})\b/, // 2024-01-15-001
-    /\b(\d{8}[-_]\d{3,6})\b/, // 20240115-001
+    /invoice\s*#:?\s*([A-Z0-9\-_]+)/i,
+    /invoice\s*(?:number|no\.?):?\s*([A-Z0-9\-_]+)/i,
+    /inv\.?\s*(?:#|number|no\.?)?:?\s*([A-Z0-9\-_]+)/i,
+    /(?:reference|ref)\s*(?:#|number|no\.?)?:?\s*([A-Z0-9\-_]+)/i,
   ]
 
   for (const pattern of patterns) {
     const match = text.match(pattern)
     if (match && match[1]) {
-      const invoiceNum = match[1].trim()
-
-      // Validate invoice number format
-      if (isValidInvoiceNumber(invoiceNum)) {
-        return invoiceNum
-      }
+      return match[1].trim()
     }
   }
 
@@ -985,113 +691,29 @@ function extractInvoiceNumber(text: string): string | null {
 }
 
 /**
- * Validate if extracted text looks like a valid invoice number
- */
-function isValidInvoiceNumber(text: string): boolean {
-  // Length check (reasonable invoice number length)
-  if (text.length < 3 || text.length > 20) return false
-
-  // Must contain at least one number or letter
-  if (!/[A-Za-z0-9]/.test(text)) return false
-
-  // Shouldn't be all numbers if very short (likely not an invoice number)
-  if (text.length < 5 && /^\d+$/.test(text)) return false
-
-  // Shouldn't contain common false positives
-  const falsePositives = ['page', 'total', 'date', 'amount', 'tax', 'gst', 'vat']
-  if (falsePositives.some(fp => text.toLowerCase().includes(fp))) return false
-
-  return true
-}
-
-/**
- * Enhanced date extraction with multiple formats and validation
+ * Extract date from text
  */
 function extractDate(text: string): string | null {
   const patterns = [
-    // Explicit date labels
-    /\b(?:invoice\s*date|date\s*of\s*invoice|issue\s*date|bill\s*date)\s*:?\s*(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4})/i,
-    /\b(?:invoice\s*date|date\s*of\s*invoice|issue\s*date|bill\s*date)\s*:?\s*(\d{4}[-\/]\d{1,2}[-\/]\d{1,2})/i,
-    /\b(?:invoice\s*date|date\s*of\s*invoice|issue\s*date|bill\s*date)\s*:?\s*([A-Za-z]{3,9}\s+\d{1,2},?\s+\d{4})/i,
-    /\b(?:invoice\s*date|date\s*of\s*invoice|issue\s*date|bill\s*date)\s*:?\s*(\d{1,2}[-\s][A-Za-z]{3,9}[-\s]\d{4})/i,
-
-    // Generic date labels
-    /\b(?:date|dated?)\s*:?\s*(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4})/i,
-    /\b(?:date|dated?)\s*:?\s*(\d{4}[-\/]\d{1,2}[-\/]\d{1,2})/i,
-    /\b(?:date|dated?)\s*:?\s*([A-Za-z]{3,9}\s+\d{1,2},?\s+\d{4})/i,
-    /\b(?:date|dated?)\s*:?\s*(\d{1,2}[-\s][A-Za-z]{3,9}[-\s]\d{4})/i,
-
-    // International date formats
-    /\b(\d{1,2}\.\d{1,2}\.\d{4})\b/, // DD.MM.YYYY (European)
-    /\b(\d{4}\.\d{1,2}\.\d{1,2})\b/, // YYYY.MM.DD (International)
-
-    // Common standalone patterns (with context validation)
-    /\b(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4})\b/g, // DD/MM/YYYY or MM/DD/YYYY
-    /\b(\d{4}[-\/]\d{1,2}[-\/]\d{1,2})\b/g, // YYYY-MM-DD
-    /\b([A-Za-z]{3,9}\s+\d{1,2},?\s+\d{4})\b/g, // Month DD, YYYY
-    /\b(\d{1,2}[-\s][A-Za-z]{3,9}[-\s]\d{4})\b/g, // DD-Month-YYYY
+    // YYYY-MM-DD format
+    /(?:date|invoice\s*date|dated?):?\s*(\d{4}[-\/]\d{1,2}[-\/]\d{1,2})/i,
+    // DD/MM/YYYY format
+    /(?:date|invoice\s*date|dated?):?\s*(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4})/i,
+    // Jan 15, 2024 format
+    /(?:date|invoice\s*date|dated?):?\s*([A-Za-z]{3,9}\s+\d{1,2},?\s+\d{4})/i,
+    // 15-Jan-2024 format
+    /(?:date|invoice\s*date|dated?):?\s*(\d{1,2}[-\s][A-Za-z]{3,9}[-\s]\d{4})/i,
   ]
 
-  // Try labeled patterns first (more reliable)
-  for (let i = 0; i < 8; i++) {
-    // First 8 patterns have labels
-    const pattern = patterns[i]
+  for (const pattern of patterns) {
     const match = text.match(pattern)
     if (match && match[1]) {
       const dateStr = match[1].trim()
-      const normalized = normalizeDate(dateStr)
-      if (normalized && isReasonableDate(normalized)) {
-        return normalized
-      }
+      return normalizeDate(dateStr)
     }
   }
 
-  // Try unlabeled patterns with context validation
-  const candidates: string[] = []
-
-  for (let i = 8; i < patterns.length; i++) {
-    const pattern = patterns[i]
-    let match
-    pattern.lastIndex = 0
-    while ((match = pattern.exec(text)) !== null) {
-      const dateStr = match[1].trim()
-      const normalized = normalizeDate(dateStr)
-
-      if (normalized && isReasonableDate(normalized)) {
-        // Check context - prefer dates near invoice-related terms
-        const matchIndex = match.index
-        const contextBefore = text.substring(Math.max(0, matchIndex - 50), matchIndex)
-        const contextAfter = text.substring(matchIndex, Math.min(text.length, matchIndex + 50))
-        const context = contextBefore + contextAfter
-
-        const hasInvoiceContext = /\b(?:invoice|bill|date|issue|tax)\b/i.test(context)
-
-        if (hasInvoiceContext) {
-          candidates.push(normalized)
-        }
-      }
-    }
-  }
-
-  // Return the first valid candidate
-  return candidates.length > 0 ? candidates[0] : null
-}
-
-/**
- * Validate if a date is reasonable for an invoice (not too old, not in future)
- */
-function isReasonableDate(dateStr: string): boolean {
-  try {
-    const date = new Date(dateStr)
-    const now = new Date()
-    const fiveYearsAgo = new Date(now.getFullYear() - 5, now.getMonth(), now.getDate())
-    const oneYearFromNow = new Date(now.getFullYear() + 1, now.getMonth(), now.getDate())
-
-    // Must be a valid date within reasonable bounds
-    return !isNaN(date.getTime()) && date >= fiveYearsAgo && date <= oneYearFromNow
-  } catch {
-    return false
-  }
+  return null
 }
 
 /**
@@ -1331,8 +953,8 @@ async function saveInvoiceToDatabase(
         },
         orderBy: { createdAt: 'desc' },
       })
-      targetProjectId = userProject?.id || null
-      console.error(`💾 Auto-selected project: ${userProject?.name} (ID: ${targetProjectId})`)
+      targetProjectId = userProject?.id || undefined
+      console.log(`Auto-selected project: ${userProject?.name} (ID: ${targetProjectId})`)
     }
 
     const invoiceData = {
@@ -1345,7 +967,7 @@ async function saveInvoiceToDatabase(
       invoiceDate: parsedInvoice.date ? new Date(parsedInvoice.date) : new Date(),
       status: 'PENDING' as const,
       userId,
-      projectId: targetProjectId,
+      ...(targetProjectId ? { projectId: targetProjectId } : {}),
       notes: parsedInvoice.description || 'Parsed from PDF',
     }
 
@@ -1353,7 +975,7 @@ async function saveInvoiceToDatabase(
       data: invoiceData,
     })
 
-    console.error(
+    console.log(
       `💾 SAVED: ${savedInvoice.id} - ${invoiceData.supplierName} - $${invoiceData.totalAmount}`
     )
   } catch (saveError) {
