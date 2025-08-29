@@ -177,8 +177,6 @@ function generateRecommendations(
   return recommendations
 }
 
-export { GET }
-
 const protectedGET = withAuth(GET, {
   resource: 'invoices',
   action: 'read',
