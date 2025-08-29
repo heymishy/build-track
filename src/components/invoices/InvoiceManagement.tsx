@@ -22,6 +22,7 @@ import {
 import { InvoiceApprovalModal } from './InvoiceApprovalModal'
 import { InvoiceCategorySummary } from './InvoiceCategorySummary'
 import { ParsedInvoice, MultiInvoiceResult } from '@/lib/pdf-parser'
+import ClientOnlyPdfViewer from './ClientOnlyPdfViewer'
 
 interface Invoice {
   id: string
@@ -93,7 +94,8 @@ export function InvoiceManagement({
   const [viewMode, setViewMode] = useState<'saved' | 'pending' | 'all'>('all')
   const [reviewingInvoice, setReviewingInvoice] = useState<ParsedInvoice | null>(null)
   const [showPdfReviewModal, setShowPdfReviewModal] = useState(false)
-  const [detailTab, setDetailTab] = useState<'details' | 'categories'>('details')
+  const [detailTab, setDetailTab] = useState<'details' | 'categories' | 'image'>('details')
+  const [pdfFileData, setPdfFileData] = useState<File | null>(null)
 
   // Mock current project (in real implementation, this would come from context)
   const currentProject = getCurrentProject()
@@ -468,7 +470,11 @@ export function InvoiceManagement({
 
                         {/* Action Buttons */}
                         <button
-                          onClick={() => setSelectedInvoice(invoice)}
+                          onClick={() => {
+                            setSelectedInvoice(invoice)
+                            setPdfFileData(null) // Clear PDF data when switching invoices
+                            setDetailTab('details') // Reset to details tab
+                          }}
                           className="p-1 text-gray-400 hover:text-gray-600"
                           title="View details"
                         >
@@ -638,7 +644,10 @@ export function InvoiceManagement({
                 Invoice Details - {selectedInvoice.invoiceNumber}
               </h3>
               <button
-                onClick={() => setSelectedInvoice(null)}
+                onClick={() => {
+                  setSelectedInvoice(null)
+                  setPdfFileData(null) // Clear PDF data when closing modal
+                }}
                 className="text-gray-400 hover:text-gray-600"
               >
                 <XMarkIcon className="h-6 w-6" />
@@ -667,6 +676,16 @@ export function InvoiceManagement({
                   }`}
                 >
                   Category Summary
+                </button>
+                <button
+                  onClick={() => setDetailTab('image')}
+                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                    detailTab === 'image'
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  PDF Image
                 </button>
               </nav>
             </div>
@@ -797,9 +816,67 @@ export function InvoiceManagement({
               />
             )}
 
+            {detailTab === 'image' && (
+              <div className="space-y-6">
+                <div className="text-center">
+                  <h4 className="font-medium text-gray-900 mb-2">PDF Screenshot</h4>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Visual representation of the original invoice for verification (50% scale)
+                  </p>
+                  
+                  {pdfFileData ? (
+                    <div className="space-y-4">
+                      <div className="border border-gray-200 rounded-lg overflow-hidden bg-gray-50">
+                        <ClientOnlyPdfViewer
+                          pdfFile={pdfFileData}
+                          className="max-h-96"
+                          pageNumber={1}
+                        />
+                      </div>
+                      <button
+                        onClick={() => setPdfFileData(null)}
+                        className="text-sm text-gray-500 hover:text-gray-700"
+                      >
+                        Remove PDF
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-8">
+                      <DocumentIcon className="mx-auto h-12 w-12 text-gray-400" />
+                      <p className="mt-2 text-sm text-gray-500 mb-4">
+                        Upload the original PDF file to view screenshots alongside extracted data
+                      </p>
+                      <input
+                        type="file"
+                        accept=".pdf"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0]
+                          if (file) {
+                            setPdfFileData(file)
+                          }
+                        }}
+                        className="hidden"
+                        id={`pdf-upload-${selectedInvoice.id}`}
+                      />
+                      <label
+                        htmlFor={`pdf-upload-${selectedInvoice.id}`}
+                        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 cursor-pointer"
+                      >
+                        <DocumentIcon className="h-4 w-4 mr-2" />
+                        Upload PDF for Preview
+                      </label>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             <div className="flex justify-end space-x-3 mt-6">
               <button
-                onClick={() => setSelectedInvoice(null)}
+                onClick={() => {
+                  setSelectedInvoice(null)
+                  setPdfFileData(null) // Clear PDF data when closing modal
+                }}
                 className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
                 Close
@@ -807,6 +884,7 @@ export function InvoiceManagement({
               <button
                 onClick={() => {
                   setSelectedInvoice(null)
+                  setPdfFileData(null) // Clear PDF data when approving
                   // Add approval logic here if needed
                 }}
                 disabled={selectedInvoice.status !== 'PENDING'}
