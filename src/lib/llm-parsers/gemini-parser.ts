@@ -175,13 +175,21 @@ export class GeminiParser extends BaseLLMParser {
           },
         }
       } else {
-        // Legacy single invoice response
-        const invoice = this.validateResponse(parsedData, request.content || '', request.pageNumber)
+        console.log('⚠️ Gemini returned single invoice format - converting to multi-invoice array format')
+        
+        // WORKAROUND: Convert single invoice response to multi-invoice format
+        // This handles Gemini's tendency to ignore the array format requirement
+        const singleInvoice = this.validateResponse(parsedData, request.content || '', request.pageNumber)
+        
+        // Force convert to multi-invoice format
+        const invoices = [singleInvoice]
+        
+        console.log('🔧 Converted single invoice to multi-invoice array format:', invoices.length, 'invoice')
         
         return {
           success: true,
-          invoice,
-          confidence: invoice.confidence,
+          invoices,
+          confidence: singleInvoice.confidence * 0.8, // Slight confidence reduction for format conversion
           costEstimate,
           processingTime,
           tokensUsed: {
@@ -191,7 +199,7 @@ export class GeminiParser extends BaseLLMParser {
           metadata: {
             model: this.config.model,
             provider: 'gemini',
-            reasoning: parsedData.reasoning || 'Successfully parsed with Gemini',
+            reasoning: 'Converted single invoice format to multi-invoice array (Gemini format compliance workaround)',
           },
         }
       }
@@ -268,9 +276,24 @@ export class GeminiParser extends BaseLLMParser {
               parts: parts,
             },
           ],
+          systemInstruction: {
+            parts: [
+              {
+                text: `You are a PDF invoice extraction system. You MUST always return responses in this exact JSON format:
+
+{
+  "invoices": [
+    // Array of invoice objects, even for single invoices
+  ]
+}
+
+NEVER return single invoice objects without the "invoices" array wrapper. Always use array format.`
+              }
+            ]
+          },
           generationConfig: {
             temperature: options?.temperature || 0.1,
-            maxOutputTokens: options?.maxTokens || 4000,
+            maxOutputTokens: options?.maxTokens || 8000, // Increased for multi-invoice responses
             topK: 40,
             topP: 0.95,
           },
@@ -328,14 +351,20 @@ export class GeminiParser extends BaseLLMParser {
   private generateGeminiPrompt(request: LLMParseRequest): string {
     const { content, context, pageNumber } = request
 
-    // Optimized prompt for Gemini - more concise to reduce token usage
     let prompt = ''
 
     // Check if we have attachments (PDF/images) or just text content
     if (request.attachments && request.attachments.length > 0) {
-      prompt = `Extract invoice data from the attached PDF document. Focus on accuracy and provide confidence scoring.
+      prompt = `CRITICAL INSTRUCTION: You are analyzing a PDF document that contains MULTIPLE INVOICES across MULTIPLE PAGES.
 
-TASK: Analyze the attached PDF and extract structured invoice information.`
+MANDATORY REQUIREMENTS:
+1. EXAMINE EVERY SINGLE PAGE of the PDF document
+2. IDENTIFY EVERY INDIVIDUAL INVOICE on each page  
+3. EXTRACT ALL invoices found - do not stop after finding one
+4. Each page may contain one or multiple invoices
+5. Look for invoice headers, invoice numbers, vendor names, and totals on EVERY page
+
+TASK: Analyze the attached PDF and extract ALL invoice information from ALL pages.`
     } else {
       prompt = `Extract invoice data from this construction invoice text. Focus on accuracy and provide confidence scoring.
 
@@ -350,9 +379,10 @@ ${context?.supplierName ? `Supplier: ${context.supplierName}` : ''}
 ${context?.expectedFormat ? `Format: ${context.expectedFormat}` : ''}
 ${context?.projectContext ? `Project: ${context.projectContext}` : ''}
 
-Extract these fields:
+EXTRACTION REQUIREMENTS:
+For EACH invoice found, extract:
 1. Invoice number (exact from document)
-2. Vendor name (full company name)
+2. Vendor name (full company name)  
 3. Date (YYYY-MM-DD format)
 4. Description (work/materials summary)
 5. Amount (pre-tax)
@@ -360,25 +390,83 @@ Extract these fields:
 7. Total (amount + tax)
 8. Line items (description, quantity, unit price, total)
 
-Return ONLY valid JSON:
+CRITICAL: You MUST return data in this EXACT JSON format with an "invoices" array:
+
 {
-  "invoiceNumber": "string",
-  "vendorName": "string",
-  "date": "YYYY-MM-DD",
-  "description": "string",
-  "amount": number,
-  "tax": number,
-  "total": number,
-  "lineItems": [
+  "invoices": [
     {
+      "invoiceNumber": "string",
+      "vendorName": "string",
+      "date": "YYYY-MM-DD",
       "description": "string",
-      "quantity": number,
-      "unitPrice": number,
-      "total": number
+      "amount": number,
+      "tax": number,
+      "total": number,
+      "lineItems": [
+        {
+          "description": "string",
+          "quantity": number,
+          "unitPrice": number,
+          "total": number
+        }
+      ],
+      "confidence": number,
+      "reasoning": "Brief extraction explanation"
     }
-  ],
-  "confidence": number,
-  "reasoning": "Brief extraction explanation and confidence rationale"`
+  ]
+}
+
+IMPORTANT VALIDATION:
+- If you find only ONE invoice, still use the array format: {"invoices": [single_invoice]}
+- If you find MULTIPLE invoices, include ALL of them in the array: {"invoices": [invoice1, invoice2, invoice3, ...]}
+- DO NOT return single invoice format without the "invoices" array wrapper
+- The response must be valid JSON that can be parsed by JSON.parse()
+
+Return ONLY the JSON response, no additional text or explanation outside the JSON.
+
+EXAMPLES OF CORRECT FORMAT:
+
+Single invoice example:
+{
+  "invoices": [
+    {
+      "invoiceNumber": "INV-001",
+      "vendorName": "ABC Construction",
+      "date": "2024-01-15",
+      "amount": 1500.00,
+      "tax": 225.00,
+      "total": 1725.00,
+      "confidence": 0.95,
+      "reasoning": "Clear invoice data found"
+    }
+  ]
+}
+
+Multiple invoice example:
+{
+  "invoices": [
+    {
+      "invoiceNumber": "INV-001",
+      "vendorName": "ABC Construction", 
+      "date": "2024-01-15",
+      "amount": 1500.00,
+      "tax": 225.00,
+      "total": 1725.00,
+      "confidence": 0.95,
+      "reasoning": "First invoice clearly identified"
+    },
+    {
+      "invoiceNumber": "INV-002",
+      "vendorName": "XYZ Supplies",
+      "date": "2024-01-16", 
+      "amount": 800.00,
+      "tax": 120.00,
+      "total": 920.00,
+      "confidence": 0.92,
+      "reasoning": "Second invoice found on page 2"
+    }
+  ]
+}`
 
     return prompt
   }

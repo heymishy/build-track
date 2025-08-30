@@ -1004,21 +1004,47 @@ async function saveInvoiceToDatabase(
         },
         orderBy: { createdAt: 'desc' },
       })
-      targetProjectId = userProject?.id || undefined
+      targetProjectId = userProject?.id
       console.log(`Auto-selected project: ${userProject?.name} (ID: ${targetProjectId})`)
     }
 
+    // Skip saving if no project found
+    if (!targetProjectId) {
+      console.log('⚠️ NO PROJECT: Cannot save invoice without a project. Skipping save.')
+      return
+    }
+
+    const invoiceNumber = parsedInvoice.invoiceNumber ||
+      `AUTO-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`
+    
+    // Check for duplicate invoice to prevent constraint errors
+    if (targetProjectId && parsedInvoice.invoiceNumber) {
+      const existingInvoice = await prisma.invoice.findUnique({
+        where: {
+          projectId_invoiceNumber: {
+            projectId: targetProjectId,
+            invoiceNumber: parsedInvoice.invoiceNumber,
+          },
+        },
+      })
+
+      if (existingInvoice) {
+        console.log(
+          `🔄 DUPLICATE DETECTED: Invoice ${parsedInvoice.invoiceNumber} already exists for project ${targetProjectId}. Skipping save.`
+        )
+        return // Skip saving duplicate invoice
+      }
+    }
+
     const invoiceData = {
-      invoiceNumber:
-        parsedInvoice.invoiceNumber ||
-        `AUTO-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+      invoiceNumber,
       supplierName: parsedInvoice.vendorName || 'Unknown Supplier',
       totalAmount: parsedInvoice.total || parsedInvoice.amount || 0,
       gstAmount: parsedInvoice.tax || 0,
       invoiceDate: parsedInvoice.date ? new Date(parsedInvoice.date) : new Date(),
       status: 'PENDING' as const,
       userId,
-      ...(targetProjectId ? { projectId: targetProjectId } : {}),
+      projectId: targetProjectId,
       notes: parsedInvoice.description || 'Parsed from PDF',
     }
 

@@ -1,15 +1,15 @@
 'use client'
 
-import { useState, useRef, useEffect, Suspense } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { CameraIcon } from '@heroicons/react/24/outline'
 import { ParsedInvoice, MultiInvoiceResult } from '@/lib/pdf-parser'
 import {
   PhaseBasedNavigation,
   PhaseNavigationProvider,
 } from '@/components/navigation/PhaseBasedNavigation'
 import { PhaseBasedContent } from '@/components/dashboard/PhaseBasedContent'
+import { EnhancedInvoiceUpload } from '@/components/invoices/EnhancedInvoiceUpload'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { AppLayout } from '@/components/layout/AppLayout'
@@ -33,8 +33,6 @@ function DashboardContent() {
     type: 'success' | 'error' | 'uploading' | null
     message: string
   }>({ type: null, message: '' })
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  const [isDragging, setIsDragging] = useState(false)
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -79,91 +77,7 @@ function DashboardContent() {
     setUploadStatus({ type: null, message: '' })
   }
 
-  const handleFileSelect = () => {
-    fileInputRef.current?.click()
-  }
 
-  const processFiles = async (files: FileList) => {
-    if (!files || files.length === 0) return
-
-    setUploadStatus({ type: 'uploading', message: 'Processing invoice PDFs...' })
-
-    try {
-      for (const file of Array.from(files)) {
-        const formData = new FormData()
-        formData.append('file', file)
-
-        const endpoint = `/api/invoices/parse?t=${Date.now()}`
-        console.log('🔥 FRONTEND: Using endpoint:', endpoint)
-
-        const response = await fetch(endpoint, {
-          method: 'POST',
-          body: formData,
-          headers: {
-            'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
-            Pragma: 'no-cache',
-            Expires: '0',
-            'X-Requested-With': 'XMLHttpRequest',
-            'X-Cache-Bypass': Date.now().toString(),
-          },
-        })
-
-        const result = await response.json()
-
-        if (result.success) {
-          const processedCount = result.result?.totalInvoices || 0
-          setUploadStatus({
-            type: 'success',
-            message:
-              processedCount > 0
-                ? `Successfully processed ${processedCount} invoice${processedCount === 1 ? '' : 's'} from ${file.name}`
-                : `File ${file.name} processed but no invoices found. Please check the PDF content.`,
-          })
-
-          // Reload projects after successful upload
-          await loadProjects()
-        } else {
-          setUploadStatus({
-            type: 'error',
-            message: result.error || 'Failed to process PDF',
-          })
-        }
-      }
-    } catch (error) {
-      setUploadStatus({
-        type: 'error',
-        message: 'Upload failed. Please try again.',
-      })
-      console.error('Upload error:', error)
-    }
-  }
-
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files
-    await processFiles(files!)
-
-    // Clear the file input
-    if (fileInputRef.current) {
-      fileInputRef.current.value = ''
-    }
-  }
-
-  const handleDrop = async (event: React.DragEvent) => {
-    event.preventDefault()
-    setIsDragging(false)
-
-    const files = event.dataTransfer.files
-    await processFiles(files)
-  }
-
-  const handleDragOver = (event: React.DragEvent) => {
-    event.preventDefault()
-    setIsDragging(true)
-  }
-
-  const handleDragLeave = () => {
-    setIsDragging(false)
-  }
 
   // Filter projects based on active view
   const getFilteredProjects = () => {
@@ -229,50 +143,15 @@ function DashboardContent() {
 
           {/* Main Content Area */}
           <div className="max-w-7xl mx-auto px-6 py-6">
-            {/* Quick Upload Section */}
-            <Card className="mb-6">
-              <Card.Body
-                className={`p-8 text-center border-2 border-dashed rounded-lg transition-colors ${
-                  isDragging
-                    ? 'border-blue-400 bg-blue-50'
-                    : 'border-gray-300 hover:border-gray-400'
-                }`}
-                onDrop={handleDrop}
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-              >
-                <CameraIcon
-                  className={`mx-auto h-12 w-12 mb-4 ${isDragging ? 'text-blue-500' : 'text-gray-400'}`}
-                />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  {isDragging ? 'Drop files here' : 'Quick Invoice Upload'}
-                </h3>
-                <p className="text-gray-500 mb-4">
-                  {isDragging
-                    ? 'Release to upload PDF files'
-                    : 'Drag and drop PDF files here, or click to select files'}
-                </p>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".pdf,image/*"
-                  multiple
-                  onChange={handleFileUpload}
-                  className="hidden"
-                  data-testid="file-input"
-                />
-                {!isDragging && (
-                  <Button
-                    onClick={handleFileSelect}
-                    className="inline-flex items-center"
-                    data-testid="upload-button"
-                  >
-                    <CameraIcon className="h-4 w-4 mr-2" />
-                    Select Files
-                  </Button>
-                )}
-              </Card.Body>
-            </Card>
+            {/* Enhanced Invoice Upload Section */}
+            <EnhancedInvoiceUpload
+              className="mb-6"
+              onUploadComplete={(result) => {
+                // Reload projects after successful upload
+                loadProjects()
+                console.log('Upload completed:', result)
+              }}
+            />
 
             {/* Phase-Based Content */}
             <PhaseBasedContent
