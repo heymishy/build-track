@@ -6,12 +6,20 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { DocumentTextIcon, MagnifyingGlassMinusIcon, MagnifyingGlassPlusIcon } from '@heroicons/react/24/outline'
-import * as pdfjsLib from 'pdfjs-dist'
+import {
+  DocumentTextIcon,
+  MagnifyingGlassMinusIcon,
+  MagnifyingGlassPlusIcon,
+} from '@heroicons/react/24/outline'
+// Dynamic import to prevent server-side rendering issues
+let pdfjsLib: any = null
 
-// Set up the worker
-if (typeof window !== 'undefined') {
-  pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js'
+const initPdfJs = async () => {
+  if (typeof window !== 'undefined' && !pdfjsLib) {
+    pdfjsLib = await import('pdfjs-dist')
+    pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js'
+  }
+  return pdfjsLib
 }
 
 interface PDFPreviewProps {
@@ -81,6 +89,12 @@ export const PDFPreview: React.FC<PDFPreviewProps> = ({
   }
 
   const renderPDFFromArrayBuffer = async (arrayBuffer: ArrayBuffer) => {
+    // Only run in browser environment
+    if (typeof window === 'undefined' || !pdfjsLib?.getDocument) {
+      setError('PDF rendering not available in server environment')
+      return
+    }
+
     try {
       const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise
       setTotalPages(pdf.numPages)
@@ -89,14 +103,14 @@ export const PDFPreview: React.FC<PDFPreviewProps> = ({
 
       // Render all pages (limit to first 20 for performance)
       const maxPages = Math.min(pdf.numPages, 20)
-      
+
       for (let pageNum = 1; pageNum <= maxPages; pageNum++) {
         const page = await pdf.getPage(pageNum)
         const viewport = page.getViewport({ scale })
 
         const canvas = document.createElement('canvas')
         const context = canvas.getContext('2d')
-        
+
         if (!context) continue
 
         canvas.height = viewport.height
@@ -187,12 +201,10 @@ export const PDFPreview: React.FC<PDFPreviewProps> = ({
             {pages.length} of {totalPages} page{totalPages === 1 ? '' : 's'}
           </span>
           {totalPages > 20 && (
-            <span className="text-xs text-orange-600">
-              (Showing first 20 pages)
-            </span>
+            <span className="text-xs text-orange-600">(Showing first 20 pages)</span>
           )}
         </div>
-        
+
         <div className="flex items-center space-x-2">
           <button
             onClick={handleZoomOut}
@@ -221,31 +233,25 @@ export const PDFPreview: React.FC<PDFPreviewProps> = ({
         style={{ height: height - 60 }} // Account for controls height
       >
         <div className="space-y-6">
-          {pages.map((page) => (
+          {pages.map(page => (
             <div
               key={page.pageNumber}
               id={`pdf-page-${page.pageNumber}`}
               className={`bg-white shadow-lg mx-auto ${
-                page.pageNumber === highlightPageNumber
-                  ? 'ring-2 ring-blue-500 ring-offset-2'
-                  : ''
+                page.pageNumber === highlightPageNumber ? 'ring-2 ring-blue-500 ring-offset-2' : ''
               }`}
               style={{ width: 'fit-content' }}
             >
               <div className="p-2">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs text-gray-500">
-                    Page {page.pageNumber}
-                  </span>
+                  <span className="text-xs text-gray-500">Page {page.pageNumber}</span>
                   {page.pageNumber === highlightPageNumber && (
-                    <span className="text-xs text-blue-600 font-medium">
-                      Invoice Location
-                    </span>
+                    <span className="text-xs text-blue-600 font-medium">Invoice Location</span>
                   )}
                 </div>
                 <div className="border border-gray-300">
                   <canvas
-                    ref={(canvas) => {
+                    ref={canvas => {
                       if (canvas && page.canvas) {
                         const ctx = canvas.getContext('2d')
                         if (ctx) {
@@ -269,7 +275,7 @@ export const PDFPreview: React.FC<PDFPreviewProps> = ({
         <div className="p-4 border-t border-gray-200 bg-gray-50">
           <div className="flex items-center justify-center space-x-2">
             <span className="text-sm text-gray-600 mr-4">Go to page:</span>
-            {Array.from({ length: Math.min(totalPages, 10) }, (_, i) => i + 1).map((pageNum) => (
+            {Array.from({ length: Math.min(totalPages, 10) }, (_, i) => i + 1).map(pageNum => (
               <button
                 key={pageNum}
                 onClick={() => scrollToPage(pageNum)}
@@ -282,9 +288,7 @@ export const PDFPreview: React.FC<PDFPreviewProps> = ({
                 {pageNum}
               </button>
             ))}
-            {totalPages > 10 && (
-              <span className="text-xs text-gray-500">...</span>
-            )}
+            {totalPages > 10 && <span className="text-xs text-gray-500">...</span>}
           </div>
         </div>
       )}

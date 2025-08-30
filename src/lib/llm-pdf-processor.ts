@@ -48,79 +48,95 @@ export class LLMPdfProcessor {
   private async initializeParsers() {
     // Initialize available LLM parsers using settings-configured API keys
     console.log('🔧 Initializing LLM parsers from user settings...')
-    
+
     try {
       // Get API keys from settings service
       const { SettingsService } = await import('./settings-service')
       const settingsService = new SettingsService(this.options.userId || '')
       const settings = await settingsService.getSettings()
-      
+
       console.log('🔑 Available API keys:', Object.keys(settings.apiKeys))
-      
+
       // Initialize Gemini parser if API key is available
       if (settings.apiKeys.gemini) {
         console.log('✅ Initializing Gemini parser with settings API key')
-        this.parsers.set('gemini', new GeminiParser({
-          apiKey: settings.apiKeys.gemini,
-          model: 'gemini-1.5-flash',
-          timeout: 30000,
-          maxRetries: 2,
-        }))
+        this.parsers.set(
+          'gemini',
+          new GeminiParser({
+            apiKey: settings.apiKeys.gemini,
+            model: 'gemini-1.5-flash',
+            timeout: 30000,
+            maxRetries: 2,
+          })
+        )
       }
 
-      // Initialize Anthropic parser if API key is available  
+      // Initialize Anthropic parser if API key is available
       if (settings.apiKeys.anthropic) {
         console.log('✅ Initializing Anthropic parser with settings API key')
-        this.parsers.set('anthropic', new AnthropicParser({
-          apiKey: settings.apiKeys.anthropic,
-          model: 'claude-3-haiku-20240307',
-          timeout: 30000,
-          maxRetries: 2,
-        }))
+        this.parsers.set(
+          'anthropic',
+          new AnthropicParser({
+            apiKey: settings.apiKeys.anthropic,
+            model: 'claude-3-haiku-20240307',
+            timeout: 30000,
+            maxRetries: 2,
+          })
+        )
       }
 
       // Fallback to environment variables if no settings API keys
       if (this.parsers.size === 0) {
         console.log('📋 No API keys in settings, checking environment variables...')
-        
+
         if (process.env.GEMINI_API_KEY) {
           console.log('✅ Found Gemini API key in environment variables')
-          this.parsers.set('gemini', new GeminiParser({
-            apiKey: process.env.GEMINI_API_KEY,
-            model: 'gemini-1.5-flash',
-            timeout: 30000,
-            maxRetries: 2,
-          }))
+          this.parsers.set(
+            'gemini',
+            new GeminiParser({
+              apiKey: process.env.GEMINI_API_KEY,
+              model: 'gemini-1.5-flash',
+              timeout: 30000,
+              maxRetries: 2,
+            })
+          )
         }
 
         if (process.env.ANTHROPIC_API_KEY) {
           console.log('✅ Found Anthropic API key in environment variables')
-          this.parsers.set('anthropic', new AnthropicParser({
-            apiKey: process.env.ANTHROPIC_API_KEY,
-            model: 'claude-3-haiku-20240307',
-            timeout: 30000,
-            maxRetries: 2,
-          }))
+          this.parsers.set(
+            'anthropic',
+            new AnthropicParser({
+              apiKey: process.env.ANTHROPIC_API_KEY,
+              model: 'claude-3-haiku-20240307',
+              timeout: 30000,
+              maxRetries: 2,
+            })
+          )
         }
       }
-      
     } catch (error) {
       console.warn('⚠️ Error loading API keys from settings:', error)
       console.log('📋 Falling back to environment variables only...')
-      
+
       if (process.env.GEMINI_API_KEY) {
-        this.parsers.set('gemini', new GeminiParser({
-          apiKey: process.env.GEMINI_API_KEY,
-          model: 'gemini-1.5-flash',
-          timeout: 30000,
-          maxRetries: 2,
-        }))
+        this.parsers.set(
+          'gemini',
+          new GeminiParser({
+            apiKey: process.env.GEMINI_API_KEY,
+            model: 'gemini-1.5-flash',
+            timeout: 30000,
+            maxRetries: 2,
+          })
+        )
       }
     }
-    
+
     // Final status
     if (this.parsers.size === 0) {
-      console.warn('⚠️ No LLM API keys configured - PDF processing will use text extraction fallback only')
+      console.warn(
+        '⚠️ No LLM API keys configured - PDF processing will use text extraction fallback only'
+      )
     } else {
       console.log('🚀 LLM parsers initialized:', Array.from(this.parsers.keys()))
     }
@@ -139,7 +155,7 @@ export class LLMPdfProcessor {
     try {
       // Initialize parsers with API keys from settings
       await this.initializeParsers()
-      
+
       // Get user's LLM settings
       const settings = await getSettings(this.options.userId)
       const pdfSettings = settings.system.pdfProcessing
@@ -400,11 +416,11 @@ Extract the invoice data now:`
 
       // Use simple text extraction approach to avoid recursion
       const { extractTextFromPDF, parseInvoiceFromTextTraditional } = await import('./pdf-parser')
-      
+
       // Extract text from PDF
       const pages = await extractTextFromPDF(pdfBuffer)
       console.log('📄 Extracted text from', pages.length, 'pages')
-      
+
       // Parse invoices from extracted text
       const invoices: ParsedInvoice[] = []
       for (let i = 0; i < pages.length; i++) {
@@ -417,9 +433,9 @@ Extract the invoice data now:`
           console.warn(`Failed to parse page ${i + 1}:`, error)
         }
       }
-      
+
       const totalAmount = invoices.reduce((sum, inv) => sum + (inv.total || 0), 0)
-      
+
       const result = {
         invoices,
         totalInvoices: invoices.length,

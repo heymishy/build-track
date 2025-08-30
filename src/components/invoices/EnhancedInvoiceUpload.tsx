@@ -17,7 +17,7 @@ import {
   SparklesIcon,
 } from '@heroicons/react/24/outline'
 import { ParsedInvoice } from '@/lib/pdf-parser'
-import { PDFPreview } from './PDFPreview'
+import { ClientOnlyPDFPreview } from './ClientOnlyPDFPreview'
 
 interface UploadProgress {
   stage: 'idle' | 'uploading' | 'parsing' | 'processing' | 'complete' | 'error'
@@ -81,26 +81,29 @@ export const EnhancedInvoiceUpload: React.FC<EnhancedInvoiceUploadProps> = ({
     setUploadProgress(prev => ({ ...prev, ...update }))
   }, [])
 
-  const simulateProgress = useCallback(async (stage: string, duration: number) => {
-    const steps = 20
-    const stepDuration = duration / steps
-    
-    for (let i = 0; i <= steps; i++) {
-      const progress = Math.min((i / steps) * 100, 100)
-      updateProgress({
-        progress,
-        message: `${stage}... ${Math.round(progress)}%`,
-      })
-      await new Promise(resolve => setTimeout(resolve, stepDuration))
-    }
-  }, [updateProgress])
+  const simulateProgress = useCallback(
+    async (stage: string, duration: number) => {
+      const steps = 20
+      const stepDuration = duration / steps
+
+      for (let i = 0; i <= steps; i++) {
+        const progress = Math.min((i / steps) * 100, 100)
+        updateProgress({
+          progress,
+          message: `${stage}... ${Math.round(progress)}%`,
+        })
+        await new Promise(resolve => setTimeout(resolve, stepDuration))
+      }
+    },
+    [updateProgress]
+  )
 
   const processFiles = async (files: FileList) => {
     if (!files || files.length === 0) return
 
     const file = files[0] // Process first file for now
     setUploadedFile(file) // Store the file for PDF preview
-    
+
     try {
       // Stage 1: Upload
       updateProgress({
@@ -150,7 +153,7 @@ export const EnhancedInvoiceUpload: React.FC<EnhancedInvoiceUploadProps> = ({
         }
 
         setProcessedResult(processedResult)
-        
+
         updateProgress({
           stage: 'complete',
           message: `Successfully processed ${processedResult.invoices.length} invoice${processedResult.invoices.length === 1 ? '' : 's'}!`,
@@ -256,9 +259,7 @@ export const EnhancedInvoiceUpload: React.FC<EnhancedInvoiceUploadProps> = ({
       {!showReview && (
         <div
           className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-            isDragging
-              ? 'border-blue-400 bg-blue-50'
-              : 'border-gray-300 hover:border-gray-400'
+            isDragging ? 'border-blue-400 bg-blue-50' : 'border-gray-300 hover:border-gray-400'
           }`}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
@@ -266,16 +267,14 @@ export const EnhancedInvoiceUpload: React.FC<EnhancedInvoiceUploadProps> = ({
         >
           <div className="flex flex-col items-center space-y-4">
             {getStageIcon()}
-            
+
             <div className="space-y-2">
               <h3 className="text-lg font-medium text-gray-900">
                 {uploadProgress.stage === 'idle' ? 'Upload Invoice PDF' : uploadProgress.message}
               </h3>
-              
+
               {uploadProgress.stage === 'idle' ? (
-                <p className="text-gray-500">
-                  Drag and drop a PDF file here, or click to select
-                </p>
+                <p className="text-gray-500">Drag and drop a PDF file here, or click to select</p>
               ) : (
                 <div className="w-full max-w-xs">
                   <div className="bg-gray-200 rounded-full h-2">
@@ -284,9 +283,7 @@ export const EnhancedInvoiceUpload: React.FC<EnhancedInvoiceUploadProps> = ({
                       style={{ width: `${uploadProgress.progress}%` }}
                     />
                   </div>
-                  <p className="text-sm text-gray-600 mt-2">
-                    {uploadProgress.progress}% complete
-                  </p>
+                  <p className="text-sm text-gray-600 mt-2">{uploadProgress.progress}% complete</p>
                 </div>
               )}
             </div>
@@ -328,12 +325,8 @@ export const EnhancedInvoiceUpload: React.FC<EnhancedInvoiceUploadProps> = ({
             <div className="flex items-center space-x-3">
               <CheckCircleIcon className="h-8 w-8 text-green-500" />
               <div>
-                <h3 className="text-lg font-medium text-green-800">
-                  Processing Complete!
-                </h3>
-                <p className="text-green-600">
-                  {processedResult.summary}
-                </p>
+                <h3 className="text-lg font-medium text-green-800">Processing Complete!</h3>
+                <p className="text-green-600">{processedResult.summary}</p>
               </div>
             </div>
             <button
@@ -395,7 +388,8 @@ const InvoiceReviewInterface: React.FC<InvoiceReviewInterfaceProps> = ({
         <div>
           <h2 className="text-xl font-semibold text-gray-900">Invoice Review</h2>
           <p className="text-gray-600">
-            {result.invoices.length} invoice{result.invoices.length === 1 ? '' : 's'} processed • Total: {formatCurrency(result.totalAmount)}
+            {result.invoices.length} invoice{result.invoices.length === 1 ? '' : 's'} processed •
+            Total: {formatCurrency(result.totalAmount)}
           </p>
         </div>
         <div className="flex space-x-3">
@@ -512,7 +506,9 @@ const InvoiceReviewInterface: React.FC<InvoiceReviewInterfaceProps> = ({
                     {formatCurrency(invoice.total)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-center">
-                    <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getConfidenceColor(invoice.confidence)}`}>
+                    <span
+                      className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getConfidenceColor(invoice.confidence)}`}
+                    >
                       {Math.round(invoice.confidence * 100)}%
                     </span>
                   </td>
@@ -580,12 +576,14 @@ const InvoiceDetailModal: React.FC<InvoiceDetailModalProps> = ({
           <h3 className="text-lg font-medium text-gray-900">
             Invoice Details: {invoice.invoiceNumber}
           </h3>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
-          >
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
             <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         </div>
@@ -617,11 +615,15 @@ const InvoiceDetailModal: React.FC<InvoiceDetailModalProps> = ({
               </div>
               <div className="flex justify-between border-t pt-3">
                 <span className="text-sm font-bold text-gray-900">Total:</span>
-                <span className="text-sm font-bold text-gray-900">{formatCurrency(invoice.total)}</span>
+                <span className="text-sm font-bold text-gray-900">
+                  {formatCurrency(invoice.total)}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-sm font-medium text-gray-500">Confidence:</span>
-                <span className="text-sm text-gray-900">{Math.round(invoice.confidence * 100)}%</span>
+                <span className="text-sm text-gray-900">
+                  {Math.round(invoice.confidence * 100)}%
+                </span>
               </div>
             </div>
           </div>
@@ -633,10 +635,15 @@ const InvoiceDetailModal: React.FC<InvoiceDetailModalProps> = ({
               {invoice.lineItems && invoice.lineItems.length > 0 ? (
                 <div className="space-y-2">
                   {invoice.lineItems.map((item, index) => (
-                    <div key={index} className="text-sm border-b border-gray-200 pb-2 last:border-b-0">
+                    <div
+                      key={index}
+                      className="text-sm border-b border-gray-200 pb-2 last:border-b-0"
+                    >
                       <div className="font-medium text-gray-900">{item.description}</div>
                       <div className="flex justify-between text-gray-600">
-                        <span>Qty: {item.quantity} × {formatCurrency(item.unitPrice)}</span>
+                        <span>
+                          Qty: {item.quantity} × {formatCurrency(item.unitPrice)}
+                        </span>
                         <span>{formatCurrency(item.total)}</span>
                       </div>
                     </div>
@@ -653,7 +660,7 @@ const InvoiceDetailModal: React.FC<InvoiceDetailModalProps> = ({
         <div className="mt-6">
           <h4 className="text-md font-medium text-gray-900 mb-4">Original Invoice</h4>
           {uploadedFile ? (
-            <PDFPreview
+            <ClientOnlyPDFPreview
               pdfFile={uploadedFile}
               highlightPageNumber={invoice.pageNumber}
               className="border border-gray-300 rounded-lg"

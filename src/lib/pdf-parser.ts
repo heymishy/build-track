@@ -1014,9 +1014,9 @@ async function saveInvoiceToDatabase(
       return
     }
 
-    const invoiceNumber = parsedInvoice.invoiceNumber ||
-      `AUTO-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`
-    
+    const invoiceNumber =
+      parsedInvoice.invoiceNumber || `AUTO-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`
+
     // Check for duplicate invoice to prevent constraint errors
     if (targetProjectId && parsedInvoice.invoiceNumber) {
       const existingInvoice = await prisma.invoice.findUnique({

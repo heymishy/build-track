@@ -77,8 +77,6 @@ function DashboardContent() {
     setUploadStatus({ type: null, message: '' })
   }
 
-
-
   // Filter projects based on active view
   const getFilteredProjects = () => {
     if (activeView === 'all') return projects
@@ -146,7 +144,7 @@ function DashboardContent() {
             {/* Enhanced Invoice Upload Section */}
             <EnhancedInvoiceUpload
               className="mb-6"
-              onUploadComplete={(result) => {
+              onUploadComplete={result => {
                 // Reload projects after successful upload
                 loadProjects()
                 console.log('Upload completed:', result)

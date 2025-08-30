@@ -148,15 +148,24 @@ export class GeminiParser extends BaseLLMParser {
 
       // Check if this is a multi-invoice response
       if (parsedData.invoices && Array.isArray(parsedData.invoices)) {
-        console.log('📄 Processing multi-invoice response:', parsedData.invoices.length, 'invoices found')
-        
+        console.log(
+          '📄 Processing multi-invoice response:',
+          parsedData.invoices.length,
+          'invoices found'
+        )
+
         // Validate and normalize each invoice
         const invoices = parsedData.invoices.map((invoiceData: any, index: number) => {
-          return this.validateResponse(invoiceData, request.content || '', (request.pageNumber || 1) + index)
+          return this.validateResponse(
+            invoiceData,
+            request.content || '',
+            (request.pageNumber || 1) + index
+          )
         })
 
         // Calculate overall confidence as average
-        const overallConfidence = invoices.reduce((sum, inv) => sum + (inv.confidence || 0), 0) / invoices.length || 0
+        const overallConfidence =
+          invoices.reduce((sum, inv) => sum + (inv.confidence || 0), 0) / invoices.length || 0
 
         return {
           success: true,
@@ -175,17 +184,27 @@ export class GeminiParser extends BaseLLMParser {
           },
         }
       } else {
-        console.log('⚠️ Gemini returned single invoice format - converting to multi-invoice array format')
-        
+        console.log(
+          '⚠️ Gemini returned single invoice format - converting to multi-invoice array format'
+        )
+
         // WORKAROUND: Convert single invoice response to multi-invoice format
         // This handles Gemini's tendency to ignore the array format requirement
-        const singleInvoice = this.validateResponse(parsedData, request.content || '', request.pageNumber)
-        
+        const singleInvoice = this.validateResponse(
+          parsedData,
+          request.content || '',
+          request.pageNumber
+        )
+
         // Force convert to multi-invoice format
         const invoices = [singleInvoice]
-        
-        console.log('🔧 Converted single invoice to multi-invoice array format:', invoices.length, 'invoice')
-        
+
+        console.log(
+          '🔧 Converted single invoice to multi-invoice array format:',
+          invoices.length,
+          'invoice'
+        )
+
         return {
           success: true,
           invoices,
@@ -199,7 +218,8 @@ export class GeminiParser extends BaseLLMParser {
           metadata: {
             model: this.config.model,
             provider: 'gemini',
-            reasoning: 'Converted single invoice format to multi-invoice array (Gemini format compliance workaround)',
+            reasoning:
+              'Converted single invoice format to multi-invoice array (Gemini format compliance workaround)',
           },
         }
       }
@@ -287,9 +307,9 @@ export class GeminiParser extends BaseLLMParser {
   ]
 }
 
-NEVER return single invoice objects without the "invoices" array wrapper. Always use array format.`
-              }
-            ]
+NEVER return single invoice objects without the "invoices" array wrapper. Always use array format.`,
+              },
+            ],
           },
           generationConfig: {
             temperature: options?.temperature || 0.1,
