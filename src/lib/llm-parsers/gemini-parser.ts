@@ -80,8 +80,16 @@ export class GeminiParser extends BaseLLMParser {
       let parsedData: any
       const responseText = response.data.candidates[0]?.content?.parts[0]?.text || ''
 
+      console.log('🔍 Raw Gemini response (first 500 chars):', responseText.substring(0, 500))
+
       try {
         parsedData = JSON.parse(responseText)
+        console.log('📊 Parsed JSON structure:', Object.keys(parsedData))
+        if (parsedData.invoices) {
+          console.log('✅ Found invoices array with', parsedData.invoices.length, 'items')
+        } else {
+          console.log('⚠️ No invoices array found - keys:', Object.keys(parsedData))
+        }
       } catch (error) {
         // Try to extract JSON from response
         const jsonMatch = responseText.match(/\{[\s\S]*\}/)

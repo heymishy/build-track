@@ -332,14 +332,15 @@ ADDITIONAL AMOUNTS:
 - Tax/GST: Tax amount (if shown)
 - Discount: Any discounts applied (if shown)
 
-OUTPUT FORMAT:
-Return a JSON object with this exact structure:
+OUTPUT FORMAT - CRITICAL: 
+You MUST return a JSON object with EXACTLY this structure. Do not return any other format:
+
 {
   "invoices": [
     {
       "invoiceNumber": "string or null",
-      "date": "YYYY-MM-DD format or null",
-      "vendorName": "string or null", 
+      "date": "YYYY-MM-DD format or null", 
+      "vendorName": "string or null",
       "description": "brief description or null",
       "amount": number or null (subtotal),
       "tax": number or null,
@@ -352,9 +353,24 @@ Return a JSON object with this exact structure:
           "total": number
         }
       ]
+    },
+    {
+      "invoiceNumber": "string or null",
+      "date": "YYYY-MM-DD format or null",
+      "vendorName": "string or null", 
+      "description": "brief description or null",
+      "amount": number or null,
+      "tax": number or null,
+      "total": number or null,
+      "lineItems": [...]
     }
   ]
 }
+
+EXAMPLE: If you find 3 invoices, your response should look like:
+{"invoices": [invoice1_object, invoice2_object, invoice3_object]}
+
+The "invoices" array is MANDATORY even if you find only one invoice.
 
 IMPORTANT REQUIREMENTS:
 - Extract ALL invoices in the document (this document has MULTIPLE pages with MULTIPLE invoices)
@@ -367,7 +383,11 @@ IMPORTANT REQUIREMENTS:
 - If multiple currencies, note the currency in the description
 - Focus on construction/trade invoices (electrical, plumbing, building materials, etc.)
 
-REMINDER: You are analyzing a MULTI-PAGE PDF with MULTIPLE INVOICES. Examine each page thoroughly and extract every invoice you find. Extract the invoice data now:`
+REMINDER: You are analyzing a MULTI-PAGE PDF with MULTIPLE INVOICES. Examine each page thoroughly and extract every invoice you find. 
+
+Your response MUST start with {"invoices": [ and contain ALL invoices in the array format shown above.
+
+Extract the invoice data now:`
   }
 
   private async fallbackToTextExtraction(
