@@ -77,6 +77,41 @@ export async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string[]> {
   try {
     console.log('PDF buffer size:', pdfBuffer.length, 'bytes')
 
+    // Add DOM polyfills for server-side PDF.js
+    if (typeof window === 'undefined') {
+      // @ts-ignore - Global polyfills for server environment
+      global.DOMMatrix = global.DOMMatrix || class DOMMatrix {
+        constructor(init?: string | number[]) {
+          // Minimal DOMMatrix implementation for PDF.js
+          this.a = 1; this.b = 0; this.c = 0; this.d = 1; this.e = 0; this.f = 0;
+          if (Array.isArray(init)) {
+            this.a = init[0] || 1; this.b = init[1] || 0; this.c = init[2] || 0;
+            this.d = init[3] || 1; this.e = init[4] || 0; this.f = init[5] || 0;
+          }
+        }
+        scale(x: number, y = x) { return new (global.DOMMatrix as any)([this.a * x, this.b * x, this.c * y, this.d * y, this.e, this.f]); }
+        translate(x: number, y: number) { return new (global.DOMMatrix as any)([this.a, this.b, this.c, this.d, this.e + x, this.f + y]); }
+        multiply(other: any) { return this; }
+      };
+      
+      // @ts-ignore - ImageData polyfill
+      global.ImageData = global.ImageData || class ImageData {
+        constructor(width: number, height: number) {
+          this.width = width;
+          this.height = height;
+          this.data = new Uint8ClampedArray(width * height * 4);
+        }
+      };
+      
+      // @ts-ignore - Path2D polyfill
+      global.Path2D = global.Path2D || class Path2D {
+        constructor() {}
+        moveTo() {}
+        lineTo() {}
+        closePath() {}
+      };
+    }
+
     // Dynamic import of pdfjs-dist legacy build for server-side usage
     const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs')
 
