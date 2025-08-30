@@ -176,7 +176,7 @@ export class GeminiParser extends BaseLLMParser {
     options?: any,
     attachments?: Array<{
       type: 'application/pdf' | 'image/jpeg' | 'image/png'
-      data: string  // Base64 encoded
+      data: string // Base64 encoded
       filename?: string
     }>
   ): Promise<{
@@ -197,7 +197,7 @@ export class GeminiParser extends BaseLLMParser {
       // Add PDF/image attachments if provided
       if (attachments && attachments.length > 0) {
         console.log('🖼️ Adding attachments to Gemini request:', attachments.length)
-        
+
         for (const attachment of attachments) {
           if (attachment.type === 'application/pdf') {
             parts.push({
@@ -290,7 +290,7 @@ export class GeminiParser extends BaseLLMParser {
 
     // Optimized prompt for Gemini - more concise to reduce token usage
     let prompt = ''
-    
+
     // Check if we have attachments (PDF/images) or just text content
     if (request.attachments && request.attachments.length > 0) {
       prompt = `Extract invoice data from the attached PDF document. Focus on accuracy and provide confidence scoring.

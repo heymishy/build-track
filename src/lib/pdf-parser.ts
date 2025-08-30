@@ -407,16 +407,16 @@ export async function parseMultipleInvoices(
 ): Promise<MultiInvoiceResult> {
   try {
     console.log('🚀 Starting LLM-first PDF processing...')
-    
+
     // NEW: Use LLM-first approach for maximum accuracy
     const { processInvoicePdfWithLLM } = await import('./llm-pdf-processor')
     const result = await processInvoicePdfWithLLM(pdfBuffer, { userId, projectId })
-    
+
     console.log('✅ LLM-first processing completed')
     console.log('   - Method:', result.parsingStats?.strategy || 'llm-first')
     console.log('   - Invoices found:', result.totalInvoices)
     console.log('   - Accuracy:', (result.qualityMetrics?.overallAccuracy || 0) * 100, '%')
-    
+
     // Save to database if requested and we have results
     if (saveToDatabase && userId && result.invoices.length > 0) {
       console.log('💾 Saving invoices to database...')
@@ -424,12 +424,11 @@ export async function parseMultipleInvoices(
         await saveInvoiceToDatabase(invoice, userId, projectId)
       }
     }
-    
+
     return result
-    
   } catch (error) {
     console.error('❌ LLM-first processing failed, falling back to legacy method:', error)
-    
+
     // FALLBACK: Use legacy text extraction method if LLM processing fails
     return await parseMultipleInvoicesLegacy(pdfBuffer, userId, saveToDatabase, projectId)
   }
@@ -445,7 +444,7 @@ async function parseMultipleInvoicesLegacy(
   projectId?: string
 ): Promise<MultiInvoiceResult> {
   console.log('📄 Using legacy text extraction method...')
-  
+
   const pages = await extractTextFromPDF(pdfBuffer)
   const invoices: ParsedInvoice[] = []
   const orchestrator = new ParsingOrchestrator(userId)

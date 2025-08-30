@@ -234,7 +234,7 @@ export class ParsingOrchestrator {
 
     try {
       const request: LLMParseRequest = {
-        content: text,  // Updated from 'text' to 'content'
+        content: text, // Updated from 'text' to 'content'
         pageNumber,
         context,
         options: {

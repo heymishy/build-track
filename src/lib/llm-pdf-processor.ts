@@ -85,7 +85,7 @@ export class LLMPdfProcessor {
       // If primary fails or low confidence, try fallback
       if (!result.success || result.confidence < pdfSettings.confidenceThreshold) {
         console.log('⚠️ Primary LLM failed or low confidence, trying fallback...')
-        
+
         if (pdfSettings.fallbackProvider !== pdfSettings.provider) {
           const fallbackResult = await this.tryProviderWithPdf(
             pdfSettings.fallbackProvider,
@@ -139,10 +139,9 @@ export class LLMPdfProcessor {
       // If LLM processing fails, fall back to text extraction
       console.log('⚠️ LLM processing failed, falling back to text extraction...')
       return await this.fallbackToTextExtraction(pdfBuffer, totalCost, processingTime)
-
     } catch (error) {
       console.error('❌ LLM PDF processing failed:', error)
-      
+
       // Fall back to text extraction
       return await this.fallbackToTextExtraction(pdfBuffer, totalCost, Date.now() - startTime)
     }
@@ -170,10 +169,12 @@ export class LLMPdfProcessor {
       // Process with LLM
       const response = await parser.parseInvoice({
         content: prompt,
-        attachments: [{
-          type: 'application/pdf',
-          data: base64Pdf,
-        }],
+        attachments: [
+          {
+            type: 'application/pdf',
+            data: base64Pdf,
+          },
+        ],
         expectedFormat: 'construction-invoice',
         context: 'Direct PDF processing',
       })
@@ -193,7 +194,6 @@ export class LLMPdfProcessor {
         confidence: 0,
         cost: response.totalCost,
       }
-
     } catch (error) {
       console.error(`❌ ${context} failed:`, error)
       return {
@@ -273,13 +273,18 @@ Extract the invoice data now:`
   ): Promise<MultiInvoiceResult> {
     try {
       console.log('📄 Falling back to text extraction method...')
-      
+
       // Import the text extraction method
       const { extractTextFromPDF, parseMultipleInvoices } = await import('./pdf-parser')
-      
+
       // Use existing text extraction as fallback
-      const result = await parseMultipleInvoices(pdfBuffer, this.options.userId, false, this.options.projectId)
-      
+      const result = await parseMultipleInvoices(
+        pdfBuffer,
+        this.options.userId,
+        false,
+        this.options.projectId
+      )
+
       // Enhance with LLM processing metadata
       return {
         ...result,
@@ -297,7 +302,7 @@ Extract the invoice data now:`
       }
     } catch (error) {
       console.error('❌ Fallback text extraction also failed:', error)
-      
+
       return {
         invoices: [],
         totalInvoices: 0,
@@ -344,7 +349,7 @@ Extract the invoice data now:`
  * This replaces the old text extraction approach
  */
 export async function processInvoicePdfWithLLM(
-  pdfBuffer: Buffer, 
+  pdfBuffer: Buffer,
   options: LLMPdfProcessorOptions = {}
 ): Promise<MultiInvoiceResult> {
   const processor = new LLMPdfProcessor(options)

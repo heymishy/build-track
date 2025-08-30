@@ -3,6 +3,8 @@
  * Type-safe settings with validation and defaults
  */
 
+import { useState, useEffect } from 'react'
+
 // Settings Types
 export interface UserSettings {
   theme: 'light' | 'dark' | 'system'
@@ -302,6 +304,17 @@ export class SettingsManager {
 // Global settings instance
 export const settingsManager = new SettingsManager()
 
+// Server-safe function to get settings without React hooks
+export async function getSettings(userId?: string): Promise<AppSettings> {
+  // For now, return default settings
+  // In the future, this could load user-specific settings from database
+  return {
+    user: defaultUserSettings,
+    project: defaultProjectSettings,
+    system: defaultSystemSettings,
+  }
+}
+
 // React hook for settings
 export function useSettings() {
   const [settings, setSettings] = useState<AppSettings>(settingsManager.getSettings())
@@ -322,6 +335,3 @@ export function useSettings() {
     resetToDefaults: settingsManager.resetToDefaults.bind(settingsManager),
   }
 }
-
-// Import React for the hook
-import { useState, useEffect } from 'react'
