@@ -30,7 +30,8 @@ export interface LLMParseRequest {
 
 export interface LLMParseResponse {
   success: boolean
-  invoice?: ParsedInvoice
+  invoice?: ParsedInvoice  // For single invoice processing (legacy)
+  invoices?: ParsedInvoice[] // For multi-invoice processing
   confidence: number
   costEstimate: number
   processingTime: number

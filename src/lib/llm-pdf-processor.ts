@@ -262,12 +262,26 @@ export class LLMPdfProcessor {
         context: 'Direct PDF processing',
       })
 
-      if (response.success && response.invoice) {
-        return {
-          success: true,
-          invoices: [response.invoice],
-          confidence: response.confidence,
-          cost: response.totalCost,
+      if (response.success) {
+        // Handle multi-invoice response
+        if (response.invoices && response.invoices.length > 0) {
+          console.log('✅ Multi-invoice response:', response.invoices.length, 'invoices')
+          return {
+            success: true,
+            invoices: response.invoices,
+            confidence: response.confidence,
+            cost: response.costEstimate,
+          }
+        }
+        // Handle single invoice response (legacy)
+        else if (response.invoice) {
+          console.log('✅ Single invoice response')
+          return {
+            success: true,
+            invoices: [response.invoice],
+            confidence: response.confidence,
+            cost: response.costEstimate,
+          }
         }
       }
 
@@ -291,7 +305,12 @@ export class LLMPdfProcessor {
   private createInvoiceExtractionPrompt(): string {
     return `You are an expert invoice data extraction system. Please analyze the attached PDF document and extract structured invoice information.
 
-TASK: Extract ALL invoices found in this PDF document with maximum accuracy.
+CRITICAL TASK: This PDF contains MULTIPLE INVOICES across MULTIPLE PAGES. You MUST:
+1. EXAMINE EVERY SINGLE PAGE of the PDF document
+2. IDENTIFY EVERY INDIVIDUAL INVOICE on each page
+3. EXTRACT ALL invoices found - do not stop after finding one
+4. Each page may contain one or multiple invoices
+5. Look for invoice headers, invoice numbers, vendor names, and totals on EVERY page
 
 For EACH invoice found, extract:
 
@@ -338,7 +357,9 @@ Return a JSON object with this exact structure:
 }
 
 IMPORTANT REQUIREMENTS:
-- Extract ALL invoices in the document (may be multiple pages)
+- Extract ALL invoices in the document (this document has MULTIPLE pages with MULTIPLE invoices)
+- SCAN EVERY PAGE - do not stop after finding the first invoice
+- This PDF likely contains 10+ invoices across multiple pages
 - Prioritize accuracy over speed
 - Use null for any field that cannot be determined
 - Ensure numbers are correctly parsed (handle currency symbols, commas)
@@ -346,7 +367,7 @@ IMPORTANT REQUIREMENTS:
 - If multiple currencies, note the currency in the description
 - Focus on construction/trade invoices (electrical, plumbing, building materials, etc.)
 
-Extract the invoice data now:`
+REMINDER: You are analyzing a MULTI-PAGE PDF with MULTIPLE INVOICES. Examine each page thoroughly and extract every invoice you find. Extract the invoice data now:`
   }
 
   private async fallbackToTextExtraction(

@@ -129,8 +129,7 @@ export class GeminiParser extends BaseLLMParser {
         }
       }
 
-      // Validate and normalize response, preserving pageNumber
-      const invoice = this.validateResponse(parsedData, request.text, request.pageNumber)
+      // Handle both single invoice and multi-invoice responses
       const processingTime = Date.now() - startTime
       const tokensUsed = response.data.usageMetadata
       const costEstimate = this.calculateCost(
@@ -139,21 +138,54 @@ export class GeminiParser extends BaseLLMParser {
         0.00015 // Gemini 1.5 Flash pricing
       )
 
-      return {
-        success: true,
-        invoice,
-        confidence: invoice.confidence,
-        costEstimate,
-        processingTime,
-        tokensUsed: {
-          input: tokensUsed?.promptTokenCount || 0,
-          output: tokensUsed?.candidatesTokenCount || 0,
-        },
-        metadata: {
-          model: this.config.model,
-          provider: 'gemini',
-          reasoning: parsedData.reasoning || 'Successfully parsed with Gemini',
-        },
+      // Check if this is a multi-invoice response
+      if (parsedData.invoices && Array.isArray(parsedData.invoices)) {
+        console.log('📄 Processing multi-invoice response:', parsedData.invoices.length, 'invoices found')
+        
+        // Validate and normalize each invoice
+        const invoices = parsedData.invoices.map((invoiceData: any, index: number) => {
+          return this.validateResponse(invoiceData, request.content || '', (request.pageNumber || 1) + index)
+        })
+
+        // Calculate overall confidence as average
+        const overallConfidence = invoices.reduce((sum, inv) => sum + (inv.confidence || 0), 0) / invoices.length || 0
+
+        return {
+          success: true,
+          invoices,
+          confidence: overallConfidence,
+          costEstimate,
+          processingTime,
+          tokensUsed: {
+            input: tokensUsed?.promptTokenCount || 0,
+            output: tokensUsed?.candidatesTokenCount || 0,
+          },
+          metadata: {
+            model: this.config.model,
+            provider: 'gemini',
+            reasoning: `Multi-invoice extraction: ${invoices.length} invoices found`,
+          },
+        }
+      } else {
+        // Legacy single invoice response
+        const invoice = this.validateResponse(parsedData, request.content || '', request.pageNumber)
+        
+        return {
+          success: true,
+          invoice,
+          confidence: invoice.confidence,
+          costEstimate,
+          processingTime,
+          tokensUsed: {
+            input: tokensUsed?.promptTokenCount || 0,
+            output: tokensUsed?.candidatesTokenCount || 0,
+          },
+          metadata: {
+            model: this.config.model,
+            provider: 'gemini',
+            reasoning: parsedData.reasoning || 'Successfully parsed with Gemini',
+          },
+        }
       }
     } catch (error) {
       return {
