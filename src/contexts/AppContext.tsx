@@ -145,7 +145,7 @@ const createInitialAppState = (): AppState => ({
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AppState>(createInitialAppState)
-  const { settings, updateSettings } = useSettings()
+  const { settings, updateUserSettings } = useSettings()
 
   // ==================== Network Detection ====================
 
@@ -232,9 +232,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         ui: { ...prev.ui, theme },
       }))
       // Update user settings
-      updateSettings({
-        user: { ...settings.user, theme },
-      })
+      updateUserSettings({ theme })
     },
 
     // Loading state
