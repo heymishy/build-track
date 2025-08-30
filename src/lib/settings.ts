@@ -1,117 +1,20 @@
+'use client'
+
 /**
- * Centralized Settings Management
- * Type-safe settings with validation and defaults
+ * Client-Side Settings Management
+ * React hook for settings management in client components
  */
 
 import { useState, useEffect } from 'react'
-
-// Settings Types
-export interface UserSettings {
-  theme: 'light' | 'dark' | 'system'
-  language: 'en' | 'en-NZ'
-  currency: 'NZD' | 'USD' | 'AUD'
-  dateFormat: 'DD/MM/YYYY' | 'MM/DD/YYYY' | 'YYYY-MM-DD'
-  timezone: string
-  notifications: {
-    email: boolean
-    browser: boolean
-    invoiceApproval: boolean
-    milestoneDeadlines: boolean
-    budgetAlerts: boolean
-  }
-  dashboard: {
-    defaultView: 'overview' | 'projects' | 'invoices'
-    showQuickStats: boolean
-    projectsPerPage: number
-  }
-}
-
-export interface ProjectSettings {
-  defaultMarkupPercent: number
-  defaultOverheadPercent: number
-  defaultCurrency: string
-  requireApprovalForInvoices: boolean
-  autoMatchInvoices: boolean
-  budgetAlertThreshold: number // percentage
-  milestoneReminderDays: number
-}
-
-export interface SystemSettings {
-  pdfProcessing: {
-    provider: 'gemini' | 'anthropic' | 'openai'
-    fallbackProvider: 'gemini' | 'anthropic' | 'openai'
-    confidenceThreshold: number
-    maxFileSize: number // bytes
-    allowedFormats: string[]
-  }
-  invoiceMatching: {
-    autoApproveHighConfidence: boolean
-    highConfidenceThreshold: number
-    requireManualReview: boolean
-  }
-  backup: {
-    enabled: boolean
-    frequency: 'daily' | 'weekly' | 'monthly'
-    retentionDays: number
-  }
-}
-
-export interface AppSettings {
-  user: UserSettings
-  project: ProjectSettings
-  system: SystemSettings
-}
-
-// Default Settings
-export const defaultUserSettings: UserSettings = {
-  theme: 'system',
-  language: 'en-NZ',
-  currency: 'NZD',
-  dateFormat: 'DD/MM/YYYY',
-  timezone: 'Pacific/Auckland',
-  notifications: {
-    email: true,
-    browser: true,
-    invoiceApproval: true,
-    milestoneDeadlines: true,
-    budgetAlerts: true,
-  },
-  dashboard: {
-    defaultView: 'overview',
-    showQuickStats: true,
-    projectsPerPage: 10,
-  },
-}
-
-export const defaultProjectSettings: ProjectSettings = {
-  defaultMarkupPercent: 15,
-  defaultOverheadPercent: 10,
-  defaultCurrency: 'NZD',
-  requireApprovalForInvoices: true,
-  autoMatchInvoices: true,
-  budgetAlertThreshold: 85,
-  milestoneReminderDays: 7,
-}
-
-export const defaultSystemSettings: SystemSettings = {
-  pdfProcessing: {
-    provider: 'gemini',
-    fallbackProvider: 'anthropic',
-    confidenceThreshold: 0.7,
-    maxFileSize: 10 * 1024 * 1024, // 10MB
-    allowedFormats: ['application/pdf', 'image/jpeg', 'image/png'],
-  },
-  invoiceMatching: {
-    autoApproveHighConfidence: false,
-    highConfidenceThreshold: 0.9,
-    requireManualReview: true,
-  },
-  backup: {
-    enabled: true,
-    frequency: 'daily',
-    retentionDays: 30,
-  },
-}
+import {
+  AppSettings,
+  UserSettings,
+  ProjectSettings,
+  SystemSettings,
+  defaultUserSettings,
+  defaultProjectSettings,
+  defaultSystemSettings,
+} from './settings-server'
 
 // Settings validation schemas
 const userSettingsSchema = {
@@ -124,7 +27,7 @@ const userSettingsSchema = {
     ['DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD'].includes(value),
 }
 
-// Settings Manager Class
+// Settings Manager Class (Client-Side Only)
 export class SettingsManager {
   private settings: AppSettings
   private readonly STORAGE_KEY = 'buildtrack_settings'
@@ -303,17 +206,6 @@ export class SettingsManager {
 
 // Global settings instance
 export const settingsManager = new SettingsManager()
-
-// Server-safe function to get settings without React hooks
-export async function getSettings(userId?: string): Promise<AppSettings> {
-  // For now, return default settings
-  // In the future, this could load user-specific settings from database
-  return {
-    user: defaultUserSettings,
-    project: defaultProjectSettings,
-    system: defaultSystemSettings,
-  }
-}
 
 // React hook for settings
 export function useSettings() {

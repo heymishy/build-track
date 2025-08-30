@@ -5,7 +5,7 @@
  */
 
 import { ParsedInvoice, InvoiceLineItem, MultiInvoiceResult } from './pdf-parser'
-import { getSettings } from './settings'
+import { getSettings } from './settings-server'
 import { GeminiParser } from './llm-parsers/gemini-parser'
 import { AnthropicParser } from './llm-parsers/anthropic-parser'
 import { BaseLLMParser } from './llm-parsers/base-llm-parser'
