@@ -112,12 +112,12 @@ export async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string[]> {
       };
     }
 
-    // Dynamic import of pdfjs-dist legacy build for server-side usage
+    // EXACT same import as working commit b996513
     const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs')
 
-    // Set worker source for Node.js environment - use public worker file for Vercel compatibility
+    // EXACT same worker config as working commit b996513 
     if (typeof window === 'undefined') {
-      pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js'
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'pdfjs-dist/legacy/build/pdf.worker.mjs'
     }
 
     // Convert Buffer to Uint8Array for PDF.js
