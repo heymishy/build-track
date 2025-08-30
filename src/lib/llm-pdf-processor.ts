@@ -46,11 +46,31 @@ export class LLMPdfProcessor {
   }
 
   private initializeParsers() {
-    // Initialize available LLM parsers
-    this.parsers.set('gemini', new GeminiParser())
-    this.parsers.set('anthropic', new AnthropicParser())
-    // OpenAI parser can be added when available
-    // this.parsers.set('openai', new OpenAIParser())
+    // Initialize available LLM parsers with basic configuration
+    // For development, provide minimal config to prevent errors
+    
+    if (process.env.GEMINI_API_KEY) {
+      this.parsers.set('gemini', new GeminiParser({
+        apiKey: process.env.GEMINI_API_KEY,
+        model: 'gemini-1.5-flash',
+        timeout: 30000,
+        maxRetries: 2,
+      }))
+    }
+
+    if (process.env.ANTHROPIC_API_KEY) {
+      this.parsers.set('anthropic', new AnthropicParser({
+        apiKey: process.env.ANTHROPIC_API_KEY,
+        model: 'claude-3-haiku-20240307',
+        timeout: 30000,
+        maxRetries: 2,
+      }))
+    }
+    
+    // If no API keys available, log a warning but don't crash
+    if (this.parsers.size === 0) {
+      console.warn('⚠️ No LLM API keys configured - PDF processing will use text extraction fallback only')
+    }
   }
 
   /**
@@ -72,6 +92,13 @@ export class LLMPdfProcessor {
       console.log('   - Provider:', pdfSettings.provider)
       console.log('   - Fallback:', pdfSettings.fallbackProvider)
       console.log('   - Buffer size:', pdfBuffer.length, 'bytes')
+      console.log('   - Available parsers:', Array.from(this.parsers.keys()))
+
+      // Check if we have any parsers configured
+      if (this.parsers.size === 0) {
+        console.log('⚠️ No LLM parsers available - skipping to text extraction fallback')
+        return await this.fallbackToTextExtraction(pdfBuffer, 0, Date.now() - startTime)
+      }
 
       // Try primary provider
       let result = await this.tryProviderWithPdf(
@@ -274,16 +301,49 @@ Extract the invoice data now:`
     try {
       console.log('📄 Falling back to text extraction method...')
 
-      // Import the text extraction method
-      const { extractTextFromPDF, parseMultipleInvoices } = await import('./pdf-parser')
-
-      // Use existing text extraction as fallback
-      const result = await parseMultipleInvoices(
-        pdfBuffer,
-        this.options.userId,
-        false,
-        this.options.projectId
-      )
+      // Use simple text extraction approach to avoid recursion
+      const { extractTextFromPDF, parseInvoiceFromTextTraditional } = await import('./pdf-parser')
+      
+      // Extract text from PDF
+      const pages = await extractTextFromPDF(pdfBuffer)
+      console.log('📄 Extracted text from', pages.length, 'pages')
+      
+      // Parse invoices from extracted text
+      const invoices: ParsedInvoice[] = []
+      for (let i = 0; i < pages.length; i++) {
+        try {
+          const invoice = await parseInvoiceFromTextTraditional(pages[i], i + 1)
+          if (invoice) {
+            invoices.push(invoice)
+          }
+        } catch (error) {
+          console.warn(`Failed to parse page ${i + 1}:`, error)
+        }
+      }
+      
+      const totalAmount = invoices.reduce((sum, inv) => sum + (inv.total || 0), 0)
+      
+      const result = {
+        invoices,
+        totalInvoices: invoices.length,
+        totalAmount,
+        summary: `📄 Text extraction found ${invoices.length} invoice(s)`,
+        parsingStats: {
+          llmUsed: false,
+          totalCost: 0,
+          averageConfidence: 0.5,
+          strategy: 'text-extraction-fallback',
+        },
+        qualityMetrics: {
+          overallAccuracy: 0.5,
+          extractionQuality: 0.6,
+          parsingSuccess: invoices.length > 0 ? 1.0 : 0.0,
+          dataCompleteness: 0.7,
+          corruptionDetected: false,
+          issuesFound: [],
+          recommendedAction: undefined,
+        },
+      }
 
       // Enhance with LLM processing metadata
       return {
