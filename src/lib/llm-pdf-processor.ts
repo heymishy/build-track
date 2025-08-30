@@ -42,34 +42,87 @@ export class LLMPdfProcessor {
       confidenceThreshold: 0.7,
       ...options,
     }
-    this.initializeParsers()
+    // Note: initializeParsers is now async and called in processPdfWithLLM
   }
 
-  private initializeParsers() {
-    // Initialize available LLM parsers with basic configuration
-    // For development, provide minimal config to prevent errors
+  private async initializeParsers() {
+    // Initialize available LLM parsers using settings-configured API keys
+    console.log('🔧 Initializing LLM parsers from user settings...')
     
-    if (process.env.GEMINI_API_KEY) {
-      this.parsers.set('gemini', new GeminiParser({
-        apiKey: process.env.GEMINI_API_KEY,
-        model: 'gemini-1.5-flash',
-        timeout: 30000,
-        maxRetries: 2,
-      }))
-    }
+    try {
+      // Get API keys from settings service
+      const { SettingsService } = await import('./settings-service')
+      const settingsService = new SettingsService(this.options.userId || '')
+      const settings = await settingsService.getSettings()
+      
+      console.log('🔑 Available API keys:', Object.keys(settings.apiKeys))
+      
+      // Initialize Gemini parser if API key is available
+      if (settings.apiKeys.gemini) {
+        console.log('✅ Initializing Gemini parser with settings API key')
+        this.parsers.set('gemini', new GeminiParser({
+          apiKey: settings.apiKeys.gemini,
+          model: 'gemini-1.5-flash',
+          timeout: 30000,
+          maxRetries: 2,
+        }))
+      }
 
-    if (process.env.ANTHROPIC_API_KEY) {
-      this.parsers.set('anthropic', new AnthropicParser({
-        apiKey: process.env.ANTHROPIC_API_KEY,
-        model: 'claude-3-haiku-20240307',
-        timeout: 30000,
-        maxRetries: 2,
-      }))
+      // Initialize Anthropic parser if API key is available  
+      if (settings.apiKeys.anthropic) {
+        console.log('✅ Initializing Anthropic parser with settings API key')
+        this.parsers.set('anthropic', new AnthropicParser({
+          apiKey: settings.apiKeys.anthropic,
+          model: 'claude-3-haiku-20240307',
+          timeout: 30000,
+          maxRetries: 2,
+        }))
+      }
+
+      // Fallback to environment variables if no settings API keys
+      if (this.parsers.size === 0) {
+        console.log('📋 No API keys in settings, checking environment variables...')
+        
+        if (process.env.GEMINI_API_KEY) {
+          console.log('✅ Found Gemini API key in environment variables')
+          this.parsers.set('gemini', new GeminiParser({
+            apiKey: process.env.GEMINI_API_KEY,
+            model: 'gemini-1.5-flash',
+            timeout: 30000,
+            maxRetries: 2,
+          }))
+        }
+
+        if (process.env.ANTHROPIC_API_KEY) {
+          console.log('✅ Found Anthropic API key in environment variables')
+          this.parsers.set('anthropic', new AnthropicParser({
+            apiKey: process.env.ANTHROPIC_API_KEY,
+            model: 'claude-3-haiku-20240307',
+            timeout: 30000,
+            maxRetries: 2,
+          }))
+        }
+      }
+      
+    } catch (error) {
+      console.warn('⚠️ Error loading API keys from settings:', error)
+      console.log('📋 Falling back to environment variables only...')
+      
+      if (process.env.GEMINI_API_KEY) {
+        this.parsers.set('gemini', new GeminiParser({
+          apiKey: process.env.GEMINI_API_KEY,
+          model: 'gemini-1.5-flash',
+          timeout: 30000,
+          maxRetries: 2,
+        }))
+      }
     }
     
-    // If no API keys available, log a warning but don't crash
+    // Final status
     if (this.parsers.size === 0) {
       console.warn('⚠️ No LLM API keys configured - PDF processing will use text extraction fallback only')
+    } else {
+      console.log('🚀 LLM parsers initialized:', Array.from(this.parsers.keys()))
     }
   }
 
@@ -84,6 +137,9 @@ export class LLMPdfProcessor {
     const maxAttempts = this.options.maxRetries! + 1
 
     try {
+      // Initialize parsers with API keys from settings
+      await this.initializeParsers()
+      
       // Get user's LLM settings
       const settings = await getSettings(this.options.userId)
       const pdfSettings = settings.system.pdfProcessing
