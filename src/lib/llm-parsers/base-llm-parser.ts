@@ -6,8 +6,13 @@
 import { ParsedInvoice } from '@/lib/pdf-parser'
 
 export interface LLMParseRequest {
-  text: string
+  content: string  // Renamed from 'text' to be more generic
   pageNumber?: number
+  attachments?: Array<{   // NEW: Support for PDF/image attachments
+    type: 'application/pdf' | 'image/jpeg' | 'image/png'
+    data: string  // Base64 encoded data
+    filename?: string
+  }>
   context?: {
     previousInvoices?: ParsedInvoice[]
     expectedFormat?: 'nz-tax-invoice' | 'au-tax-invoice' | 'construction-invoice' | 'generic'

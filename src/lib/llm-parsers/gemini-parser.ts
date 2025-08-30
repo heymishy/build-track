@@ -58,8 +58,8 @@ export class GeminiParser extends BaseLLMParser {
 
       const prompt = this.generateGeminiPrompt(request)
 
-      // Make API call to Gemini
-      const response = await this.callGeminiAPI(prompt, request.options)
+      // Make API call to Gemini (updated to support attachments)
+      const response = await this.callGeminiAPI(prompt, request.options, request.attachments)
 
       if (!response.success) {
         return {
@@ -173,7 +173,12 @@ export class GeminiParser extends BaseLLMParser {
 
   private async callGeminiAPI(
     prompt: string,
-    options?: any
+    options?: any,
+    attachments?: Array<{
+      type: 'application/pdf' | 'image/jpeg' | 'image/png'
+      data: string  // Base64 encoded
+      filename?: string
+    }>
   ): Promise<{
     success: boolean
     data?: GeminiResponse
@@ -181,6 +186,36 @@ export class GeminiParser extends BaseLLMParser {
   }> {
     try {
       const url = `${this.config.baseUrl}/${this.config.model}:generateContent?key=${this.config.apiKey}`
+
+      // Build parts array with text prompt and attachments
+      const parts: any[] = [
+        {
+          text: prompt,
+        },
+      ]
+
+      // Add PDF/image attachments if provided
+      if (attachments && attachments.length > 0) {
+        console.log('🖼️ Adding attachments to Gemini request:', attachments.length)
+        
+        for (const attachment of attachments) {
+          if (attachment.type === 'application/pdf') {
+            parts.push({
+              inline_data: {
+                mime_type: 'application/pdf',
+                data: attachment.data,
+              },
+            })
+          } else if (attachment.type.startsWith('image/')) {
+            parts.push({
+              inline_data: {
+                mime_type: attachment.type,
+                data: attachment.data,
+              },
+            })
+          }
+        }
+      }
 
       const response = await fetch(url, {
         method: 'POST',
@@ -190,11 +225,7 @@ export class GeminiParser extends BaseLLMParser {
         body: JSON.stringify({
           contents: [
             {
-              parts: [
-                {
-                  text: prompt,
-                },
-              ],
+              parts: parts,
             },
           ],
           generationConfig: {
@@ -255,13 +286,24 @@ export class GeminiParser extends BaseLLMParser {
   }
 
   private generateGeminiPrompt(request: LLMParseRequest): string {
-    const { text, context, pageNumber } = request
+    const { content, context, pageNumber } = request
 
     // Optimized prompt for Gemini - more concise to reduce token usage
-    return `Extract invoice data from this construction invoice text. Focus on accuracy and provide confidence scoring.
+    let prompt = ''
+    
+    // Check if we have attachments (PDF/images) or just text content
+    if (request.attachments && request.attachments.length > 0) {
+      prompt = `Extract invoice data from the attached PDF document. Focus on accuracy and provide confidence scoring.
+
+TASK: Analyze the attached PDF and extract structured invoice information.`
+    } else {
+      prompt = `Extract invoice data from this construction invoice text. Focus on accuracy and provide confidence scoring.
 
 INVOICE TEXT (Page ${pageNumber || 1}):
-${text}
+${content}`
+    }
+
+    prompt += `
 
 CONTEXT:
 ${context?.supplierName ? `Supplier: ${context.supplierName}` : ''}
@@ -296,13 +338,8 @@ Return ONLY valid JSON:
     }
   ],
   "confidence": number,
-  "reasoning": "Brief extraction explanation and confidence rationale"
-}
+  "reasoning": "Brief extraction explanation and confidence rationale"`
 
-Rules:
-- Numbers only for amounts (no strings)
-- Use null if field not found
-- Confidence 0.0-1.0 based on data clarity
-- Total should equal amount + tax`
+    return prompt
   }
 }
