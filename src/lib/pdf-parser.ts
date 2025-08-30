@@ -115,9 +115,11 @@ export async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string[]> {
     // Dynamic import of pdfjs-dist legacy build for server-side usage
     const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs')
 
-    // Set worker source for Node.js environment
+    // Disable worker for serverless environments (Vercel)
     if (typeof window === 'undefined') {
-      pdfjsLib.GlobalWorkerOptions.workerSrc = 'pdfjs-dist/legacy/build/pdf.worker.mjs'
+      pdfjsLib.GlobalWorkerOptions.workerSrc = null
+      // Disable workers entirely for server-side processing
+      pdfjsLib.disableWorker = true
     }
 
     // Convert Buffer to Uint8Array for PDF.js
@@ -130,6 +132,8 @@ export async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string[]> {
       useSystemFonts: true,
       disableFontFace: false,
       isEvalSupported: false,
+      useWorkerFetch: false, // Disable worker fetch in serverless environment
+      disableWorker: true, // Force disable worker
     })
 
     const pdf = await loadingTask.promise
