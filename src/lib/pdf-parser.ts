@@ -71,91 +71,27 @@ export interface MultiInvoiceResult {
 }
 
 /**
- * Extract text from PDF buffer using pdfjs-dist, returning page-by-page text
+ * Extract text from PDF buffer using pdf-parse (Node.js compatible)
+ * Returns page-by-page text like the original working implementation
  */
 export async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string[]> {
   try {
     console.log('PDF buffer size:', pdfBuffer.length, 'bytes')
 
-    // Add DOM polyfills for server-side PDF.js
-    if (typeof window === 'undefined') {
-      // @ts-ignore - Global polyfills for server environment
-      global.DOMMatrix = global.DOMMatrix || class DOMMatrix {
-        constructor(init?: string | number[]) {
-          // Minimal DOMMatrix implementation for PDF.js
-          this.a = 1; this.b = 0; this.c = 0; this.d = 1; this.e = 0; this.f = 0;
-          if (Array.isArray(init)) {
-            this.a = init[0] || 1; this.b = init[1] || 0; this.c = init[2] || 0;
-            this.d = init[3] || 1; this.e = init[4] || 0; this.f = init[5] || 0;
-          }
-        }
-        scale(x: number, y = x) { return new (global.DOMMatrix as any)([this.a * x, this.b * x, this.c * y, this.d * y, this.e, this.f]); }
-        translate(x: number, y: number) { return new (global.DOMMatrix as any)([this.a, this.b, this.c, this.d, this.e + x, this.f + y]); }
-        multiply(other: any) { return this; }
-      };
-      
-      // @ts-ignore - ImageData polyfill
-      global.ImageData = global.ImageData || class ImageData {
-        constructor(width: number, height: number) {
-          this.width = width;
-          this.height = height;
-          this.data = new Uint8ClampedArray(width * height * 4);
-        }
-      };
-      
-      // @ts-ignore - Path2D polyfill
-      global.Path2D = global.Path2D || class Path2D {
-        constructor() {}
-        moveTo() {}
-        lineTo() {}
-        closePath() {}
-      };
-    }
+    // Use pdf-parse for simple, reliable text extraction
+    const pdfParse = (await import('pdf-parse')).default
 
-    // EXACT same import as working commit b996513
-    const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs')
-
-    // EXACT same worker config as working commit b996513 
-    if (typeof window === 'undefined') {
-      pdfjsLib.GlobalWorkerOptions.workerSrc = 'pdfjs-dist/legacy/build/pdf.worker.mjs'
-    }
-
-    // Convert Buffer to Uint8Array for PDF.js
-    const uint8Array = new Uint8Array(pdfBuffer)
-
-    // Load the PDF document with error handling - simple configuration like working version
-    const loadingTask = pdfjsLib.getDocument({
-      data: uint8Array,
-      verbosity: 0, // Reduce console output
-      useSystemFonts: true,
-      disableFontFace: false,
-      isEvalSupported: false,
+    const pdfData = await pdfParse(pdfBuffer, {
+      // Keep text formatting and spacing
+      normalizeWhitespace: false,
+      disableCombineTextItems: false,
     })
 
-    const pdf = await loadingTask.promise
-    console.log('PDF loaded successfully, pages:', pdf.numPages)
+    console.log('PDF loaded successfully, pages:', pdfData.numpages)
 
-    const pages: string[] = []
-
-    // Extract text from each page separately
-    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-      try {
-        const page = await pdf.getPage(pageNum)
-        const textContent = await page.getTextContent()
-
-        // Extract text items and join them
-        const pageText = textContent.items
-          .filter((item): item is any => 'str' in item)
-          .map((item: any) => item.str)
-          .join(' ')
-
-        pages.push(pageText.trim())
-      } catch (pageError) {
-        console.warn(`Error extracting text from page ${pageNum}:`, pageError)
-        // Add empty string for failed pages to maintain page indexing
-        pages.push('')
-      }
-    }
+    // Split text into pages using common page break indicators
+    const fullText = pdfData.text
+    const pages = splitTextIntoPages(fullText, pdfData.numpages)
 
     console.log(
       'PDF text extracted successfully, pages:',
@@ -178,6 +114,45 @@ export async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string[]> {
     })
     throw error
   }
+}
+
+/**
+ * Split full PDF text into pages using heuristics
+ * This approximates the page-by-page extraction from the original working implementation
+ */
+function splitTextIntoPages(text: string, numPages: number): string[] {
+  if (numPages === 1) {
+    return [text]
+  }
+
+  // Split by common page break patterns
+  let pages = text.split(/(?:\n\s*){3,}|\f|\x0C/g) // Form feeds or large gaps
+
+  // If we don't have enough splits, try other patterns
+  if (pages.length < numPages) {
+    // Split by invoice headers or other common patterns
+    pages = text.split(/(?=(?:invoice|tax\s+invoice|statement|bill|receipt)\s*\n)/gi)
+  }
+
+  // If still not enough, split by equal length chunks as fallback
+  if (pages.length < numPages && text.length > 100) {
+    const chunkSize = Math.ceil(text.length / numPages)
+    pages = []
+    for (let i = 0; i < text.length; i += chunkSize) {
+      pages.push(text.substring(i, i + chunkSize))
+    }
+  }
+
+  // Ensure we have the right number of pages (pad or trim as needed)
+  while (pages.length < numPages) {
+    pages.push('')
+  }
+  if (pages.length > numPages) {
+    pages = pages.slice(0, numPages)
+  }
+
+  // Clean up each page
+  return pages.map(page => page.trim())
 }
 
 /**
