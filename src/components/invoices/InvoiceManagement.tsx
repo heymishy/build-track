@@ -18,6 +18,8 @@ import {
   ExclamationTriangleIcon,
   XCircleIcon,
   XMarkIcon,
+  Square3Stack3DIcon,
+  CheckIcon,
 } from '@heroicons/react/24/outline'
 import { InvoiceApprovalModal } from './InvoiceApprovalModal'
 import { InvoiceCategorySummary } from './InvoiceCategorySummary'
@@ -101,6 +103,13 @@ export function InvoiceManagement({
   // Mock current project (in real implementation, this would come from context)
   const currentProject = getCurrentProject()
 
+  // Multi-select state
+  const [selectedInvoiceIds, setSelectedInvoiceIds] = useState<Set<string>>(new Set())
+  const [showBulkActions, setShowBulkActions] = useState(false)
+  const [isSelectAllMode, setIsSelectAllMode] = useState(false)
+  const [projectFilter, setProjectFilter] = useState<string>('')
+  const [availableProjects, setAvailableProjects] = useState<Array<{id: string, name: string}>>([])
+
   // Pagination
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
@@ -108,7 +117,23 @@ export function InvoiceManagement({
 
   useEffect(() => {
     fetchInvoices()
-  }, [projectId, currentPage, searchTerm, statusFilter])
+  }, [projectId, currentPage, searchTerm, statusFilter, projectFilter])
+
+  // Fetch available projects for filtering
+  useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        const response = await fetch('/api/projects')
+        const data = await response.json()
+        if (data.success) {
+          setAvailableProjects(data.projects.map((p: any) => ({ id: p.id, name: p.name })))
+        }
+      } catch (err) {
+        console.error('Failed to fetch projects for filtering:', err)
+      }
+    }
+    fetchProjects()
+  }, [])
 
   const fetchInvoices = async () => {
     try {
@@ -118,7 +143,15 @@ export function InvoiceManagement({
         limit: '20',
       })
 
-      if (projectId) params.append('projectId', projectId)
+      // Handle project filtering - either from parent projectId or filter selection
+      const activeProjectId = projectId || projectFilter
+      if (activeProjectId) {
+        if (activeProjectId === 'unlinked') {
+          params.append('unlinked', 'true')
+        } else {
+          params.append('projectId', activeProjectId)
+        }
+      }
       if (searchTerm) params.append('search', searchTerm)
       if (statusFilter !== 'all') params.append('status', statusFilter)
 
@@ -260,6 +293,135 @@ export function InvoiceManagement({
     }
   }
 
+  // Multi-select functions
+  const handleToggleSelect = (invoiceId: string) => {
+    setSelectedInvoiceIds(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(invoiceId)) {
+        newSet.delete(invoiceId)
+      } else {
+        newSet.add(invoiceId)
+      }
+      setShowBulkActions(newSet.size > 0)
+      return newSet
+    })
+  }
+
+  const handleSelectAll = () => {
+    if (isSelectAllMode) {
+      setSelectedInvoiceIds(new Set())
+      setIsSelectAllMode(false)
+      setShowBulkActions(false)
+    } else {
+      const allIds = new Set(invoices.map(inv => inv.id))
+      setSelectedInvoiceIds(allIds)
+      setIsSelectAllMode(true)
+      setShowBulkActions(allIds.size > 0)
+    }
+  }
+
+  const handleBulkDelete = async () => {
+    const selectedIds = Array.from(selectedInvoiceIds)
+    if (selectedIds.length === 0) return
+
+    const confirmMessage = `Are you sure you want to delete ${selectedIds.length} invoice${selectedIds.length > 1 ? 's' : ''}? This action cannot be undone.`
+    if (!confirm(confirmMessage)) return
+
+    try {
+      const deletePromises = selectedIds.map(id =>
+        fetch(`/api/invoices/${id}`, { method: 'DELETE' })
+      )
+      
+      const results = await Promise.all(deletePromises)
+      const successful = results.filter(r => r.ok).length
+      
+      if (successful > 0) {
+        setInvoices(prev => prev.filter(inv => !selectedInvoiceIds.has(inv.id)))
+        setSelectedInvoiceIds(new Set())
+        setShowBulkActions(false)
+        setIsSelectAllMode(false)
+      }
+      
+      if (successful < selectedIds.length) {
+        setError(`Successfully deleted ${successful} of ${selectedIds.length} invoices`)
+      }
+    } catch (err) {
+      setError('Failed to delete selected invoices')
+      console.error('Bulk delete error:', err)
+    }
+  }
+
+  const handleBulkStatusUpdate = async (newStatus: string) => {
+    const selectedIds = Array.from(selectedInvoiceIds)
+    if (selectedIds.length === 0) return
+
+    try {
+      const updatePromises = selectedIds.map(id =>
+        fetch(`/api/invoices/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: newStatus }),
+        })
+      )
+      
+      const results = await Promise.all(updatePromises)
+      const successful = results.filter(r => r.ok).length
+      
+      if (successful > 0) {
+        setInvoices(prev =>
+          prev.map(inv => 
+            selectedInvoiceIds.has(inv.id) ? { ...inv, status: newStatus as any } : inv
+          )
+        )
+        setSelectedInvoiceIds(new Set())
+        setShowBulkActions(false)
+        setIsSelectAllMode(false)
+      }
+      
+      if (successful < selectedIds.length) {
+        setError(`Successfully updated ${successful} of ${selectedIds.length} invoices`)
+      }
+    } catch (err) {
+      setError('Failed to update selected invoices')
+      console.error('Bulk status update error:', err)
+    }
+  }
+
+  const handleDeleteAllInProject = async () => {
+    const currentProjectId = projectId || projectFilter
+    if (!currentProjectId) {
+      setError('Please select a project to delete all invoices')
+      return
+    }
+
+    const projectName = projectId 
+      ? 'current project' 
+      : availableProjects.find(p => p.id === projectFilter)?.name || 'selected project'
+
+    if (!confirm(`Are you sure you want to delete ALL invoices in ${projectName}? This action cannot be undone.`)) {
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/invoices/delete-all-project?projectId=${currentProjectId}`, {
+        method: 'DELETE',
+      })
+      
+      const data = await response.json()
+      if (data.success) {
+        fetchInvoices() // Refresh the list
+        setSelectedInvoiceIds(new Set())
+        setShowBulkActions(false)
+        setIsSelectAllMode(false)
+      } else {
+        setError(data.error || 'Failed to delete all invoices')
+      }
+    } catch (err) {
+      setError('Failed to delete all project invoices')
+      console.error('Delete all project invoices error:', err)
+    }
+  }
+
   if (loading) {
     return (
       <div className={`bg-white rounded-lg shadow p-6 ${className}`}>
@@ -363,35 +525,122 @@ export function InvoiceManagement({
 
         {/* Filters */}
         {showFilters && (
-          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
-              <div className="relative">
-                <MagnifyingGlassIcon className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                <input
-                  type="text"
-                  value={searchTerm}
-                  onChange={e => setSearchTerm(e.target.value)}
-                  placeholder="Invoice number, supplier..."
-                  className="pl-10 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                />
+          <div className="mt-4 space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
+                <div className="relative">
+                  <MagnifyingGlassIcon className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="text"
+                    value={searchTerm}
+                    onChange={e => setSearchTerm(e.target.value)}
+                    placeholder="Invoice number, supplier..."
+                    className="pl-10 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                  />
+                </div>
               </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                <select
+                  value={statusFilter}
+                  onChange={e => setStatusFilter(e.target.value)}
+                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                >
+                  <option value="all">All Statuses</option>
+                  <option value="PENDING">Pending</option>
+                  <option value="APPROVED">Approved</option>
+                  <option value="PAID">Paid</option>
+                  <option value="DISPUTED">Disputed</option>
+                  <option value="REJECTED">Rejected</option>
+                </select>
+              </div>
+              {!projectId && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Project</label>
+                  <select
+                    value={projectFilter}
+                    onChange={e => setProjectFilter(e.target.value)}
+                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                  >
+                    <option value="">All Projects</option>
+                    <option value="unlinked">Unlinked</option>
+                    {availableProjects.map(project => (
+                      <option key={project.id} value={project.id}>{project.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-              <select
-                value={statusFilter}
-                onChange={e => setStatusFilter(e.target.value)}
-                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+          </div>
+        )}
+
+        {/* Multi-select Controls */}
+        {invoices.length > 0 && (
+          <div className="mt-4 flex items-center justify-between px-6 py-3 bg-gray-50">
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={handleSelectAll}
+                className="flex items-center text-sm text-gray-600 hover:text-gray-800"
               >
-                <option value="all">All Statuses</option>
-                <option value="PENDING">Pending</option>
-                <option value="APPROVED">Approved</option>
-                <option value="PAID">Paid</option>
-                <option value="DISPUTED">Disputed</option>
-                <option value="REJECTED">Rejected</option>
-              </select>
+                <div className="relative">
+                  <input
+                    type="checkbox"
+                    checked={isSelectAllMode}
+                    onChange={() => {}}
+                    className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  {isSelectAllMode && (
+                    <CheckIcon className="h-3 w-3 absolute inset-0.5 text-white pointer-events-none" />
+                  )}
+                </div>
+                <span className="ml-2">
+                  {isSelectAllMode ? 'Deselect All' : 'Select All'}
+                  {selectedInvoiceIds.size > 0 && ` (${selectedInvoiceIds.size} selected)`}
+                </span>
+              </button>
+
+              {selectedInvoiceIds.size > 0 && (
+                <span className="text-sm text-gray-500">
+                  {selectedInvoiceIds.size} invoice{selectedInvoiceIds.size > 1 ? 's' : ''} selected
+                </span>
+              )}
             </div>
+
+            {showBulkActions && (
+              <div className="flex items-center space-x-2">
+                <select
+                  onChange={e => e.target.value && handleBulkStatusUpdate(e.target.value)}
+                  defaultValue=""
+                  className="text-sm border-gray-300 rounded-md focus:border-blue-500 focus:ring-blue-500"
+                >
+                  <option value="">Update Status...</option>
+                  <option value="PENDING">Mark as Pending</option>
+                  <option value="APPROVED">Mark as Approved</option>
+                  <option value="PAID">Mark as Paid</option>
+                  <option value="DISPUTED">Mark as Disputed</option>
+                  <option value="REJECTED">Mark as Rejected</option>
+                </select>
+                
+                <button
+                  onClick={handleBulkDelete}
+                  className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700"
+                >
+                  <TrashIcon className="h-4 w-4 mr-1" />
+                  Delete Selected
+                </button>
+
+                {(projectId || projectFilter) && (
+                  <button
+                    onClick={handleDeleteAllInProject}
+                    className="inline-flex items-center px-3 py-1.5 border border-red-300 text-sm font-medium rounded-md text-red-700 bg-red-50 hover:bg-red-100"
+                  >
+                    <Square3Stack3DIcon className="h-4 w-4 mr-1" />
+                    Delete All in Project
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -430,8 +679,18 @@ export function InvoiceManagement({
                 {invoices.map(invoice => (
                   <div key={invoice.id} className="px-6 py-4 hover:bg-gray-50">
                     <div className="flex items-center justify-between">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center space-x-3">
+                      <div className="flex items-center space-x-3 flex-1 min-w-0">
+                        {/* Checkbox */}
+                        <div className="flex-shrink-0">
+                          <input
+                            type="checkbox"
+                            checked={selectedInvoiceIds.has(invoice.id)}
+                            onChange={() => handleToggleSelect(invoice.id)}
+                            className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          />
+                        </div>
+                        
+                        <div className="flex items-center space-x-3 flex-1 min-w-0">
                           <div>
                             <p className="text-sm font-medium text-gray-900 truncate">
                               {invoice.invoiceNumber}

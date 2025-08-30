@@ -12,6 +12,7 @@ async function GET(request: NextRequest, user: AuthUser) {
   try {
     const { searchParams } = new URL(request.url)
     const projectId = searchParams.get('projectId')
+    const unlinked = searchParams.get('unlinked') === 'true'
     const status = searchParams.get('status')
     const search = searchParams.get('search')
     const startDate = searchParams.get('startDate')
@@ -41,6 +42,9 @@ async function GET(request: NextRequest, user: AuthUser) {
     // Add project filter if provided
     if (projectId) {
       whereClause.AND.push({ projectId })
+    } else if (unlinked) {
+      // Filter for invoices not linked to any project
+      whereClause.AND.push({ projectId: null })
     }
 
     // Add status filter if provided
