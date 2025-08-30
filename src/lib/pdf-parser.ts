@@ -115,14 +115,10 @@ export async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string[]> {
     // Dynamic import of pdfjs-dist legacy build for server-side usage
     const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs')
 
-    // Set worker source for Node.js environment (Vercel compatible)
+    // For server environments: completely disable worker system
     if (typeof window === 'undefined') {
-      // Try to disable worker for serverless - if this fails, PDF.js will fallback to main thread
-      try {
-        pdfjsLib.GlobalWorkerOptions.workerSrc = null
-      } catch (e) {
-        console.log('Worker disable failed, continuing with main thread')
-      }
+      // The key fix: set workerSrc to false to disable worker completely
+      pdfjsLib.GlobalWorkerOptions.workerSrc = false
     }
 
     // Convert Buffer to Uint8Array for PDF.js
