@@ -73,9 +73,9 @@ async function GET(request: NextRequest, user: AuthUser, { params }: { params: {
 }
 
 // PATCH /api/invoices/[id] - Update invoice (mainly status)
-async function PATCH(request: NextRequest, user: AuthUser, { params }: { params: { id: string } }) {
+async function PATCH(request: NextRequest, user: AuthUser, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const invoiceId = params.id
+    const { id: invoiceId } = await params
     const body = await request.json()
     const { status, notes, dueDate } = body
 
@@ -142,10 +142,10 @@ async function PATCH(request: NextRequest, user: AuthUser, { params }: { params:
 async function DELETE(
   request: NextRequest,
   user: AuthUser,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const invoiceId = params.id
+    const { id: invoiceId } = await params
 
     // Verify user has access to this invoice and is authorized to delete
     const existingInvoice = await prisma.invoice.findFirst({

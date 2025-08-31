@@ -8,7 +8,7 @@
 import { createContext, useContext, ReactNode, useEffect, useState } from 'react'
 import { AuthProvider } from './AuthContext'
 import { ProjectsProvider } from './ProjectsContext'
-import { useSettings } from '@/lib/settings'
+import { useClientSettings } from '@/hooks/useClientSettings'
 import type { AppSettings, SystemSettings, LoadingState } from '@/types'
 
 // ==================== App State Interface ====================
@@ -145,7 +145,7 @@ const createInitialAppState = (): AppState => ({
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AppState>(createInitialAppState)
-  const { settings, updateUserSettings } = useSettings()
+  const { theme, updateTheme } = useClientSettings()
 
   // ==================== Network Detection ====================
 
@@ -232,7 +232,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         ui: { ...prev.ui, theme },
       }))
       // Update user settings
-      updateUserSettings({ theme })
+      updateTheme(theme)
     },
 
     // Loading state

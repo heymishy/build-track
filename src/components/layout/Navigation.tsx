@@ -16,6 +16,7 @@ import {
 import { tokens } from '@/lib/design-system'
 import { Button } from '@/components/ui/Button'
 import { useAuth } from '@/hooks/useAuth'
+import { LLMStatusIndicator } from '@/components/ui/LLMStatusIndicator'
 
 interface NavigationItem {
   id: string
@@ -140,8 +141,9 @@ export function Navigation({ className = '' }: NavigationProps) {
       >
         <div className="flex-1 flex flex-col min-h-0">
           {/* Logo */}
-          <div className="flex items-center h-16 px-6 border-b border-gray-200">
+          <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200">
             <h1 className="text-xl font-bold text-blue-700">BuildTrack</h1>
+            <LLMStatusIndicator />
           </div>
 
           {/* Primary Navigation */}
@@ -190,14 +192,17 @@ export function Navigation({ className = '' }: NavigationProps) {
         {/* Mobile Header */}
         <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200 bg-white">
           <h1 className="text-xl font-bold text-blue-700">BuildTrack</h1>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setMobileMenuOpen(true)}
-            data-testid="mobile-menu-button"
-          >
-            <Bars3Icon className="h-6 w-6" />
-          </Button>
+          <div className="flex items-center space-x-2">
+            <LLMStatusIndicator />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setMobileMenuOpen(true)}
+              data-testid="mobile-menu-button"
+            >
+              <Bars3Icon className="h-6 w-6" />
+            </Button>
+          </div>
         </div>
 
         {/* Mobile Menu Overlay */}
