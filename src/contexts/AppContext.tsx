@@ -200,13 +200,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // ==================== Theme Synchronization ====================
 
   useEffect(() => {
-    if (settings.user.theme !== state.ui.theme) {
+    if (theme !== state.ui.theme) {
       setState(prev => ({
         ...prev,
-        ui: { ...prev.ui, theme: settings.user.theme },
+        ui: { ...prev.ui, theme },
       }))
     }
-  }, [settings.user.theme])
+  }, [theme])
 
   // ==================== Actions Implementation ====================
 
