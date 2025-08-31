@@ -170,15 +170,17 @@ export function getUserFromRequest(request: NextRequest): AuthUser | null {
 
     const token = cookieToken || bearerToken
 
-    console.log('Auth debug:', {
-      hasCookieToken: !!cookieToken,
-      hasBearerToken: !!bearerToken,
-      hasToken: !!token,
-      cookieNames: request.cookies.getAll().map(cookie => cookie.name),
-      url: request.url,
-      cookieValue: cookieToken ? cookieToken.substring(0, 20) + '...' : null,
-      userAgent: request.headers.get('user-agent')?.substring(0, 50),
-    })
+    if (process.env.NODE_ENV === 'development' && process.env.DEBUG_AUTH === 'true') {
+      console.log('Auth debug:', {
+        hasCookieToken: !!cookieToken,
+        hasBearerToken: !!bearerToken,
+        hasToken: !!token,
+        cookieNames: request.cookies.getAll().map(cookie => cookie.name),
+        url: request.url,
+        cookieValue: cookieToken ? cookieToken.substring(0, 20) + '...' : null,
+        userAgent: request.headers.get('user-agent')?.substring(0, 50),
+      })
+    }
 
     if (!token) {
       console.log('No token found in request')
@@ -206,11 +208,13 @@ export function getUserFromRequest(request: NextRequest): AuthUser | null {
       updatedAt: new Date(),
     }
 
-    console.log('Successfully authenticated user:', {
-      id: user.id,
-      email: user.email,
-      role: user.role,
-    })
+    if (process.env.NODE_ENV === 'development' && process.env.DEBUG_AUTH === 'true') {
+      console.log('Successfully authenticated user:', {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+      })
+    }
     return user
   } catch (error) {
     console.error('Error verifying JWT token:', error)

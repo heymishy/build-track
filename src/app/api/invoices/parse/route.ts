@@ -13,19 +13,23 @@ const ALLOWED_FILE_TYPE = 'application/pdf'
 // const CACHE_BUST = Date.now() // Force rebuild: 1725070756000
 
 async function POST(request: NextRequest, user: AuthUser) {
-  console.error('🚀🚀🚀 PDF parse API called - ENHANCED LOGGING ACTIVE 🚀🚀🚀')
-  const startMemory = process.memoryUsage()
-  console.error('Initial memory usage:', {
-    rss: Math.round(startMemory.rss / 1024 / 1024) + 'MB',
-    heapUsed: Math.round(startMemory.heapUsed / 1024 / 1024) + 'MB',
-  })
+  if (process.env.DEBUG_PDF === 'true') {
+    console.error('🚀🚀🚀 PDF parse API called - ENHANCED LOGGING ACTIVE 🚀🚀🚀')
+    const startMemory = process.memoryUsage()
+    console.error('Initial memory usage:', {
+      rss: Math.round(startMemory.rss / 1024 / 1024) + 'MB',
+      heapUsed: Math.round(startMemory.heapUsed / 1024 / 1024) + 'MB',
+    })
+  }
 
   try {
     // Parse the form data
     const formData = await request.formData()
     const file = formData.get('file') as File
 
-    console.log('File received:', file?.name, 'Size:', file?.size)
+    if (process.env.DEBUG_PDF === 'true') {
+      console.log('File received:', file?.name, 'Size:', file?.size)
+    }
 
     // Validate file presence
     if (!file) {
@@ -49,15 +53,19 @@ async function POST(request: NextRequest, user: AuthUser) {
     }
 
     // Convert file to buffer
-    console.log('Converting file to buffer...')
+    if (process.env.DEBUG_PDF === 'true') {
+      console.log('Converting file to buffer...')
+    }
     const arrayBuffer = await file.arrayBuffer()
     const buffer = Buffer.from(arrayBuffer)
 
     const bufferMemory = process.memoryUsage()
-    console.log('After buffer conversion:', {
-      rss: Math.round(bufferMemory.rss / 1024 / 1024) + 'MB',
-      heapUsed: Math.round(bufferMemory.heapUsed / 1024 / 1024) + 'MB',
-    })
+    if (process.env.DEBUG_PDF === 'true') {
+      console.log('After buffer conversion:', {
+        rss: Math.round(bufferMemory.rss / 1024 / 1024) + 'MB',
+        heapUsed: Math.round(bufferMemory.heapUsed / 1024 / 1024) + 'MB',
+      })
+    }
 
     // Parse multiple invoices from PDF
     let result
