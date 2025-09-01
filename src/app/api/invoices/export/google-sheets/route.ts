@@ -6,7 +6,11 @@
 import { NextRequest } from 'next/server'
 import { withAuth, AuthUser } from '@/lib/middleware'
 import { prisma } from '@/lib/prisma'
-import { googleSheetsService, formatInvoiceForExport, expandInvoiceLineItems } from '@/lib/google-sheets'
+import {
+  googleSheetsService,
+  formatInvoiceForExport,
+  expandInvoiceLineItems,
+} from '@/lib/google-sheets'
 
 interface ExportRequest {
   projectId?: string
@@ -21,22 +25,23 @@ async function POST(request: NextRequest, user: AuthUser) {
   try {
     if (!googleSheetsService.isAvailable()) {
       return Response.json(
-        { 
-          success: false, 
-          error: 'Google Sheets API not configured. Please contact administrator to set up Google Sheets integration.' 
+        {
+          success: false,
+          error:
+            'Google Sheets API not configured. Please contact administrator to set up Google Sheets integration.',
         },
         { status: 503 }
       )
     }
 
     const body: ExportRequest = await request.json()
-    const { 
-      projectId, 
-      status = ['PENDING', 'APPROVED', 'PAID'], 
-      dateFrom, 
+    const {
+      projectId,
+      status = ['PENDING', 'APPROVED', 'PAID'],
+      dateFrom,
       dateTo,
       includeLineItems = false,
-      spreadsheetTitle
+      spreadsheetTitle,
     } = body
 
     // Build query filters
@@ -49,9 +54,9 @@ async function POST(request: NextRequest, user: AuthUser) {
       whereClause.AND.push({
         project: {
           users: {
-            some: { userId: user.id }
-          }
-        }
+            some: { userId: user.id },
+          },
+        },
       })
     }
 
@@ -68,13 +73,13 @@ async function POST(request: NextRequest, user: AuthUser) {
     // Date filters
     if (dateFrom) {
       whereClause.AND.push({
-        invoiceDate: { gte: new Date(dateFrom) }
+        invoiceDate: { gte: new Date(dateFrom) },
       })
     }
 
     if (dateTo) {
       whereClause.AND.push({
-        invoiceDate: { lte: new Date(dateTo) }
+        invoiceDate: { lte: new Date(dateTo) },
       })
     }
 
@@ -86,7 +91,7 @@ async function POST(request: NextRequest, user: AuthUser) {
           select: {
             id: true,
             name: true,
-          }
+          },
         },
         lineItems: true,
         user: {
@@ -94,19 +99,16 @@ async function POST(request: NextRequest, user: AuthUser) {
             id: true,
             name: true,
             email: true,
-          }
+          },
         },
       },
-      orderBy: [
-        { invoiceDate: 'desc' },
-        { createdAt: 'desc' }
-      ]
+      orderBy: [{ invoiceDate: 'desc' }, { createdAt: 'desc' }],
     })
 
     if (invoices.length === 0) {
       return Response.json({
         success: false,
-        error: 'No invoices found matching the specified criteria'
+        error: 'No invoices found matching the specified criteria',
       })
     }
 
@@ -119,7 +121,8 @@ async function POST(request: NextRequest, user: AuthUser) {
     }
 
     // Generate spreadsheet title
-    const title = spreadsheetTitle || `BuildTrack Invoice Export - ${new Date().toLocaleDateString('en-NZ')}`
+    const title =
+      spreadsheetTitle || `BuildTrack Invoice Export - ${new Date().toLocaleDateString('en-NZ')}`
 
     try {
       // Create new spreadsheet
@@ -149,18 +152,18 @@ async function POST(request: NextRequest, user: AuthUser) {
             dateFrom,
             dateTo,
             includeLineItems,
-          }
-        }
+          },
+        },
       })
-
     } catch (sheetsError: any) {
       console.error('Google Sheets export error:', sheetsError)
-      
+
       let errorMessage = 'Failed to export to Google Sheets. Please try again or contact support.'
       let statusCode = 500
-      
+
       if (sheetsError.name === 'PermissionError' || sheetsError.code === 403) {
-        errorMessage = 'Permission denied. Please ensure your Google Cloud setup includes:\n\n' +
+        errorMessage =
+          'Permission denied. Please ensure your Google Cloud setup includes:\n\n' +
           '✅ Google Sheets API enabled\n' +
           '✅ Google Drive API enabled\n' +
           '✅ Service account has Editor role\n\n' +
@@ -170,26 +173,23 @@ async function POST(request: NextRequest, user: AuthUser) {
         errorMessage = 'Google API configuration issue: ' + sheetsError.message
         statusCode = 503
       }
-      
+
       return Response.json(
-        { 
-          success: false, 
+        {
+          success: false,
           error: errorMessage,
           details: sheetsError instanceof Error ? sheetsError.message : 'Unknown error',
-          troubleshooting: sheetsError.name === 'PermissionError' ? 
-            'Visit Google Cloud Console and ensure both Sheets and Drive APIs are enabled, and service account has proper permissions.' : 
-            'Check server logs for detailed error information.'
+          troubleshooting:
+            sheetsError.name === 'PermissionError'
+              ? 'Visit Google Cloud Console and ensure both Sheets and Drive APIs are enabled, and service account has proper permissions.'
+              : 'Check server logs for detailed error information.',
         },
         { status: statusCode }
       )
     }
-
   } catch (error) {
     console.error('Invoice export API error:', error)
-    return Response.json(
-      { success: false, error: 'Failed to export invoices' },
-      { status: 500 }
-    )
+    return Response.json({ success: false, error: 'Failed to export invoices' }, { status: 500 })
   }
 }
 

@@ -40,11 +40,11 @@ async function GET(
       where: { projectId },
       include: {
         dependencies: {
-          select: { id: true, name: true, status: true }
+          select: { id: true, name: true, status: true },
         },
         dependentOn: {
-          select: { id: true, name: true, status: true }
-        }
+          select: { id: true, name: true, status: true },
+        },
       },
       orderBy: { sortOrder: 'asc' },
     })
@@ -153,13 +153,16 @@ async function POST(
         status: 'PENDING',
         percentComplete: 0,
         // Connect dependencies using implicit many-to-many relationship
-        dependencies: validatedDependencies.length > 0 ? {
-          connect: validatedDependencies.map(id => ({ id }))
-        } : undefined,
+        dependencies:
+          validatedDependencies.length > 0
+            ? {
+                connect: validatedDependencies.map(id => ({ id })),
+              }
+            : undefined,
       },
       include: {
         dependencies: {
-          select: { id: true, name: true, status: true }
+          select: { id: true, name: true, status: true },
         },
       },
     })

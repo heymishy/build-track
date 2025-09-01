@@ -7,7 +7,14 @@ import { UserRole, ProjectRole } from '@prisma/client'
 import { NextRequest } from 'next/server'
 
 // Define available resources and actions
-export type Resource = 'users' | 'projects' | 'invoices' | 'estimates' | 'milestones' | 'settings' | 'suppliers'
+export type Resource =
+  | 'users'
+  | 'projects'
+  | 'invoices'
+  | 'estimates'
+  | 'milestones'
+  | 'settings'
+  | 'suppliers'
 export type Action = 'create' | 'read' | 'update' | 'delete' | 'write'
 
 // User with role information

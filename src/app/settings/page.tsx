@@ -124,7 +124,7 @@ export default function SettingsPage() {
         setGoogleSheetsConfig(prev => ({
           ...prev,
           isConfigured: gsConfig.isConfigured,
-          method: gsConfig.hasServiceAccountKey ? 'json' : 'individual'
+          method: gsConfig.hasServiceAccountKey ? 'json' : 'individual',
         }))
       }
     } catch (error) {
@@ -255,7 +255,10 @@ export default function SettingsPage() {
   }
 
   const testGoogleSheetsConnection = async () => {
-    if (!googleSheetsConfig.serviceAccountKey && (!googleSheetsConfig.clientEmail || !googleSheetsConfig.privateKey)) {
+    if (
+      !googleSheetsConfig.serviceAccountKey &&
+      (!googleSheetsConfig.clientEmail || !googleSheetsConfig.privateKey)
+    ) {
       toast.error('Please enter Google Sheets credentials first')
       return
     }
@@ -275,7 +278,7 @@ export default function SettingsPage() {
       })
 
       const result = await response.json()
-      
+
       if (result.success) {
         toast.success('Google Sheets connection successful! ✅')
         console.log('Connection details:', result.details)
@@ -292,7 +295,10 @@ export default function SettingsPage() {
   }
 
   const saveGoogleSheetsConfiguration = async () => {
-    if (!googleSheetsConfig.serviceAccountKey && (!googleSheetsConfig.clientEmail || !googleSheetsConfig.privateKey)) {
+    if (
+      !googleSheetsConfig.serviceAccountKey &&
+      (!googleSheetsConfig.clientEmail || !googleSheetsConfig.privateKey)
+    ) {
       toast.error('Please enter Google Sheets credentials first')
       return
     }
@@ -312,15 +318,15 @@ export default function SettingsPage() {
       })
 
       const result = await response.json()
-      
+
       if (result.success) {
         toast.success('Google Sheets configuration saved! ✅')
         setGoogleSheetsConfig(prev => ({ ...prev, isConfigured: true }))
-        
+
         if (result.requiresRestart) {
           toast.loading('Server restart required for environment variables...', { duration: 3000 })
         }
-        
+
         console.log('Configuration saved:', result)
       } else {
         toast.error(`Save failed: ${result.error}`)
@@ -718,10 +724,10 @@ export default function SettingsPage() {
                     Export invoices directly to Google Sheets for reporting and analysis
                   </p>
                 </div>
-                <Badge 
+                <Badge
                   className={`${
-                    googleSheetsConfig.isConfigured 
-                      ? 'bg-green-100 text-green-800' 
+                    googleSheetsConfig.isConfigured
+                      ? 'bg-green-100 text-green-800'
                       : 'bg-gray-100 text-gray-600'
                   }`}
                 >
@@ -732,7 +738,7 @@ export default function SettingsPage() {
               <div className="space-y-4">
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                   <h4 className="text-sm font-medium text-blue-900 mb-3">Configuration Method</h4>
-                  
+
                   {/* Method Selection */}
                   <div className="flex gap-4 mb-3">
                     <label className="flex items-center cursor-pointer">
@@ -741,13 +747,15 @@ export default function SettingsPage() {
                         name="googleSheetsMethod"
                         value="json"
                         checked={googleSheetsConfig.method === 'json'}
-                        onChange={(e) => setGoogleSheetsConfig(prev => ({ 
-                          ...prev, 
-                          method: 'json',
-                          // Clear individual fields when switching to JSON
-                          clientEmail: '',
-                          privateKey: ''
-                        }))}
+                        onChange={e =>
+                          setGoogleSheetsConfig(prev => ({
+                            ...prev,
+                            method: 'json',
+                            // Clear individual fields when switching to JSON
+                            clientEmail: '',
+                            privateKey: '',
+                          }))
+                        }
                         className="mr-2"
                       />
                       <span className="text-sm text-blue-900">Complete JSON Key</span>
@@ -758,18 +766,20 @@ export default function SettingsPage() {
                         name="googleSheetsMethod"
                         value="individual"
                         checked={googleSheetsConfig.method === 'individual'}
-                        onChange={(e) => setGoogleSheetsConfig(prev => ({ 
-                          ...prev, 
-                          method: 'individual',
-                          // Clear JSON field when switching to individual
-                          serviceAccountKey: ''
-                        }))}
+                        onChange={e =>
+                          setGoogleSheetsConfig(prev => ({
+                            ...prev,
+                            method: 'individual',
+                            // Clear JSON field when switching to individual
+                            serviceAccountKey: '',
+                          }))
+                        }
                         className="mr-2"
                       />
                       <span className="text-sm text-blue-900">Individual Fields</span>
                     </label>
                   </div>
-                  
+
                   <p className="text-xs text-blue-700">
                     Choose your preferred configuration method based on what you have available.
                   </p>
@@ -843,8 +853,8 @@ export default function SettingsPage() {
                 <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                   <h4 className="text-sm font-medium text-yellow-900 mb-2">⚠️ Security Notice</h4>
                   <p className="text-xs text-yellow-700">
-                    These credentials will be stored as environment variables on your server. 
-                    Never share these credentials or commit them to version control.
+                    These credentials will be stored as environment variables on your server. Never
+                    share these credentials or commit them to version control.
                   </p>
                 </div>
 
@@ -868,7 +878,11 @@ export default function SettingsPage() {
                 <div className="flex gap-3 flex-wrap">
                   <Button
                     onClick={testGoogleSheetsConnection}
-                    disabled={googleSheetsTesting || (!googleSheetsConfig.serviceAccountKey && (!googleSheetsConfig.clientEmail || !googleSheetsConfig.privateKey))}
+                    disabled={
+                      googleSheetsTesting ||
+                      (!googleSheetsConfig.serviceAccountKey &&
+                        (!googleSheetsConfig.clientEmail || !googleSheetsConfig.privateKey))
+                    }
                     size="sm"
                     variant="outline"
                   >
@@ -906,7 +920,11 @@ export default function SettingsPage() {
                         setGoogleSheetsTesting(false)
                       }
                     }}
-                    disabled={googleSheetsTesting || (!googleSheetsConfig.serviceAccountKey && (!googleSheetsConfig.clientEmail || !googleSheetsConfig.privateKey))}
+                    disabled={
+                      googleSheetsTesting ||
+                      (!googleSheetsConfig.serviceAccountKey &&
+                        (!googleSheetsConfig.clientEmail || !googleSheetsConfig.privateKey))
+                    }
                     size="sm"
                     variant="outline"
                     className="text-xs"
@@ -930,12 +948,14 @@ export default function SettingsPage() {
                         })
                         const result = await response.json()
                         console.log('Full diagnostic result:', result)
-                        
+
                         if (result.success) {
                           toast.success('Full diagnostic passed! ✅ Check console for details.')
                         } else {
-                          toast.error(`Diagnostic found ${result.diagnostics?.summary?.failed || 'multiple'} issues`)
-                          
+                          toast.error(
+                            `Diagnostic found ${result.diagnostics?.summary?.failed || 'multiple'} issues`
+                          )
+
                           // Show specific recommendations
                           if (result.diagnostics?.recommendations) {
                             console.log('🔧 Recommendations:')
@@ -951,7 +971,11 @@ export default function SettingsPage() {
                         setGoogleSheetsTesting(false)
                       }
                     }}
-                    disabled={googleSheetsTesting || (!googleSheetsConfig.serviceAccountKey && (!googleSheetsConfig.clientEmail || !googleSheetsConfig.privateKey))}
+                    disabled={
+                      googleSheetsTesting ||
+                      (!googleSheetsConfig.serviceAccountKey &&
+                        (!googleSheetsConfig.clientEmail || !googleSheetsConfig.privateKey))
+                    }
                     size="sm"
                     variant="outline"
                     className="text-xs bg-blue-50 hover:bg-blue-100 text-blue-700"
@@ -962,20 +986,23 @@ export default function SettingsPage() {
                     onClick={async () => {
                       setGoogleSheetsTesting(true)
                       try {
-                        const response = await fetch('/api/settings/google-sheets/test-sheets-only', {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          credentials: 'include',
-                          body: JSON.stringify({
-                            method: googleSheetsConfig.method,
-                            serviceAccountKey: googleSheetsConfig.serviceAccountKey,
-                            clientEmail: googleSheetsConfig.clientEmail,
-                            privateKey: googleSheetsConfig.privateKey,
-                          }),
-                        })
+                        const response = await fetch(
+                          '/api/settings/google-sheets/test-sheets-only',
+                          {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'include',
+                            body: JSON.stringify({
+                              method: googleSheetsConfig.method,
+                              serviceAccountKey: googleSheetsConfig.serviceAccountKey,
+                              clientEmail: googleSheetsConfig.clientEmail,
+                              privateKey: googleSheetsConfig.privateKey,
+                            }),
+                          }
+                        )
                         const result = await response.json()
                         console.log('Sheets-only test result:', result)
-                        
+
                         if (result.success) {
                           toast.success('Sheets API works! ✅ Check console for spreadsheet link.')
                         } else {
@@ -988,7 +1015,11 @@ export default function SettingsPage() {
                         setGoogleSheetsTesting(false)
                       }
                     }}
-                    disabled={googleSheetsTesting || (!googleSheetsConfig.serviceAccountKey && (!googleSheetsConfig.clientEmail || !googleSheetsConfig.privateKey))}
+                    disabled={
+                      googleSheetsTesting ||
+                      (!googleSheetsConfig.serviceAccountKey &&
+                        (!googleSheetsConfig.clientEmail || !googleSheetsConfig.privateKey))
+                    }
                     size="sm"
                     variant="outline"
                     className="text-xs bg-green-50 hover:bg-green-100 text-green-700"
@@ -999,22 +1030,27 @@ export default function SettingsPage() {
                     onClick={async () => {
                       setGoogleSheetsTesting(true)
                       try {
-                        const response = await fetch('/api/settings/google-sheets/test-alternative-auth', {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          credentials: 'include',
-                          body: JSON.stringify({
-                            method: googleSheetsConfig.method,
-                            serviceAccountKey: googleSheetsConfig.serviceAccountKey,
-                            clientEmail: googleSheetsConfig.clientEmail,
-                            privateKey: googleSheetsConfig.privateKey,
-                          }),
-                        })
+                        const response = await fetch(
+                          '/api/settings/google-sheets/test-alternative-auth',
+                          {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'include',
+                            body: JSON.stringify({
+                              method: googleSheetsConfig.method,
+                              serviceAccountKey: googleSheetsConfig.serviceAccountKey,
+                              clientEmail: googleSheetsConfig.clientEmail,
+                              privateKey: googleSheetsConfig.privateKey,
+                            }),
+                          }
+                        )
                         const result = await response.json()
                         console.log('Alternative auth test result:', result)
-                        
+
                         if (result.success) {
-                          toast.success(`Alternative auth: ${result.details?.successfulMethods?.length || 0} methods worked! ✅`)
+                          toast.success(
+                            `Alternative auth: ${result.details?.successfulMethods?.length || 0} methods worked! ✅`
+                          )
                           console.log('🎉 Working methods:', result.details?.successfulMethods)
                           if (result.recommendation) {
                             console.log('💡 Recommendation:', result.recommendation)
@@ -1032,7 +1068,11 @@ export default function SettingsPage() {
                         setGoogleSheetsTesting(false)
                       }
                     }}
-                    disabled={googleSheetsTesting || (!googleSheetsConfig.serviceAccountKey && (!googleSheetsConfig.clientEmail || !googleSheetsConfig.privateKey))}
+                    disabled={
+                      googleSheetsTesting ||
+                      (!googleSheetsConfig.serviceAccountKey &&
+                        (!googleSheetsConfig.clientEmail || !googleSheetsConfig.privateKey))
+                    }
                     size="sm"
                     variant="outline"
                     className="text-xs bg-purple-50 hover:bg-purple-100 text-purple-700"
@@ -1043,34 +1083,41 @@ export default function SettingsPage() {
                     onClick={async () => {
                       setGoogleSheetsTesting(true)
                       try {
-                        const response = await fetch('/api/settings/google-sheets/test-domain-policy', {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          credentials: 'include',
-                          body: JSON.stringify({
-                            method: googleSheetsConfig.method,
-                            serviceAccountKey: googleSheetsConfig.serviceAccountKey,
-                            clientEmail: googleSheetsConfig.clientEmail,
-                            privateKey: googleSheetsConfig.privateKey,
-                          }),
-                        })
+                        const response = await fetch(
+                          '/api/settings/google-sheets/test-domain-policy',
+                          {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'include',
+                            body: JSON.stringify({
+                              method: googleSheetsConfig.method,
+                              serviceAccountKey: googleSheetsConfig.serviceAccountKey,
+                              clientEmail: googleSheetsConfig.clientEmail,
+                              privateKey: googleSheetsConfig.privateKey,
+                            }),
+                          }
+                        )
                         const result = await response.json()
                         console.log('Domain policy test result:', result)
-                        
+
                         if (result.success) {
                           toast.success(`Domain test: ${result.analysis?.accessLevel} access level`)
                           console.log('🔍 Access Analysis:', result.analysis)
                         } else {
-                          toast.error(`Domain test: ${result.analysis?.likelyIssue || 'Access blocked'}`)
+                          toast.error(
+                            `Domain test: ${result.analysis?.likelyIssue || 'Access blocked'}`
+                          )
                         }
-                        
+
                         if (result.recommendation) {
                           console.log('💡 Domain Recommendation:', result.recommendation)
                         }
-                        
+
                         if (result.analysis?.likelyIssue === 'DOMAIN_POLICY') {
                           console.log('🚨 DOMAIN POLICY RESTRICTION DETECTED!')
-                          console.log('📞 Contact your Google Workspace admin to allow service account API access')
+                          console.log(
+                            '📞 Contact your Google Workspace admin to allow service account API access'
+                          )
                         }
                       } catch (error) {
                         console.error('Domain policy test error:', error)
@@ -1079,7 +1126,11 @@ export default function SettingsPage() {
                         setGoogleSheetsTesting(false)
                       }
                     }}
-                    disabled={googleSheetsTesting || (!googleSheetsConfig.serviceAccountKey && (!googleSheetsConfig.clientEmail || !googleSheetsConfig.privateKey))}
+                    disabled={
+                      googleSheetsTesting ||
+                      (!googleSheetsConfig.serviceAccountKey &&
+                        (!googleSheetsConfig.clientEmail || !googleSheetsConfig.privateKey))
+                    }
                     size="sm"
                     variant="outline"
                     className="text-xs bg-orange-50 hover:bg-orange-100 text-orange-700"
@@ -1088,7 +1139,11 @@ export default function SettingsPage() {
                   </Button>
                   <Button
                     onClick={saveGoogleSheetsConfiguration}
-                    disabled={googleSheetsLoading || (!googleSheetsConfig.serviceAccountKey && (!googleSheetsConfig.clientEmail || !googleSheetsConfig.privateKey))}
+                    disabled={
+                      googleSheetsLoading ||
+                      (!googleSheetsConfig.serviceAccountKey &&
+                        (!googleSheetsConfig.clientEmail || !googleSheetsConfig.privateKey))
+                    }
                     size="sm"
                   >
                     {googleSheetsLoading ? 'Saving...' : 'Save Configuration'}
@@ -1098,14 +1153,18 @@ export default function SettingsPage() {
                 {/* Debug Section for LLM Status */}
                 <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mt-6">
                   <h4 className="text-sm font-medium text-gray-900 mb-2">🔧 Debug Tools</h4>
-                  <p className="text-xs text-gray-600 mb-3">Test system features for troubleshooting</p>
+                  <p className="text-xs text-gray-600 mb-3">
+                    Test system features for troubleshooting
+                  </p>
                   <div className="flex gap-2">
                     <Button
                       onClick={() => {
                         // Test LLM status indicator
-                        window.dispatchEvent(new CustomEvent('llm-processing-start', { 
-                          detail: { operation: 'Testing LLM indicator...' } 
-                        }))
+                        window.dispatchEvent(
+                          new CustomEvent('llm-processing-start', {
+                            detail: { operation: 'Testing LLM indicator...' },
+                          })
+                        )
                         setTimeout(() => {
                           window.dispatchEvent(new CustomEvent('llm-processing-end'))
                         }, 3000)

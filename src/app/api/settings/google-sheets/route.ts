@@ -23,12 +23,14 @@ async function GET(request: NextRequest, user: AuthUser) {
   try {
     // Check if Google Sheets is currently configured
     const isConfigured = googleSheetsService.isAvailable()
-    
+
     return NextResponse.json({
       success: true,
       isConfigured,
       hasServiceAccountKey: !!process.env.GOOGLE_SERVICE_ACCOUNT_KEY,
-      hasIndividualCredentials: !!(process.env.GOOGLE_CLIENT_EMAIL && process.env.GOOGLE_PRIVATE_KEY),
+      hasIndividualCredentials: !!(
+        process.env.GOOGLE_CLIENT_EMAIL && process.env.GOOGLE_PRIVATE_KEY
+      ),
     })
   } catch (error) {
     console.error('Failed to get Google Sheets config:', error)
@@ -42,7 +44,7 @@ async function GET(request: NextRequest, user: AuthUser) {
 async function POST(request: NextRequest, user: AuthUser) {
   try {
     const config: GoogleSheetsConfig = await request.json()
-    
+
     // Validate the configuration
     if (!config.method) {
       return NextResponse.json(
@@ -58,7 +60,7 @@ async function POST(request: NextRequest, user: AuthUser) {
           { status: 400 }
         )
       }
-      
+
       // Validate JSON format
       try {
         JSON.parse(config.serviceAccountKey)
@@ -84,11 +86,14 @@ async function POST(request: NextRequest, user: AuthUser) {
     }
 
     // Remove existing Google Sheets configuration
-    const envLines = envContent.split('\n').filter(line => 
-      !line.startsWith('GOOGLE_SERVICE_ACCOUNT_KEY=') &&
-      !line.startsWith('GOOGLE_CLIENT_EMAIL=') &&
-      !line.startsWith('GOOGLE_PRIVATE_KEY=')
-    )
+    const envLines = envContent
+      .split('\n')
+      .filter(
+        line =>
+          !line.startsWith('GOOGLE_SERVICE_ACCOUNT_KEY=') &&
+          !line.startsWith('GOOGLE_CLIENT_EMAIL=') &&
+          !line.startsWith('GOOGLE_PRIVATE_KEY=')
+      )
 
     // Add new configuration
     if (config.method === 'json') {
@@ -117,7 +122,6 @@ async function POST(request: NextRequest, user: AuthUser) {
       message: 'Google Sheets configuration saved successfully',
       requiresRestart: true, // Environment variables require server restart
     })
-
   } catch (error) {
     console.error('Failed to save Google Sheets config:', error)
     return NextResponse.json(
@@ -136,11 +140,14 @@ async function DELETE(request: NextRequest, user: AuthUser) {
     }
 
     // Remove Google Sheets configuration
-    const envLines = envContent.split('\n').filter(line => 
-      !line.startsWith('GOOGLE_SERVICE_ACCOUNT_KEY=') &&
-      !line.startsWith('GOOGLE_CLIENT_EMAIL=') &&
-      !line.startsWith('GOOGLE_PRIVATE_KEY=')
-    )
+    const envLines = envContent
+      .split('\n')
+      .filter(
+        line =>
+          !line.startsWith('GOOGLE_SERVICE_ACCOUNT_KEY=') &&
+          !line.startsWith('GOOGLE_CLIENT_EMAIL=') &&
+          !line.startsWith('GOOGLE_PRIVATE_KEY=')
+      )
 
     // Write updated configuration
     writeFileSync(CONFIG_PATH, envLines.join('\n'))
@@ -152,9 +159,8 @@ async function DELETE(request: NextRequest, user: AuthUser) {
 
     return NextResponse.json({
       success: true,
-      message: 'Google Sheets configuration removed successfully'
+      message: 'Google Sheets configuration removed successfully',
     })
-
   } catch (error) {
     console.error('Failed to remove Google Sheets config:', error)
     return NextResponse.json(

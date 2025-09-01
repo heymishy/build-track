@@ -550,8 +550,8 @@ export function MilestoneManagement({ project, className = '' }: MilestoneManage
                     }`}
                   >
                     <option value="PENDING">Pending</option>
-                    <option 
-                      value="IN_PROGRESS" 
+                    <option
+                      value="IN_PROGRESS"
                       disabled={!canStartMilestone(milestone) && milestone.status === 'PENDING'}
                     >
                       In Progress
@@ -679,7 +679,9 @@ export function MilestoneManagement({ project, className = '' }: MilestoneManage
                                   } else {
                                     setFormData({
                                       ...formData,
-                                      dependencies: formData.dependencies.filter(id => id !== milestone.id),
+                                      dependencies: formData.dependencies.filter(
+                                        id => id !== milestone.id
+                                      ),
                                     })
                                   }
                                 }}
@@ -862,7 +864,9 @@ export function MilestoneManagement({ project, className = '' }: MilestoneManage
                                   } else {
                                     setFormData({
                                       ...formData,
-                                      dependencies: formData.dependencies.filter(id => id !== milestone.id),
+                                      dependencies: formData.dependencies.filter(
+                                        id => id !== milestone.id
+                                      ),
                                     })
                                   }
                                 }}

@@ -179,161 +179,165 @@ export default function ReportsPage() {
         </div>
 
         <div className="max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* Main Report Generator */}
-          <div className="lg:col-span-3">
-            <ReportManager projects={projects} />
-          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            {/* Main Report Generator */}
+            <div className="lg:col-span-3">
+              <ReportManager projects={projects} />
+            </div>
 
-          {/* Sidebar */}
-          <div className="space-y-6">
-            {/* Quick Stats */}
-            <Card>
-              <Card.Header>
-                <h3 className="text-lg font-medium text-gray-900">Quick Stats</h3>
-              </Card.Header>
-              <Card.Body>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Total Projects</span>
-                    <span className="text-sm font-medium text-gray-900">{projects.length}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Active Projects</span>
-                    <span className="text-sm font-medium text-blue-600">
-                      {projects.filter(p => p.status === 'IN_PROGRESS').length}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Completed Projects</span>
-                    <span className="text-sm font-medium text-green-600">
-                      {projects.filter(p => p.status === 'COMPLETED').length}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">On Hold</span>
-                    <span className="text-sm font-medium text-yellow-600">
-                      {projects.filter(p => p.status === 'ON_HOLD').length}
-                    </span>
-                  </div>
-                </div>
-              </Card.Body>
-            </Card>
-
-            {/* Project Overview */}
-            <Card>
-              <Card.Header>
-                <h3 className="text-lg font-medium text-gray-900">Project Overview</h3>
-              </Card.Header>
-              <Card.Body>
-                <div className="space-y-3 max-h-64 overflow-y-auto">
-                  {projects.length === 0 ? (
-                    <div className="text-center py-4">
-                      <p className="text-sm text-gray-500">No projects found</p>
+            {/* Sidebar */}
+            <div className="space-y-6">
+              {/* Quick Stats */}
+              <Card>
+                <Card.Header>
+                  <h3 className="text-lg font-medium text-gray-900">Quick Stats</h3>
+                </Card.Header>
+                <Card.Body>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600">Total Projects</span>
+                      <span className="text-sm font-medium text-gray-900">{projects.length}</span>
                     </div>
-                  ) : (
-                    projects.slice(0, 5).map(project => (
-                      <div key={project.id} className="p-3 bg-gray-50 rounded-lg">
-                        <div className="flex items-center justify-between mb-2">
-                          <h4 className="text-sm font-medium text-gray-900 truncate">
-                            {project.name}
-                          </h4>
-                          <span
-                            className={`px-2 py-1 text-xs font-medium rounded ${getProjectStatusColor(project.status)}`}
-                          >
-                            {project.status}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between text-xs text-gray-600">
-                          <span>Budget: ${project.totalBudget?.toLocaleString()}</span>
-                          {project.stats && (
-                            <span>Used: {project.stats.budgetUsedPercent?.toFixed(1)}%</span>
-                          )}
-                        </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600">Active Projects</span>
+                      <span className="text-sm font-medium text-blue-600">
+                        {projects.filter(p => p.status === 'IN_PROGRESS').length}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600">Completed Projects</span>
+                      <span className="text-sm font-medium text-green-600">
+                        {projects.filter(p => p.status === 'COMPLETED').length}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600">On Hold</span>
+                      <span className="text-sm font-medium text-yellow-600">
+                        {projects.filter(p => p.status === 'ON_HOLD').length}
+                      </span>
+                    </div>
+                  </div>
+                </Card.Body>
+              </Card>
+
+              {/* Project Overview */}
+              <Card>
+                <Card.Header>
+                  <h3 className="text-lg font-medium text-gray-900">Project Overview</h3>
+                </Card.Header>
+                <Card.Body>
+                  <div className="space-y-3 max-h-64 overflow-y-auto">
+                    {projects.length === 0 ? (
+                      <div className="text-center py-4">
+                        <p className="text-sm text-gray-500">No projects found</p>
                       </div>
-                    ))
-                  )}
-                  {projects.length > 5 && (
-                    <p className="text-xs text-gray-500 text-center">
-                      And {projects.length - 5} more projects...
-                    </p>
-                  )}
-                </div>
-              </Card.Body>
-            </Card>
-
-            {/* Recent Reports */}
-            <Card>
-              <Card.Header>
-                <h3 className="text-lg font-medium text-gray-900">Recent Reports</h3>
-              </Card.Header>
-              <Card.Body>
-                <div className="space-y-3">
-                  {recentReports.length === 0 ? (
-                    <div className="text-center py-4">
-                      <ClockIcon className="mx-auto h-8 w-8 text-gray-400" />
-                      <p className="text-sm text-gray-500 mt-2">No recent reports</p>
-                      <p className="text-xs text-gray-400">Generated reports will appear here</p>
-                    </div>
-                  ) : (
-                    recentReports.map(report => (
-                      <div key={report.id} className="p-3 border border-gray-200 rounded-lg">
-                        <div className="flex items-start space-x-3">
-                          <div className="flex-shrink-0 mt-1">{getReportTypeIcon(report.type)}</div>
-                          <div className="flex-1 min-w-0">
+                    ) : (
+                      projects.slice(0, 5).map(project => (
+                        <div key={project.id} className="p-3 bg-gray-50 rounded-lg">
+                          <div className="flex items-center justify-between mb-2">
                             <h4 className="text-sm font-medium text-gray-900 truncate">
-                              {report.name}
+                              {project.name}
                             </h4>
-                            {report.projectName && (
-                              <p className="text-xs text-gray-600 truncate">{report.projectName}</p>
+                            <span
+                              className={`px-2 py-1 text-xs font-medium rounded ${getProjectStatusColor(project.status)}`}
+                            >
+                              {project.status}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between text-xs text-gray-600">
+                            <span>Budget: ${project.totalBudget?.toLocaleString()}</span>
+                            {project.stats && (
+                              <span>Used: {project.stats.budgetUsedPercent?.toFixed(1)}%</span>
                             )}
-                            <div className="flex items-center justify-between mt-1">
-                              <span className="text-xs text-gray-500">
-                                {formatDate(report.generatedAt)}
-                              </span>
-                              <span className="text-xs font-medium text-gray-700 uppercase">
-                                {report.format}
-                              </span>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                    {projects.length > 5 && (
+                      <p className="text-xs text-gray-500 text-center">
+                        And {projects.length - 5} more projects...
+                      </p>
+                    )}
+                  </div>
+                </Card.Body>
+              </Card>
+
+              {/* Recent Reports */}
+              <Card>
+                <Card.Header>
+                  <h3 className="text-lg font-medium text-gray-900">Recent Reports</h3>
+                </Card.Header>
+                <Card.Body>
+                  <div className="space-y-3">
+                    {recentReports.length === 0 ? (
+                      <div className="text-center py-4">
+                        <ClockIcon className="mx-auto h-8 w-8 text-gray-400" />
+                        <p className="text-sm text-gray-500 mt-2">No recent reports</p>
+                        <p className="text-xs text-gray-400">Generated reports will appear here</p>
+                      </div>
+                    ) : (
+                      recentReports.map(report => (
+                        <div key={report.id} className="p-3 border border-gray-200 rounded-lg">
+                          <div className="flex items-start space-x-3">
+                            <div className="flex-shrink-0 mt-1">
+                              {getReportTypeIcon(report.type)}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h4 className="text-sm font-medium text-gray-900 truncate">
+                                {report.name}
+                              </h4>
+                              {report.projectName && (
+                                <p className="text-xs text-gray-600 truncate">
+                                  {report.projectName}
+                                </p>
+                              )}
+                              <div className="flex items-center justify-between mt-1">
+                                <span className="text-xs text-gray-500">
+                                  {formatDate(report.generatedAt)}
+                                </span>
+                                <span className="text-xs font-medium text-gray-700 uppercase">
+                                  {report.format}
+                                </span>
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </Card.Body>
-            </Card>
+                      ))
+                    )}
+                  </div>
+                </Card.Body>
+              </Card>
 
-            {/* Help & Tips */}
-            <Card>
-              <Card.Header>
-                <h3 className="text-lg font-medium text-gray-900 flex items-center">
-                  <InformationCircleIcon className="h-5 w-5 mr-2 text-blue-600" />
-                  Tips & Help
-                </h3>
-              </Card.Header>
-              <Card.Body>
-                <div className="space-y-3 text-sm text-gray-600">
-                  <div>
-                    <h4 className="font-medium text-gray-900 mb-1">PDF Reports</h4>
-                    <p>
-                      Best for presentations and formal documentation. Includes charts and formatted
-                      layouts.
-                    </p>
+              {/* Help & Tips */}
+              <Card>
+                <Card.Header>
+                  <h3 className="text-lg font-medium text-gray-900 flex items-center">
+                    <InformationCircleIcon className="h-5 w-5 mr-2 text-blue-600" />
+                    Tips & Help
+                  </h3>
+                </Card.Header>
+                <Card.Body>
+                  <div className="space-y-3 text-sm text-gray-600">
+                    <div>
+                      <h4 className="font-medium text-gray-900 mb-1">PDF Reports</h4>
+                      <p>
+                        Best for presentations and formal documentation. Includes charts and
+                        formatted layouts.
+                      </p>
+                    </div>
+                    <div>
+                      <h4 className="font-medium text-gray-900 mb-1">CSV/Excel Reports</h4>
+                      <p>Perfect for data analysis and importing into spreadsheet applications.</p>
+                    </div>
+                    <div>
+                      <h4 className="font-medium text-gray-900 mb-1">Executive Summary</h4>
+                      <p>High-level overview ideal for stakeholder meetings and project reviews.</p>
+                    </div>
                   </div>
-                  <div>
-                    <h4 className="font-medium text-gray-900 mb-1">CSV/Excel Reports</h4>
-                    <p>Perfect for data analysis and importing into spreadsheet applications.</p>
-                  </div>
-                  <div>
-                    <h4 className="font-medium text-gray-900 mb-1">Executive Summary</h4>
-                    <p>High-level overview ideal for stakeholder meetings and project reviews.</p>
-                  </div>
-                </div>
-              </Card.Body>
-            </Card>
+                </Card.Body>
+              </Card>
+            </div>
           </div>
-        </div>
         </div>
       </div>
     </AppLayout>

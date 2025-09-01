@@ -113,7 +113,7 @@ export function InvoiceManagement({
   const [availableProjects, setAvailableProjects] = useState<Array<{ id: string; name: string }>>(
     []
   )
-  
+
   // Google Sheets Export state
   const [showExportModal, setShowExportModal] = useState(false)
 
@@ -1215,14 +1215,14 @@ export function InvoiceManagement({
                 <XMarkIcon className="h-6 w-6" />
               </button>
             </div>
-            
+
             <GoogleSheetsExport
               defaultProjectId={projectId || projectFilter || undefined}
               showProjectSelector={!projectId}
               compact={false}
               className="border-0 shadow-none p-0"
             />
-            
+
             <div className="flex justify-end mt-6">
               <button
                 onClick={() => setShowExportModal(false)}

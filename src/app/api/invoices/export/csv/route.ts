@@ -18,12 +18,12 @@ interface ExportRequest {
 async function POST(request: NextRequest, user: AuthUser) {
   try {
     const body: ExportRequest = await request.json()
-    const { 
-      projectId, 
-      status = ['PENDING', 'APPROVED', 'PAID'], 
-      dateFrom, 
+    const {
+      projectId,
+      status = ['PENDING', 'APPROVED', 'PAID'],
+      dateFrom,
       dateTo,
-      includeLineItems = false
+      includeLineItems = false,
     } = body
 
     // Build query filters (same as Google Sheets export)
@@ -36,9 +36,9 @@ async function POST(request: NextRequest, user: AuthUser) {
       whereClause.AND.push({
         project: {
           users: {
-            some: { userId: user.id }
-          }
-        }
+            some: { userId: user.id },
+          },
+        },
       })
     }
 
@@ -55,13 +55,13 @@ async function POST(request: NextRequest, user: AuthUser) {
     // Date filters
     if (dateFrom) {
       whereClause.AND.push({
-        invoiceDate: { gte: new Date(dateFrom) }
+        invoiceDate: { gte: new Date(dateFrom) },
       })
     }
 
     if (dateTo) {
       whereClause.AND.push({
-        invoiceDate: { lte: new Date(dateTo) }
+        invoiceDate: { lte: new Date(dateTo) },
       })
     }
 
@@ -73,7 +73,7 @@ async function POST(request: NextRequest, user: AuthUser) {
           select: {
             id: true,
             name: true,
-          }
+          },
         },
         lineItems: true,
         user: {
@@ -81,19 +81,16 @@ async function POST(request: NextRequest, user: AuthUser) {
             id: true,
             name: true,
             email: true,
-          }
+          },
         },
       },
-      orderBy: [
-        { invoiceDate: 'desc' },
-        { createdAt: 'desc' }
-      ]
+      orderBy: [{ invoiceDate: 'desc' }, { createdAt: 'desc' }],
     })
 
     if (invoices.length === 0) {
       return Response.json({
         success: false,
-        error: 'No invoices found matching the specified criteria'
+        error: 'No invoices found matching the specified criteria',
       })
     }
 
@@ -102,7 +99,8 @@ async function POST(request: NextRequest, user: AuthUser) {
 
     if (includeLineItems) {
       // Header for line items format
-      csvContent = 'Supplier,Invoice No.,Date,Customer Reference,Description,Quantity,Unit Price,Total Amount,Taxable Amount,Plus GST,Total\n'
+      csvContent =
+        'Supplier,Invoice No.,Date,Customer Reference,Description,Quantity,Unit Price,Total Amount,Taxable Amount,Plus GST,Total\n'
 
       // Process each invoice's line items
       for (const invoice of invoices) {
@@ -119,7 +117,7 @@ async function POST(request: NextRequest, user: AuthUser) {
               (lineItem.totalPrice || 0).toFixed(2),
               (lineItem.totalPrice || 0).toFixed(2), // Simplified - line items don't separate GST
               '0.00', // GST is typically at invoice level
-              (lineItem.totalPrice || 0).toFixed(2)
+              (lineItem.totalPrice || 0).toFixed(2),
             ].join(',')
             csvContent += row + '\n'
           }
@@ -138,20 +136,21 @@ async function POST(request: NextRequest, user: AuthUser) {
             Number(invoice.totalAmount).toFixed(2),
             taxableAmount.toFixed(2),
             gstAmount.toFixed(2),
-            Number(invoice.totalAmount).toFixed(2)
+            Number(invoice.totalAmount).toFixed(2),
           ].join(',')
           csvContent += row + '\n'
         }
       }
     } else {
       // Header for summary format
-      csvContent = 'Supplier,Invoice No.,Date,Customer Reference,Description,Quantity,Unit Price,Total Amount,Taxable Amount,Plus GST,Total\n'
+      csvContent =
+        'Supplier,Invoice No.,Date,Customer Reference,Description,Quantity,Unit Price,Total Amount,Taxable Amount,Plus GST,Total\n'
 
       // Process each invoice as single row
       for (const invoice of invoices) {
         const taxableAmount = Number(invoice.totalAmount) - Number(invoice.gstAmount || 0)
         const gstAmount = Number(invoice.gstAmount || 0)
-        
+
         const row = [
           escapeCSV(invoice.supplierName || 'Unknown Supplier'),
           escapeCSV(invoice.invoiceNumber || ''),
@@ -163,7 +162,7 @@ async function POST(request: NextRequest, user: AuthUser) {
           Number(invoice.totalAmount).toFixed(2),
           taxableAmount.toFixed(2),
           gstAmount.toFixed(2),
-          Number(invoice.totalAmount).toFixed(2)
+          Number(invoice.totalAmount).toFixed(2),
         ].join(',')
         csvContent += row + '\n'
       }
@@ -180,9 +179,8 @@ async function POST(request: NextRequest, user: AuthUser) {
         'Content-Type': 'text/csv',
         'Content-Disposition': `attachment; filename="${filename}"`,
         'Cache-Control': 'no-cache',
-      }
+      },
     })
-
   } catch (error) {
     console.error('CSV export error:', error)
     return Response.json(

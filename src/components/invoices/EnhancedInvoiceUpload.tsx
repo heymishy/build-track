@@ -46,50 +46,53 @@ export const EnhancedInvoiceUpload: React.FC<EnhancedInvoiceUploadProps> = ({
     resetProcessing,
   } = useInvoiceProcessing()
 
-  const handleFileSelect = useCallback(async (files: FileList | null) => {
-    if (!files || files.length === 0) return
+  const handleFileSelect = useCallback(
+    async (files: FileList | null) => {
+      if (!files || files.length === 0) return
 
-    const file = files[0]
-    
-    // Validate file type
-    if (file.type !== 'application/pdf') {
-      alert('Please select a PDF file')
-      return
-    }
+      const file = files[0]
 
-    // Validate file size (10MB)
-    if (file.size > 10 * 1024 * 1024) {
-      alert('File size must be less than 10MB')
-      return
-    }
+      // Validate file type
+      if (file.type !== 'application/pdf') {
+        alert('Please select a PDF file')
+        return
+      }
 
-    setUploadedFile(file)
-    setShowResults(false)
+      // Validate file size (10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        alert('File size must be less than 10MB')
+        return
+      }
 
-    try {
-      const result = await processInvoices(file, {
-        onComplete: (result) => {
-          setProcessingResult(result)
-          setShowResults(true)
-          if (onUploadComplete) {
-            onUploadComplete(result)
-          }
-        },
-        onError: (error) => {
-          console.error('Processing error:', error)
-          setProcessingResult({
-            success: false,
-            totalInvoices: 0,
-            totalAmount: 0,
-            error,
-          })
-          setShowResults(true)
-        }
-      })
-    } catch (error) {
-      console.error('Upload error:', error)
-    }
-  }, [processInvoices, onUploadComplete])
+      setUploadedFile(file)
+      setShowResults(false)
+
+      try {
+        const result = await processInvoices(file, {
+          onComplete: result => {
+            setProcessingResult(result)
+            setShowResults(true)
+            if (onUploadComplete) {
+              onUploadComplete(result)
+            }
+          },
+          onError: error => {
+            console.error('Processing error:', error)
+            setProcessingResult({
+              success: false,
+              totalInvoices: 0,
+              totalAmount: 0,
+              error,
+            })
+            setShowResults(true)
+          },
+        })
+      } catch (error) {
+        console.error('Upload error:', error)
+      }
+    },
+    [processInvoices, onUploadComplete]
+  )
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault()
@@ -101,15 +104,21 @@ export const EnhancedInvoiceUpload: React.FC<EnhancedInvoiceUploadProps> = ({
     setIsDragging(false)
   }, [])
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    setIsDragging(false)
-    handleFileSelect(e.dataTransfer.files)
-  }, [handleFileSelect])
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault()
+      setIsDragging(false)
+      handleFileSelect(e.dataTransfer.files)
+    },
+    [handleFileSelect]
+  )
 
-  const handleFileInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    handleFileSelect(e.target.files)
-  }, [handleFileSelect])
+  const handleFileInputChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      handleFileSelect(e.target.files)
+    },
+    [handleFileSelect]
+  )
 
   const handleReset = useCallback(() => {
     resetProcessing()
@@ -132,9 +141,10 @@ export const EnhancedInvoiceUpload: React.FC<EnhancedInvoiceUploadProps> = ({
         <div
           className={`
             border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer
-            ${isDragging 
-              ? 'border-blue-500 bg-blue-50' 
-              : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
+            ${
+              isDragging
+                ? 'border-blue-500 bg-blue-50'
+                : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
             }
           `}
           onDragOver={handleDragOver}
@@ -149,9 +159,9 @@ export const EnhancedInvoiceUpload: React.FC<EnhancedInvoiceUploadProps> = ({
             onChange={handleFileInputChange}
             className="hidden"
           />
-          
+
           <DocumentArrowUpIcon className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-          
+
           <div className="space-y-2">
             <p className="text-lg font-medium text-gray-900">
               {isDragging ? 'Drop your PDF here' : 'Upload Invoice PDF'}
@@ -159,9 +169,7 @@ export const EnhancedInvoiceUpload: React.FC<EnhancedInvoiceUploadProps> = ({
             <p className="text-sm text-gray-600">
               Drag and drop a PDF file here, or click to select
             </p>
-            <p className="text-xs text-gray-500">
-              Maximum file size: 10MB • Supported format: PDF
-            </p>
+            <p className="text-xs text-gray-500">Maximum file size: 10MB • Supported format: PDF</p>
           </div>
         </div>
       )}

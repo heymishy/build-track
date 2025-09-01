@@ -39,7 +39,7 @@ async function POST(request: NextRequest, user: AuthUser) {
 
       // Test the connection by creating a new service instance
       const { GoogleAuth } = await import('google-auth-library')
-      
+
       let credentials
       if (process.env.GOOGLE_SERVICE_ACCOUNT_KEY) {
         credentials = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_KEY)
@@ -54,16 +54,16 @@ async function POST(request: NextRequest, user: AuthUser) {
         credentials,
         scopes: [
           'https://www.googleapis.com/auth/spreadsheets',
-          'https://www.googleapis.com/auth/drive'
+          'https://www.googleapis.com/auth/drive',
         ],
       })
 
       // Test authentication
       const authClient = await auth.getClient()
-      
+
       // Try to get access token to verify credentials work
       const tokenResponse = await authClient.getAccessToken()
-      
+
       if (!tokenResponse.token) {
         throw new Error('Failed to obtain access token')
       }
@@ -73,7 +73,8 @@ async function POST(request: NextRequest, user: AuthUser) {
       try {
         const { google } = await import('googleapis')
         const service = google.serviceusage({ version: 'v1', auth: authClient })
-        const projectId = credentials.project_id || credentials.client_email.split('@')[1].split('.')[0]
+        const projectId =
+          credentials.project_id || credentials.client_email.split('@')[1].split('.')[0]
         serviceAccountInfo = `Project: ${projectId}`
       } catch (e) {
         // Service usage API might not be enabled, but that's OK for testing
@@ -88,20 +89,19 @@ async function POST(request: NextRequest, user: AuthUser) {
           clientEmail: credentials.client_email,
           hasToken: !!tokenResponse.token,
           serviceAccount: serviceAccountInfo,
-          apiNote: 'Note: You may need to enable Google Sheets API in Cloud Console for full functionality'
-        }
+          apiNote:
+            'Note: You may need to enable Google Sheets API in Cloud Console for full functionality',
+        },
       })
-
     } finally {
       // Restore original environment variables
       process.env.GOOGLE_SERVICE_ACCOUNT_KEY = originalEnv.GOOGLE_SERVICE_ACCOUNT_KEY
       process.env.GOOGLE_CLIENT_EMAIL = originalEnv.GOOGLE_CLIENT_EMAIL
       process.env.GOOGLE_PRIVATE_KEY = originalEnv.GOOGLE_PRIVATE_KEY
     }
-
   } catch (error) {
     console.error('Google Sheets connection test failed:', error)
-    
+
     let errorMessage = 'Connection test failed'
     if (error instanceof Error) {
       if (error.message.includes('JSON')) {
@@ -118,10 +118,10 @@ async function POST(request: NextRequest, user: AuthUser) {
     }
 
     return NextResponse.json(
-      { 
-        success: false, 
+      {
+        success: false,
         error: errorMessage,
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 400 }
     )

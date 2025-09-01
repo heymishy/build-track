@@ -34,7 +34,7 @@ async function POST(request: NextRequest, user: AuthUser) {
 
       const { GoogleAuth } = await import('google-auth-library')
       const { google } = await import('googleapis')
-      
+
       let credentials: any
       if (process.env.GOOGLE_SERVICE_ACCOUNT_KEY) {
         credentials = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_KEY)
@@ -49,7 +49,7 @@ async function POST(request: NextRequest, user: AuthUser) {
       // Test 1: Try with explicit project ID
       try {
         console.log('Test 1: Explicit project ID approach')
-        
+
         const auth = new GoogleAuth({
           credentials,
           projectId: credentials.project_id || 'plucky-hue-452808-s5',
@@ -62,9 +62,9 @@ async function POST(request: NextRequest, user: AuthUser) {
         const testSpreadsheet = await sheets.spreadsheets.create({
           requestBody: {
             properties: {
-              title: 'BuildTrack Test 1 - Explicit ProjectId'
-            }
-          }
+              title: 'BuildTrack Test 1 - Explicit ProjectId',
+            },
+          },
         })
 
         // Clean up
@@ -76,22 +76,21 @@ async function POST(request: NextRequest, user: AuthUser) {
         testResults.push({
           test: 'Explicit Project ID',
           status: 'SUCCESS',
-          spreadsheetId: testSpreadsheet.data.spreadsheetId
+          spreadsheetId: testSpreadsheet.data.spreadsheetId,
         })
-
       } catch (error: any) {
         testResults.push({
           test: 'Explicit Project ID',
           status: 'FAILED',
           error: error.message,
-          code: error.code
+          code: error.code,
         })
       }
 
       // Test 2: Try with quota project
       try {
         console.log('Test 2: Quota project approach')
-        
+
         const auth = new GoogleAuth({
           credentials,
           quotaProjectId: credentials.project_id || 'plucky-hue-452808-s5',
@@ -104,9 +103,9 @@ async function POST(request: NextRequest, user: AuthUser) {
         const testSpreadsheet = await sheets.spreadsheets.create({
           requestBody: {
             properties: {
-              title: 'BuildTrack Test 2 - Quota Project'
-            }
-          }
+              title: 'BuildTrack Test 2 - Quota Project',
+            },
+          },
         })
 
         // Clean up
@@ -118,22 +117,21 @@ async function POST(request: NextRequest, user: AuthUser) {
         testResults.push({
           test: 'Quota Project ID',
           status: 'SUCCESS',
-          spreadsheetId: testSpreadsheet.data.spreadsheetId
+          spreadsheetId: testSpreadsheet.data.spreadsheetId,
         })
-
       } catch (error: any) {
         testResults.push({
           test: 'Quota Project ID',
           status: 'FAILED',
           error: error.message,
-          code: error.code
+          code: error.code,
         })
       }
 
       // Test 3: Try with cloud-platform scope (very broad)
       try {
         console.log('Test 3: Cloud platform scope')
-        
+
         const auth = new GoogleAuth({
           credentials,
           scopes: ['https://www.googleapis.com/auth/cloud-platform'],
@@ -145,9 +143,9 @@ async function POST(request: NextRequest, user: AuthUser) {
         const testSpreadsheet = await sheets.spreadsheets.create({
           requestBody: {
             properties: {
-              title: 'BuildTrack Test 3 - Cloud Platform Scope'
-            }
-          }
+              title: 'BuildTrack Test 3 - Cloud Platform Scope',
+            },
+          },
         })
 
         // Clean up
@@ -159,22 +157,21 @@ async function POST(request: NextRequest, user: AuthUser) {
         testResults.push({
           test: 'Cloud Platform Scope',
           status: 'SUCCESS',
-          spreadsheetId: testSpreadsheet.data.spreadsheetId
+          spreadsheetId: testSpreadsheet.data.spreadsheetId,
         })
-
       } catch (error: any) {
         testResults.push({
           test: 'Cloud Platform Scope',
           status: 'FAILED',
           error: error.message,
-          code: error.code
+          code: error.code,
         })
       }
 
       // Test 4: Try minimal approach with different auth config
       try {
         console.log('Test 4: Minimal auth config')
-        
+
         const authClient = new google.auth.JWT(
           credentials.client_email,
           undefined,
@@ -185,15 +182,15 @@ async function POST(request: NextRequest, user: AuthUser) {
         )
 
         await authClient.authorize()
-        
+
         const sheets = google.sheets({ version: 'v4', auth: authClient })
 
         const testSpreadsheet = await sheets.spreadsheets.create({
           requestBody: {
             properties: {
-              title: 'BuildTrack Test 4 - JWT Direct'
-            }
-          }
+              title: 'BuildTrack Test 4 - JWT Direct',
+            },
+          },
         })
 
         // Clean up
@@ -205,15 +202,14 @@ async function POST(request: NextRequest, user: AuthUser) {
         testResults.push({
           test: 'JWT Direct Auth',
           status: 'SUCCESS',
-          spreadsheetId: testSpreadsheet.data.spreadsheetId
+          spreadsheetId: testSpreadsheet.data.spreadsheetId,
         })
-
       } catch (error: any) {
         testResults.push({
           test: 'JWT Direct Auth',
           status: 'FAILED',
           error: error.message,
-          code: error.code
+          code: error.code,
         })
       }
 
@@ -224,31 +220,30 @@ async function POST(request: NextRequest, user: AuthUser) {
         success: successCount > 0,
         message: `Alternative auth tests: ${successCount} successful, ${failureCount} failed`,
         results: testResults,
-        recommendation: successCount > 0 ? 
-          'At least one authentication method worked! Check results for working approach.' :
-          'All authentication methods failed. This suggests organization policy restrictions or API quotas.',
+        recommendation:
+          successCount > 0
+            ? 'At least one authentication method worked! Check results for working approach.'
+            : 'All authentication methods failed. This suggests organization policy restrictions or API quotas.',
         details: {
           projectId: credentials.project_id,
           clientEmail: credentials.client_email,
-          successfulMethods: testResults.filter(r => r.status === 'SUCCESS').map(r => r.test)
-        }
+          successfulMethods: testResults.filter(r => r.status === 'SUCCESS').map(r => r.test),
+        },
       })
-
     } finally {
       // Restore original environment variables
       process.env.GOOGLE_SERVICE_ACCOUNT_KEY = originalEnv.GOOGLE_SERVICE_ACCOUNT_KEY
       process.env.GOOGLE_CLIENT_EMAIL = originalEnv.GOOGLE_CLIENT_EMAIL
       process.env.GOOGLE_PRIVATE_KEY = originalEnv.GOOGLE_PRIVATE_KEY
     }
-
   } catch (error) {
     console.error('Alternative auth test failed:', error)
-    
+
     return NextResponse.json(
-      { 
-        success: false, 
+      {
+        success: false,
         error: 'Alternative auth test failed to run',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 400 }
     )

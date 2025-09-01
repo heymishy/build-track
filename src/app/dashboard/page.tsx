@@ -155,9 +155,9 @@ function DashboardContent() {
             {/* Cost Tracking Section */}
             <div className="mb-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-4">Cost Tracking</h2>
-              <CostTrackingWidget 
+              <CostTrackingWidget
                 showProjectSelector={true}
-                onProjectChange={(projectId) => {
+                onProjectChange={projectId => {
                   // Optional: sync with activeView if needed
                   console.log('Cost tracking project changed:', projectId)
                 }}

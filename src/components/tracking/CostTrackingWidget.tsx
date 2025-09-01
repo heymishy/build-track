@@ -70,9 +70,10 @@ export function CostTrackingWidget({
       setLoading(true)
       setError(null)
 
-      const url = selectedProjectId === 'all' 
-        ? '/api/analytics/cost-tracking'
-        : `/api/projects/${selectedProjectId}/cost-tracking`
+      const url =
+        selectedProjectId === 'all'
+          ? '/api/analytics/cost-tracking'
+          : `/api/projects/${selectedProjectId}/cost-tracking`
 
       const response = await fetch(url, {
         credentials: 'include',
@@ -190,12 +191,16 @@ export function CostTrackingWidget({
                 <div className="text-right">
                   <div className="flex items-center">
                     {getVarianceIcon(project.variance)}
-                    <span className={`ml-1 text-sm font-medium ${getVarianceColor(project.variance)}`}>
-                      {project.variance > 0 ? '+' : ''}{formatCurrency(Math.abs(project.variance), project.currency)}
+                    <span
+                      className={`ml-1 text-sm font-medium ${getVarianceColor(project.variance)}`}
+                    >
+                      {project.variance > 0 ? '+' : ''}
+                      {formatCurrency(Math.abs(project.variance), project.currency)}
                     </span>
                   </div>
                   <div className="text-xs text-gray-500 mt-1">
-                    {project.variancePercent > 0 ? '+' : ''}{project.variancePercent.toFixed(1)}%
+                    {project.variancePercent > 0 ? '+' : ''}
+                    {project.variancePercent.toFixed(1)}%
                   </div>
                 </div>
               </div>
@@ -230,7 +235,10 @@ export function CostTrackingWidget({
                   <h4 className="text-sm font-medium text-gray-900 mb-2">Milestones</h4>
                   <div className="space-y-2">
                     {project.milestones.map(milestone => (
-                      <div key={milestone.id} className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded">
+                      <div
+                        key={milestone.id}
+                        className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded"
+                      >
                         <div className="flex items-center">
                           {milestone.status === 'COMPLETED' ? (
                             <CheckCircleIcon className="h-4 w-4 text-green-500 mr-2" />
@@ -261,8 +269,13 @@ export function CostTrackingWidget({
                   <h4 className="text-sm font-medium text-gray-900 mb-2">Spend by Category</h4>
                   <div className="space-y-2">
                     {project.spendByCategory.map(category => (
-                      <div key={category.category} className="flex items-center justify-between py-1">
-                        <span className="text-sm text-gray-600 capitalize">{category.category.toLowerCase()}</span>
+                      <div
+                        key={category.category}
+                        className="flex items-center justify-between py-1"
+                      >
+                        <span className="text-sm text-gray-600 capitalize">
+                          {category.category.toLowerCase()}
+                        </span>
                         <div className="flex items-center space-x-4 text-sm">
                           <span className="text-gray-500">
                             {formatCurrency(category.estimated, project.currency)} est.
@@ -271,7 +284,8 @@ export function CostTrackingWidget({
                             {formatCurrency(category.actual, project.currency)} actual
                           </span>
                           <span className={`font-medium ${getVarianceColor(category.variance)}`}>
-                            {category.variance > 0 ? '+' : ''}{formatCurrency(Math.abs(category.variance), project.currency)}
+                            {category.variance > 0 ? '+' : ''}
+                            {formatCurrency(Math.abs(category.variance), project.currency)}
                           </span>
                         </div>
                       </div>

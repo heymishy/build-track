@@ -37,7 +37,7 @@ async function POST(request: NextRequest, user: AuthUser) {
 
       const { GoogleAuth } = await import('google-auth-library')
       const { google } = await import('googleapis')
-      
+
       let credentials
       if (process.env.GOOGLE_SERVICE_ACCOUNT_KEY) {
         credentials = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_KEY)
@@ -51,7 +51,7 @@ async function POST(request: NextRequest, user: AuthUser) {
       // Test with ONLY Sheets API scope
       const auth = new GoogleAuth({
         credentials,
-        scopes: ['https://www.googleapis.com/auth/spreadsheets']
+        scopes: ['https://www.googleapis.com/auth/spreadsheets'],
       })
 
       const authClient = await auth.getClient()
@@ -60,13 +60,13 @@ async function POST(request: NextRequest, user: AuthUser) {
       try {
         // Try to create spreadsheet using ONLY Sheets API
         console.log('Attempting to create spreadsheet with Sheets API only...')
-        
+
         const response = await sheets.spreadsheets.create({
           requestBody: {
             properties: {
-              title: 'BuildTrack Sheets-Only Test - Safe to Delete'
-            }
-          }
+              title: 'BuildTrack Sheets-Only Test - Safe to Delete',
+            },
+          },
         })
 
         const spreadsheetId = response.data.spreadsheetId
@@ -77,7 +77,7 @@ async function POST(request: NextRequest, user: AuthUser) {
           // We can't delete via Sheets API, but we can clear it
           await sheets.spreadsheets.values.clear({
             spreadsheetId: spreadsheetId!,
-            range: 'A:Z'
+            range: 'A:Z',
           })
           console.log('Spreadsheet cleared (cannot delete via Sheets API)')
         } catch (cleanupError) {
@@ -93,13 +93,12 @@ async function POST(request: NextRequest, user: AuthUser) {
             clientEmail: credentials.client_email,
             apiUsed: 'Sheets API only',
             note: 'Drive API might not be needed for basic functionality',
-            url: `https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit`
-          }
+            url: `https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit`,
+          },
         })
-
       } catch (sheetsError: any) {
         console.error('Sheets API error:', sheetsError)
-        
+
         return NextResponse.json({
           success: false,
           error: 'Sheets API failed even with minimal scope',
@@ -108,26 +107,27 @@ async function POST(request: NextRequest, user: AuthUser) {
             clientEmail: credentials.client_email,
             errorCode: sheetsError.code,
             errorMessage: sheetsError.message,
-            suggestion: sheetsError.code === 403 ? 'Billing account or organization policy issue' : 'API configuration issue'
-          }
+            suggestion:
+              sheetsError.code === 403
+                ? 'Billing account or organization policy issue'
+                : 'API configuration issue',
+          },
         })
       }
-
     } finally {
       // Restore original environment variables
       process.env.GOOGLE_SERVICE_ACCOUNT_KEY = originalEnv.GOOGLE_SERVICE_ACCOUNT_KEY
       process.env.GOOGLE_CLIENT_EMAIL = originalEnv.GOOGLE_CLIENT_EMAIL
       process.env.GOOGLE_PRIVATE_KEY = originalEnv.GOOGLE_PRIVATE_KEY
     }
-
   } catch (error) {
     console.error('Sheets-only test failed:', error)
-    
+
     return NextResponse.json(
-      { 
-        success: false, 
+      {
+        success: false,
         error: 'Test failed to run',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 400 }
     )

@@ -132,11 +132,12 @@ export function GoogleSheetsExport({
         const url = window.URL.createObjectURL(blob)
         const link = document.createElement('a')
         link.href = url
-        
+
         // Extract filename from response headers or use default
         const contentDisposition = response.headers.get('content-disposition')
-        const filename = contentDisposition?.match(/filename="(.+)"/)?.[1] || 'BuildTrack_Invoice_Export.csv'
-        
+        const filename =
+          contentDisposition?.match(/filename="(.+)"/)?.[1] || 'BuildTrack_Invoice_Export.csv'
+
         link.download = filename
         document.body.appendChild(link)
         link.click()
@@ -146,7 +147,7 @@ export function GoogleSheetsExport({
         setExportResult({
           success: true,
           message: 'CSV export successful',
-          data: { filename }
+          data: { filename },
         })
       } else {
         const result = await response.json()
@@ -243,11 +244,11 @@ export function GoogleSheetsExport({
 
       {/* Export Result */}
       {exportResult && (
-        <div className={`mb-4 p-4 rounded-lg border ${
-          exportResult.success 
-            ? 'bg-green-50 border-green-200' 
-            : 'bg-red-50 border-red-200'
-        }`}>
+        <div
+          className={`mb-4 p-4 rounded-lg border ${
+            exportResult.success ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
+          }`}
+        >
           <div className="flex items-start justify-between">
             <div className="flex items-start">
               {exportResult.success ? (
@@ -256,14 +257,19 @@ export function GoogleSheetsExport({
                 <ExclamationTriangleIcon className="h-5 w-5 text-red-500 mt-0.5 mr-2" />
               )}
               <div>
-                <p className={`text-sm font-medium ${
-                  exportResult.success ? 'text-green-800' : 'text-red-800'
-                }`}>
+                <p
+                  className={`text-sm font-medium ${
+                    exportResult.success ? 'text-green-800' : 'text-red-800'
+                  }`}
+                >
                   {exportResult.message}
                 </p>
                 {exportResult.success && exportResult.data && (
                   <div className="mt-2 space-y-1 text-sm text-green-700">
-                    <p>Exported {exportResult.data.totalRows} rows from {exportResult.data.totalInvoices} invoices</p>
+                    <p>
+                      Exported {exportResult.data.totalRows} rows from{' '}
+                      {exportResult.data.totalInvoices} invoices
+                    </p>
                     {exportResult.data.spreadsheetUrl && (
                       <p>
                         <a
@@ -284,10 +290,7 @@ export function GoogleSheetsExport({
                 )}
               </div>
             </div>
-            <button
-              onClick={clearResult}
-              className="text-gray-400 hover:text-gray-600"
-            >
+            <button onClick={clearResult} className="text-gray-400 hover:text-gray-600">
               ×
             </button>
           </div>
@@ -298,9 +301,7 @@ export function GoogleSheetsExport({
         {/* Project Selector */}
         {showProjectSelector && (
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Project
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Project</label>
             <ProjectSelector
               selectedProjectId={selectedProjectId}
               onProjectChange={setSelectedProjectId}
@@ -311,16 +312,14 @@ export function GoogleSheetsExport({
 
         {/* Status Filter */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Invoice Status
-          </label>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Invoice Status</label>
           <div className="grid grid-cols-2 gap-2">
             {statusOptions.map(option => (
               <label key={option.value} className="flex items-center">
                 <input
                   type="checkbox"
                   checked={selectedStatus.includes(option.value)}
-                  onChange={(e) => {
+                  onChange={e => {
                     if (e.target.checked) {
                       setSelectedStatus([...selectedStatus, option.value])
                     } else {
@@ -338,24 +337,20 @@ export function GoogleSheetsExport({
         {/* Date Range */}
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              From Date
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">From Date</label>
             <input
               type="date"
               value={dateFrom}
-              onChange={(e) => setDateFrom(e.target.value)}
+              onChange={e => setDateFrom(e.target.value)}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              To Date
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">To Date</label>
             <input
               type="date"
               value={dateTo}
-              onChange={(e) => setDateTo(e.target.value)}
+              onChange={e => setDateTo(e.target.value)}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
             />
           </div>
@@ -364,14 +359,12 @@ export function GoogleSheetsExport({
         {/* Options */}
         <div className="space-y-3">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Export Options
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Export Options</label>
             <label className="flex items-center">
               <input
                 type="checkbox"
                 checked={includeLineItems}
-                onChange={(e) => setIncludeLineItems(e.target.checked)}
+                onChange={e => setIncludeLineItems(e.target.checked)}
                 className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
               />
               <span className="ml-2 text-sm text-gray-900">
@@ -387,7 +380,7 @@ export function GoogleSheetsExport({
             <input
               type="text"
               value={spreadsheetTitle}
-              onChange={(e) => setSpreadsheetTitle(e.target.value)}
+              onChange={e => setSpreadsheetTitle(e.target.value)}
               placeholder="BuildTrack Invoice Export"
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
             />
@@ -413,7 +406,7 @@ export function GoogleSheetsExport({
               </>
             )}
           </Button>
-          
+
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-gray-200" />
@@ -422,7 +415,7 @@ export function GoogleSheetsExport({
               <span className="bg-white px-2 text-gray-500">Or</span>
             </div>
           </div>
-          
+
           <Button
             onClick={handleCSVExport}
             disabled={isExporting || selectedStatus.length === 0}

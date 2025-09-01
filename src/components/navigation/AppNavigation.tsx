@@ -189,17 +189,18 @@ export function AppNavigation() {
             {llmProcessing && (
               <div className="flex items-center space-x-2 bg-blue-50 px-3 py-1 rounded-full border border-blue-200">
                 <CpuChipIcon className="h-4 w-4 text-blue-600 animate-pulse" />
-                <span className="text-xs text-blue-700 hidden sm:inline">
-                  {processingDetails}
-                </span>
+                <span className="text-xs text-blue-700 hidden sm:inline">{processingDetails}</span>
                 <ClockIcon className="h-3 w-3 text-blue-500 animate-spin sm:hidden" />
               </div>
             )}
-            
+
             {user && (
               <div className="flex items-center space-x-2 lg:space-x-3">
                 <div className="hidden sm:flex items-center space-x-2 lg:space-x-3">
-                  <span className="text-sm text-gray-700 truncate max-w-32 lg:max-w-48" title={user.name}>
+                  <span
+                    className="text-sm text-gray-700 truncate max-w-32 lg:max-w-48"
+                    title={user.name}
+                  >
                     {user.name}
                   </span>
                   <span
@@ -214,7 +215,7 @@ export function AppNavigation() {
                     {user.role}
                   </span>
                 </div>
-                
+
                 {/* Mobile user display */}
                 <div className="sm:hidden">
                   <span
@@ -227,10 +228,13 @@ export function AppNavigation() {
                     }`}
                     title={`${user.name} (${user.role})`}
                   >
-                    {user.name.split(' ').map(n => n[0]).join('')}
+                    {user.name
+                      .split(' ')
+                      .map(n => n[0])
+                      .join('')}
                   </span>
                 </div>
-                
+
                 <button
                   onClick={() => {
                     // Handle logout by redirecting to home with logout param

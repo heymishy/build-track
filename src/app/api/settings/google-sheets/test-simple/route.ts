@@ -38,7 +38,7 @@ async function POST(request: NextRequest, user: AuthUser) {
 
       // Test the connection by creating a new service instance
       const { GoogleAuth } = await import('google-auth-library')
-      
+
       let credentials
       if (process.env.GOOGLE_SERVICE_ACCOUNT_KEY) {
         credentials = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_KEY)
@@ -53,16 +53,16 @@ async function POST(request: NextRequest, user: AuthUser) {
         credentials,
         scopes: [
           'https://www.googleapis.com/auth/spreadsheets',
-          'https://www.googleapis.com/auth/drive'
+          'https://www.googleapis.com/auth/drive',
         ],
       })
 
       // Test authentication with minimal permissions
       const authClient = await auth.getClient()
-      
+
       // Try to get access token to verify credentials work
       const tokenResponse = await authClient.getAccessToken()
-      
+
       if (!tokenResponse.token) {
         throw new Error('Failed to obtain access token')
       }
@@ -70,12 +70,12 @@ async function POST(request: NextRequest, user: AuthUser) {
       // Test if we can access Google APIs at all
       const { google } = await import('googleapis')
       const drive = google.drive({ version: 'v3', auth: authClient })
-      
+
       // Try to list files (read-only operation)
       try {
         await drive.files.list({
           pageSize: 1,
-          fields: 'files(id, name)'
+          fields: 'files(id, name)',
         })
       } catch (driveError: any) {
         if (driveError.code === 403) {
@@ -84,15 +84,16 @@ async function POST(request: NextRequest, user: AuthUser) {
             error: 'Service account authentication works, but lacks proper IAM permissions.',
             troubleshooting: {
               issue: 'Service account needs IAM role permissions',
-              solution: 'Go to Google Cloud Console → IAM & Admin → IAM, find your service account, and give it "Editor" role',
-              link: `https://console.cloud.google.com/iam-admin/iam?project=${credentials.project_id || '525469478431'}`
+              solution:
+                'Go to Google Cloud Console → IAM & Admin → IAM, find your service account, and give it "Editor" role',
+              link: `https://console.cloud.google.com/iam-admin/iam?project=${credentials.project_id || '525469478431'}`,
             },
             details: {
               method,
               clientEmail: credentials.client_email,
               hasToken: !!tokenResponse.token,
-              permissionIssue: true
-            }
+              permissionIssue: true,
+            },
           })
         }
         throw driveError
@@ -106,20 +107,18 @@ async function POST(request: NextRequest, user: AuthUser) {
           clientEmail: credentials.client_email,
           hasToken: !!tokenResponse.token,
           driveAccess: true,
-          ready: 'Ready for spreadsheet creation!'
-        }
+          ready: 'Ready for spreadsheet creation!',
+        },
       })
-
     } finally {
       // Restore original environment variables
       process.env.GOOGLE_SERVICE_ACCOUNT_KEY = originalEnv.GOOGLE_SERVICE_ACCOUNT_KEY
       process.env.GOOGLE_CLIENT_EMAIL = originalEnv.GOOGLE_CLIENT_EMAIL
       process.env.GOOGLE_PRIVATE_KEY = originalEnv.GOOGLE_PRIVATE_KEY
     }
-
   } catch (error) {
     console.error('Google Sheets simple test failed:', error)
-    
+
     let errorMessage = 'Connection test failed'
     if (error instanceof Error) {
       if (error.message.includes('JSON')) {
@@ -136,10 +135,10 @@ async function POST(request: NextRequest, user: AuthUser) {
     }
 
     return NextResponse.json(
-      { 
-        success: false, 
+      {
+        success: false,
         error: errorMessage,
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 400 }
     )

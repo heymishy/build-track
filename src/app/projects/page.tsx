@@ -267,10 +267,7 @@ export default function ProjectsPage() {
               <p className="text-sm text-gray-600">Monitor project spend vs estimates</p>
             </div>
           </div>
-          <CostTrackingWidget 
-            showProjectSelector={true}
-            className="mb-0"
-          />
+          <CostTrackingWidget showProjectSelector={true} className="mb-0" />
         </div>
 
         {/* Projects List */}

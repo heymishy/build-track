@@ -43,7 +43,9 @@ class GoogleSheetsService {
       const privateKey = process.env.GOOGLE_PRIVATE_KEY
 
       if (!serviceAccountKey && !clientEmail && !privateKey) {
-        console.warn('Google Sheets API not configured. Set GOOGLE_SERVICE_ACCOUNT_KEY or individual credentials.')
+        console.warn(
+          'Google Sheets API not configured. Set GOOGLE_SERVICE_ACCOUNT_KEY or individual credentials.'
+        )
         return
       }
 
@@ -65,7 +67,7 @@ class GoogleSheetsService {
         credentials,
         scopes: [
           'https://www.googleapis.com/auth/spreadsheets',
-          'https://www.googleapis.com/auth/drive'
+          'https://www.googleapis.com/auth/drive',
         ],
       })
 
@@ -84,17 +86,19 @@ class GoogleSheetsService {
 
     try {
       const sheets = await this.getSheetsClient()
-      
+
       const response = await sheets.spreadsheets.create({
         requestBody: {
           properties: {
             title,
           },
-          sheets: [{
-            properties: {
-              title: 'Invoice Export',
+          sheets: [
+            {
+              properties: {
+                title: 'Invoice Export',
+              },
             },
-          }],
+          ],
         },
       })
 
@@ -110,7 +114,7 @@ class GoogleSheetsService {
     } catch (error: any) {
       console.error('Error creating spreadsheet:', error)
       console.error('Full error details:', JSON.stringify(error, null, 2))
-      
+
       if (error.code === 403) {
         // Log additional diagnostic info
         console.error('403 Error Details:', {
@@ -118,40 +122,45 @@ class GoogleSheetsService {
           code: error.code,
           status: error.status,
           statusText: error.statusText,
-          config: error.config ? {
-            url: error.config.url,
-            method: error.config.method,
-            headers: error.config.headers ? Object.keys(error.config.headers) : 'none'
-          } : 'no config',
-          response: error.response ? {
-            status: error.response.status,
-            statusText: error.response.statusText,
-            data: error.response.data
-          } : 'no response'
+          config: error.config
+            ? {
+                url: error.config.url,
+                method: error.config.method,
+                headers: error.config.headers ? Object.keys(error.config.headers) : 'none',
+              }
+            : 'no config',
+          response: error.response
+            ? {
+                status: error.response.status,
+                statusText: error.response.statusText,
+                data: error.response.data,
+              }
+            : 'no response',
         })
-        
+
         const permissionError = new Error(
           'Permission denied. Despite Owner role and enabled APIs, spreadsheet creation failed.\n\n' +
-          'Possible causes:\n' +
-          '1. API propagation delay (wait 5-10 minutes after enabling)\n' +
-          '2. Organization policy restrictions\n' +
-          '3. Service account needs domain-wide delegation\n' +
-          '4. Google Workspace domain restrictions\n' +
-          '5. Billing account not properly configured\n\n' +
-          'Project: plucky-hue-452808-s5\n' +
-          'Service Account: build-track-sheets@plucky-hue-452808-s5.iam.gserviceaccount.com\n\n' +
-          'Original error: ' + error.message
+            'Possible causes:\n' +
+            '1. API propagation delay (wait 5-10 minutes after enabling)\n' +
+            '2. Organization policy restrictions\n' +
+            '3. Service account needs domain-wide delegation\n' +
+            '4. Google Workspace domain restrictions\n' +
+            '5. Billing account not properly configured\n\n' +
+            'Project: plucky-hue-452808-s5\n' +
+            'Service Account: build-track-sheets@plucky-hue-452808-s5.iam.gserviceaccount.com\n\n' +
+            'Original error: ' +
+            error.message
         )
         permissionError.name = 'PermissionError'
         throw permissionError
       }
-      
+
       throw error
     }
   }
 
   async exportInvoicesToSheet(
-    spreadsheetId: string, 
+    spreadsheetId: string,
     invoices: InvoiceExportData[],
     sheetName: string = 'Invoice Export'
   ): Promise<void> {
@@ -174,7 +183,7 @@ class GoogleSheetsService {
         'Total Amount',
         'Taxable Amount',
         'Plus GST',
-        'Total'
+        'Total',
       ]
 
       // Prepare data rows
@@ -265,10 +274,10 @@ class GoogleSheetsService {
 
     const authClient = await this.auth.getClient()
     const { google } = await import('googleapis')
-    
-    return google.sheets({ 
-      version: 'v4', 
-      auth: authClient as any 
+
+    return google.sheets({
+      version: 'v4',
+      auth: authClient as any,
     })
   }
 
@@ -276,10 +285,10 @@ class GoogleSheetsService {
     try {
       const authClient = await this.auth!.getClient()
       const { google } = await import('googleapis')
-      
-      const drive = google.drive({ 
-        version: 'v3', 
-        auth: authClient as any 
+
+      const drive = google.drive({
+        version: 'v3',
+        auth: authClient as any,
       })
 
       // Make the spreadsheet publicly viewable (anyone with link can view)

@@ -16,7 +16,7 @@ interface LLMProcessingEvent {
 export function startLLMProcessing(operation: string, details?: string) {
   if (typeof window !== 'undefined') {
     const event = new CustomEvent('llm-processing-start', {
-      detail: { operation, details }
+      detail: { operation, details },
     })
     window.dispatchEvent(event)
   }

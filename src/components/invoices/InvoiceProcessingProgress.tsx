@@ -84,7 +84,9 @@ export function InvoiceProcessingProgress({
       case 'completed':
         return <CheckCircleIcon className="h-5 w-5 text-green-600" />
       case 'in_progress':
-        return <div className="animate-spin rounded-full h-5 w-5 border-2 border-blue-600 border-t-transparent" />
+        return (
+          <div className="animate-spin rounded-full h-5 w-5 border-2 border-blue-600 border-t-transparent" />
+        )
       case 'error':
         return <XCircleIcon className="h-5 w-5 text-red-600" />
       default:
@@ -92,9 +94,8 @@ export function InvoiceProcessingProgress({
     }
   }
 
-  const overallProgress = steps.length > 0 
-    ? (steps.filter(s => s.status === 'completed').length / steps.length) * 100 
-    : 0
+  const overallProgress =
+    steps.length > 0 ? (steps.filter(s => s.status === 'completed').length / steps.length) * 100 : 0
 
   return (
     <div className={`bg-white rounded-lg shadow-lg border ${className}`}>
@@ -102,13 +103,17 @@ export function InvoiceProcessingProgress({
       <div className="px-6 py-4 border-b border-gray-200">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <CpuChipIcon className={`h-6 w-6 ${isProcessing ? 'text-blue-600 animate-pulse' : 'text-gray-600'}`} />
+            <CpuChipIcon
+              className={`h-6 w-6 ${isProcessing ? 'text-blue-600 animate-pulse' : 'text-gray-600'}`}
+            />
             <div>
               <h3 className="text-lg font-semibold text-gray-900">
                 {isProcessing ? 'Processing Invoices...' : 'Processing Complete'}
               </h3>
               <p className="text-sm text-gray-600">
-                {isProcessing ? `Elapsed time: ${formatTime(elapsedTime)}` : `Completed in ${formatTime(elapsedTime)}`}
+                {isProcessing
+                  ? `Elapsed time: ${formatTime(elapsedTime)}`
+                  : `Completed in ${formatTime(elapsedTime)}`}
               </p>
             </div>
           </div>
@@ -153,9 +158,7 @@ export function InvoiceProcessingProgress({
             <div className="text-2xl font-bold text-gray-900">
               ${stats.processedAmount.toFixed(0)}
             </div>
-            <div className="text-xs text-gray-600">
-              of ${stats.totalAmount.toFixed(0)}
-            </div>
+            <div className="text-xs text-gray-600">of ${stats.totalAmount.toFixed(0)}</div>
           </div>
 
           <div className="text-center">
@@ -169,7 +172,9 @@ export function InvoiceProcessingProgress({
           <div className="text-center">
             <ClockIcon className="h-8 w-8 text-orange-600 mx-auto mb-2" />
             <div className="text-2xl font-bold text-gray-900">
-              {stats.averageProcessingTime > 0 ? `${(stats.averageProcessingTime / 1000).toFixed(1)}s` : '-'}
+              {stats.averageProcessingTime > 0
+                ? `${(stats.averageProcessingTime / 1000).toFixed(1)}s`
+                : '-'}
             </div>
             <div className="text-xs text-gray-600">Avg Time</div>
           </div>
@@ -183,18 +188,26 @@ export function InvoiceProcessingProgress({
                 <SparklesIcon className="h-5 w-5 text-indigo-600" />
                 <span className="text-sm font-medium text-gray-900">Extraction Quality</span>
               </div>
-              <div className={`text-lg font-bold ${
-                stats.qualityScore >= 0.8 ? 'text-green-600' : 
-                stats.qualityScore >= 0.6 ? 'text-yellow-600' : 'text-red-600'
-              }`}>
+              <div
+                className={`text-lg font-bold ${
+                  stats.qualityScore >= 0.8
+                    ? 'text-green-600'
+                    : stats.qualityScore >= 0.6
+                      ? 'text-yellow-600'
+                      : 'text-red-600'
+                }`}
+              >
                 {(stats.qualityScore * 100).toFixed(0)}%
               </div>
             </div>
             <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
               <div
                 className={`h-2 rounded-full transition-all duration-500 ${
-                  stats.qualityScore >= 0.8 ? 'bg-green-600' : 
-                  stats.qualityScore >= 0.6 ? 'bg-yellow-600' : 'bg-red-600'
+                  stats.qualityScore >= 0.8
+                    ? 'bg-green-600'
+                    : stats.qualityScore >= 0.6
+                      ? 'bg-yellow-600'
+                      : 'bg-red-600'
                 }`}
                 style={{ width: `${stats.qualityScore * 100}%` }}
               />
@@ -209,35 +222,35 @@ export function InvoiceProcessingProgress({
         <div className="space-y-3">
           {steps.map((step, index) => (
             <div key={step.id} className="flex items-start space-x-3">
-              <div className="flex-shrink-0 mt-0.5">
-                {getStepIcon(step)}
-              </div>
+              <div className="flex-shrink-0 mt-0.5">{getStepIcon(step)}</div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
-                  <h5 className={`text-sm font-medium ${
-                    step.status === 'error' ? 'text-red-900' : 
-                    step.status === 'completed' ? 'text-green-900' :
-                    step.status === 'in_progress' ? 'text-blue-900' : 'text-gray-900'
-                  }`}>
+                  <h5
+                    className={`text-sm font-medium ${
+                      step.status === 'error'
+                        ? 'text-red-900'
+                        : step.status === 'completed'
+                          ? 'text-green-900'
+                          : step.status === 'in_progress'
+                            ? 'text-blue-900'
+                            : 'text-gray-900'
+                    }`}
+                  >
                     {step.name}
                     {step.status === 'in_progress' && currentStep === step.id && (
                       <span className="ml-2 text-xs text-blue-600">(Current)</span>
                     )}
                   </h5>
                   {step.duration && (
-                    <span className="text-xs text-gray-500">
-                      {formatTime(step.duration)}
-                    </span>
+                    <span className="text-xs text-gray-500">{formatTime(step.duration)}</span>
                   )}
                 </div>
-                
+
                 {step.description && (
                   <p className="text-sm text-gray-600 mt-1">{step.description}</p>
                 )}
-                
-                {step.error && (
-                  <p className="text-sm text-red-600 mt-1">{step.error}</p>
-                )}
+
+                {step.error && <p className="text-sm text-red-600 mt-1">{step.error}</p>}
 
                 {/* Step Progress Bar */}
                 {step.status === 'in_progress' && step.progress !== undefined && (
@@ -265,9 +278,12 @@ export function InvoiceProcessingProgress({
           </h4>
           <div className="space-y-2 max-h-32 overflow-y-auto">
             {stats.errors.map((error, index) => (
-              <div key={index} className={`text-xs p-2 rounded ${
-                error.type === 'error' ? 'bg-red-50 text-red-700' : 'bg-yellow-50 text-yellow-700'
-              }`}>
+              <div
+                key={index}
+                className={`text-xs p-2 rounded ${
+                  error.type === 'error' ? 'bg-red-50 text-red-700' : 'bg-yellow-50 text-yellow-700'
+                }`}
+              >
                 <div className="font-medium">{error.message}</div>
                 <div className="text-xs opacity-75 mt-1">
                   {error.timestamp.toLocaleTimeString()}

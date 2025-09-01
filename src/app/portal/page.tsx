@@ -429,7 +429,9 @@ export default function SupplierPortalPage() {
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
           <div className="relative top-20 mx-auto p-5 border w-11/12 max-w-4xl shadow-lg rounded-md bg-white">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium text-gray-900">Export Your Invoices to Google Sheets</h3>
+              <h3 className="text-lg font-medium text-gray-900">
+                Export Your Invoices to Google Sheets
+              </h3>
               <button
                 onClick={() => setShowExportModal(false)}
                 className="text-gray-400 hover:text-gray-600"
@@ -437,21 +439,22 @@ export default function SupplierPortalPage() {
                 <XMarkIcon className="h-6 w-6" />
               </button>
             </div>
-            
+
             <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
               <p className="text-sm text-blue-800">
-                <strong>Note:</strong> This will export invoices uploaded through this portal using your email address ({email}). 
-                You can filter by project and status to customize the export.
+                <strong>Note:</strong> This will export invoices uploaded through this portal using
+                your email address ({email}). You can filter by project and status to customize the
+                export.
               </p>
             </div>
-            
+
             <GoogleSheetsExport
               defaultProjectId={selectedProjectId || undefined}
               showProjectSelector={true}
               compact={false}
               className="border-0 shadow-none p-0"
             />
-            
+
             <div className="flex justify-end mt-6">
               <button
                 onClick={() => setShowExportModal(false)}

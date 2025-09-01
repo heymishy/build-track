@@ -38,7 +38,7 @@ export function useInvoiceProcessing() {
     errors: [],
   })
   const [currentStep, setCurrentStep] = useState<string | undefined>()
-  
+
   const abortController = useRef<AbortController | null>(null)
   const stepTimings = useRef<Map<string, number>>(new Map())
 
@@ -79,23 +79,25 @@ export function useInvoiceProcessing() {
   }, [])
 
   const updateStep = useCallback((stepId: string, updates: Partial<ProcessingStep>) => {
-    setSteps(prev => prev.map(step => {
-      if (step.id === stepId) {
-        // Track timing
-        if (updates.status === 'in_progress') {
-          stepTimings.current.set(stepId, Date.now())
-          setCurrentStep(stepId)
-        } else if (updates.status === 'completed' || updates.status === 'error') {
-          const startTime = stepTimings.current.get(stepId)
-          if (startTime) {
-            updates.duration = Date.now() - startTime
+    setSteps(prev =>
+      prev.map(step => {
+        if (step.id === stepId) {
+          // Track timing
+          if (updates.status === 'in_progress') {
+            stepTimings.current.set(stepId, Date.now())
+            setCurrentStep(stepId)
+          } else if (updates.status === 'completed' || updates.status === 'error') {
+            const startTime = stepTimings.current.get(stepId)
+            if (startTime) {
+              updates.duration = Date.now() - startTime
+            }
           }
+
+          return { ...step, ...updates }
         }
-        
-        return { ...step, ...updates }
-      }
-      return step
-    }))
+        return step
+      })
+    )
   }, [])
 
   const updateStats = useCallback((updates: Partial<ProcessingStats>) => {
@@ -105,135 +107,137 @@ export function useInvoiceProcessing() {
   const addError = useCallback((message: string, type: 'warning' | 'error' = 'error') => {
     setStats(prev => ({
       ...prev,
-      errors: [...prev.errors, {
-        message,
-        type,
-        timestamp: new Date(),
-      }],
+      errors: [
+        ...prev.errors,
+        {
+          message,
+          type,
+          timestamp: new Date(),
+        },
+      ],
     }))
   }, [])
 
-  const processInvoices = useCallback(async (
-    file: File, 
-    options: InvoiceProcessingOptions = {}
-  ): Promise<ProcessedInvoiceResult> => {
-    try {
-      setIsProcessing(true)
-      setSteps(initializeSteps())
-      setStats({
-        totalInvoices: 0,
-        processedInvoices: 0,
-        totalAmount: 0,
-        processedAmount: 0,
-        successRate: 0,
-        averageProcessingTime: 0,
-        errors: [],
-      })
-      setCurrentStep(undefined)
-      
-      // Create abort controller for cancellation
-      abortController.current = new AbortController()
-      
-      // Start global LLM processing indicator
-      startLLMProcessing('Processing invoices...', `Parsing ${file.name}`)
+  const processInvoices = useCallback(
+    async (file: File, options: InvoiceProcessingOptions = {}): Promise<ProcessedInvoiceResult> => {
+      try {
+        setIsProcessing(true)
+        setSteps(initializeSteps())
+        setStats({
+          totalInvoices: 0,
+          processedInvoices: 0,
+          totalAmount: 0,
+          processedAmount: 0,
+          successRate: 0,
+          averageProcessingTime: 0,
+          errors: [],
+        })
+        setCurrentStep(undefined)
 
-      const startTime = Date.now()
+        // Create abort controller for cancellation
+        abortController.current = new AbortController()
 
-      // Step 1: File Upload
-      updateStep('upload', { status: 'in_progress', progress: 0 })
-      
-      const formData = new FormData()
-      formData.append('file', file)
-      
-      updateStep('upload', { status: 'completed', progress: 100 })
-      updateStep('extraction', { status: 'in_progress', progress: 0 })
+        // Start global LLM processing indicator
+        startLLMProcessing('Processing invoices...', `Parsing ${file.name}`)
 
-      // Step 2-5: API Call with progress tracking
-      const response = await fetch('/api/invoices/parse', {
-        method: 'POST',
-        body: formData,
-        signal: abortController.current.signal,
-      })
+        const startTime = Date.now()
 
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to process invoices')
+        // Step 1: File Upload
+        updateStep('upload', { status: 'in_progress', progress: 0 })
+
+        const formData = new FormData()
+        formData.append('file', file)
+
+        updateStep('upload', { status: 'completed', progress: 100 })
+        updateStep('extraction', { status: 'in_progress', progress: 0 })
+
+        // Step 2-5: API Call with progress tracking
+        const response = await fetch('/api/invoices/parse', {
+          method: 'POST',
+          body: formData,
+          signal: abortController.current.signal,
+        })
+
+        if (!response.ok) {
+          const errorData = await response.json()
+          throw new Error(errorData.error || 'Failed to process invoices')
+        }
+
+        const result = await response.json()
+
+        // Update steps to completed
+        updateStep('extraction', { status: 'completed', progress: 100 })
+        updateStep('parsing', { status: 'completed', progress: 100 })
+        updateStep('validation', { status: 'completed', progress: 100 })
+        updateStep('saving', { status: 'completed', progress: 100 })
+
+        // Calculate final stats
+        const processingTime = Date.now() - startTime
+        const finalStats: ProcessingStats = {
+          totalInvoices: result.totalInvoices || 0,
+          processedInvoices: result.totalInvoices || 0,
+          totalAmount: result.totalAmount || 0,
+          processedAmount: result.totalAmount || 0,
+          successRate: result.success ? 1 : 0,
+          averageProcessingTime: processingTime,
+          qualityScore: result.qualityMetrics?.overallAccuracy,
+          errors:
+            result.qualityMetrics?.issuesFound?.map((issue: string) => ({
+              message: issue,
+              type: 'warning' as const,
+              timestamp: new Date(),
+            })) || [],
+        }
+
+        setStats(finalStats)
+
+        // Notify callbacks
+        if (options.onStatsUpdate) {
+          options.onStatsUpdate(finalStats)
+        }
+
+        if (options.onComplete) {
+          options.onComplete(result)
+        }
+
+        return {
+          success: true,
+          totalInvoices: result.totalInvoices || 0,
+          totalAmount: result.totalAmount || 0,
+          qualityScore: result.qualityMetrics?.overallAccuracy,
+          invoices: result.invoices || [],
+        }
+      } catch (error: any) {
+        // Handle cancellation
+        if (error.name === 'AbortError') {
+          updateStep(currentStep || 'upload', { status: 'error', error: 'Processing cancelled' })
+          addError('Processing was cancelled by user')
+          return { success: false, totalInvoices: 0, totalAmount: 0, error: 'Cancelled' }
+        }
+
+        // Handle other errors
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
+        updateStep(currentStep || 'upload', { status: 'error', error: errorMessage })
+        addError(errorMessage, 'error')
+
+        if (options.onError) {
+          options.onError(errorMessage)
+        }
+
+        return {
+          success: false,
+          totalInvoices: 0,
+          totalAmount: 0,
+          error: errorMessage,
+        }
+      } finally {
+        setIsProcessing(false)
+        setCurrentStep(undefined)
+        endLLMProcessing()
       }
-
-      const result = await response.json()
-      
-      // Update steps to completed
-      updateStep('extraction', { status: 'completed', progress: 100 })
-      updateStep('parsing', { status: 'completed', progress: 100 })
-      updateStep('validation', { status: 'completed', progress: 100 })
-      updateStep('saving', { status: 'completed', progress: 100 })
-
-      // Calculate final stats
-      const processingTime = Date.now() - startTime
-      const finalStats: ProcessingStats = {
-        totalInvoices: result.totalInvoices || 0,
-        processedInvoices: result.totalInvoices || 0,
-        totalAmount: result.totalAmount || 0,
-        processedAmount: result.totalAmount || 0,
-        successRate: result.success ? 1 : 0,
-        averageProcessingTime: processingTime,
-        qualityScore: result.qualityMetrics?.overallAccuracy,
-        errors: result.qualityMetrics?.issuesFound?.map((issue: string) => ({
-          message: issue,
-          type: 'warning' as const,
-          timestamp: new Date(),
-        })) || [],
-      }
-
-      setStats(finalStats)
-      
-      // Notify callbacks
-      if (options.onStatsUpdate) {
-        options.onStatsUpdate(finalStats)
-      }
-      
-      if (options.onComplete) {
-        options.onComplete(result)
-      }
-
-      return {
-        success: true,
-        totalInvoices: result.totalInvoices || 0,
-        totalAmount: result.totalAmount || 0,
-        qualityScore: result.qualityMetrics?.overallAccuracy,
-        invoices: result.invoices || [],
-      }
-
-    } catch (error: any) {
-      // Handle cancellation
-      if (error.name === 'AbortError') {
-        updateStep(currentStep || 'upload', { status: 'error', error: 'Processing cancelled' })
-        addError('Processing was cancelled by user')
-        return { success: false, totalInvoices: 0, totalAmount: 0, error: 'Cancelled' }
-      }
-
-      // Handle other errors
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
-      updateStep(currentStep || 'upload', { status: 'error', error: errorMessage })
-      addError(errorMessage, 'error')
-      
-      if (options.onError) {
-        options.onError(errorMessage)
-      }
-
-      return {
-        success: false,
-        totalInvoices: 0,
-        totalAmount: 0,
-        error: errorMessage,
-      }
-      
-    } finally {
-      setIsProcessing(false)
-      setCurrentStep(undefined)
-      endLLMProcessing()
-    }
-  }, [initializeSteps, updateStep, updateStats, addError, currentStep])
+    },
+    [initializeSteps, updateStep, updateStats, addError, currentStep]
+  )
 
   const cancelProcessing = useCallback(() => {
     if (abortController.current) {
@@ -263,7 +267,7 @@ export function useInvoiceProcessing() {
     steps,
     stats,
     currentStep,
-    
+
     // Actions
     processInvoices,
     cancelProcessing,

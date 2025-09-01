@@ -207,7 +207,7 @@ async function GET(
     // Get milestones for this project
     const milestones = await prisma.milestone.findMany({
       where: { projectId },
-      orderBy: { sortOrder: 'asc' }
+      orderBy: { sortOrder: 'asc' },
     })
 
     const formattedMilestones = milestones.map(milestone => ({
@@ -217,7 +217,7 @@ async function GET(
       actualDate: milestone.actualDate?.toISOString(),
       paymentAmount: Number(milestone.paymentAmount),
       percentComplete: Number(milestone.percentComplete),
-      status: milestone.status
+      status: milestone.status,
     }))
 
     // Calculate spend by category for widget compatibility
@@ -233,7 +233,7 @@ async function GET(
       variancePercent,
       currency: project.currency,
       milestones: formattedMilestones,
-      spendByCategory
+      spendByCategory,
     }
 
     return NextResponse.json({
@@ -273,26 +273,26 @@ async function calculateSpendByCategory(projectId: string) {
   const invoices = await prisma.invoice.findMany({
     where: {
       projectId,
-      status: { not: 'CANCELLED' }
+      status: { not: 'CANCELLED' },
     },
     include: {
-      lineItems: true
-    }
+      lineItems: true,
+    },
   })
 
   // Get trades and line items for estimates
   const trades = await prisma.trade.findMany({
     where: {
-      projectId
+      projectId,
     },
     include: {
-      lineItems: true
-    }
+      lineItems: true,
+    },
   })
 
   // Group invoice spend by category
   const invoiceSpendByCategory = new Map<string, number>()
-  
+
   invoices.forEach(invoice => {
     invoice.lineItems.forEach((lineItem: any) => {
       const category = lineItem.category || 'OTHER'
@@ -303,21 +303,21 @@ async function calculateSpendByCategory(projectId: string) {
 
   // Group estimates by category
   const estimatesByCategory = new Map<string, number>()
-  
+
   trades.forEach(trade => {
     trade.lineItems.forEach((lineItem: any) => {
       const materialCost = Number(lineItem.materialCostEst || 0)
-      const laborCost = Number(lineItem.laborCostEst || 0) 
+      const laborCost = Number(lineItem.laborCostEst || 0)
       const equipmentCost = Number(lineItem.equipmentCostEst || 0)
       const quantity = Number(lineItem.quantity || 1)
-      
+
       let totalEstimate = (materialCost + laborCost + equipmentCost) * quantity
-      
+
       const markupPercent = Number(lineItem.markupPercent || 0)
       const overheadPercent = Number(lineItem.overheadPercent || 0)
-      
-      totalEstimate *= (1 + markupPercent / 100)
-      totalEstimate *= (1 + overheadPercent / 100)
+
+      totalEstimate *= 1 + markupPercent / 100
+      totalEstimate *= 1 + overheadPercent / 100
 
       const category = categorizeLineItem(lineItem.description)
       const current = estimatesByCategory.get(category) || 0
@@ -326,39 +326,44 @@ async function calculateSpendByCategory(projectId: string) {
   })
 
   // Combine data
-  const allCategories = new Set([
-    ...invoiceSpendByCategory.keys(),
-    ...estimatesByCategory.keys()
-  ])
+  const allCategories = new Set([...invoiceSpendByCategory.keys(), ...estimatesByCategory.keys()])
 
-  return Array.from(allCategories).map(category => {
-    const estimated = estimatesByCategory.get(category) || 0
-    const actual = invoiceSpendByCategory.get(category) || 0
-    const variance = actual - estimated
+  return Array.from(allCategories)
+    .map(category => {
+      const estimated = estimatesByCategory.get(category) || 0
+      const actual = invoiceSpendByCategory.get(category) || 0
+      const variance = actual - estimated
 
-    return {
-      category,
-      estimated,
-      actual,
-      variance
-    }
-  }).filter(item => item.estimated > 0 || item.actual > 0)
+      return {
+        category,
+        estimated,
+        actual,
+        variance,
+      }
+    })
+    .filter(item => item.estimated > 0 || item.actual > 0)
 }
 
 function categorizeLineItem(description: string): string {
   const desc = description.toLowerCase()
-  
+
   if (desc.includes('labor') || desc.includes('install') || desc.includes('work')) {
     return 'LABOR'
   }
   if (desc.includes('equipment') || desc.includes('tool') || desc.includes('machinery')) {
     return 'EQUIPMENT'
   }
-  if (desc.includes('material') || desc.includes('supply') || desc.includes('concrete') || 
-      desc.includes('timber') || desc.includes('steel') || desc.includes('pipe')) {
+  if (
+    desc.includes('material') ||
+    desc.includes('supply') ||
+    desc.includes('concrete') ||
+    desc.includes('timber') ||
+    desc.includes('steel') ||
+    desc.includes('pipe')
+  ) {
     return 'MATERIAL'
   }
-  
+
   return 'OTHER'
 }
 

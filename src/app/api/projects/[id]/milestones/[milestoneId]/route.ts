@@ -43,11 +43,11 @@ async function GET(
       },
       include: {
         dependencies: {
-          select: { id: true, name: true, status: true }
+          select: { id: true, name: true, status: true },
         },
         dependentOn: {
-          select: { id: true, name: true, status: true }
-        }
+          select: { id: true, name: true, status: true },
+        },
       },
     })
 
@@ -173,8 +173,8 @@ async function PUT(
       // Set up dependency relationships (replace all existing)
       dependenciesUpdate = {
         dependencies: {
-          set: validatedDependencies.map(id => ({ id }))
-        }
+          set: validatedDependencies.map(id => ({ id })),
+        },
       }
     }
 
@@ -187,7 +187,7 @@ async function PUT(
       },
       include: {
         dependencies: {
-          select: { id: true, name: true, status: true }
+          select: { id: true, name: true, status: true },
         },
       },
     })
