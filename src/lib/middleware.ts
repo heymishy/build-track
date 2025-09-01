@@ -7,7 +7,7 @@ import { UserRole, ProjectRole } from '@prisma/client'
 import { NextRequest } from 'next/server'
 
 // Define available resources and actions
-export type Resource = 'users' | 'projects' | 'invoices' | 'estimates' | 'milestones' | 'settings'
+export type Resource = 'users' | 'projects' | 'invoices' | 'estimates' | 'milestones' | 'settings' | 'suppliers'
 export type Action = 'create' | 'read' | 'update' | 'delete' | 'write'
 
 // User with role information
@@ -54,6 +54,7 @@ const PERMISSION_MATRIX: Record<UserRole, Record<Resource, Action[]>> = {
     estimates: ['create', 'read', 'update', 'delete', 'write'],
     milestones: ['create', 'read', 'update', 'delete', 'write'],
     settings: ['create', 'read', 'update', 'delete', 'write'],
+    suppliers: ['create', 'read', 'update', 'delete', 'write'],
   },
   USER: {
     users: ['read'], // Can only read their own user info
@@ -62,6 +63,7 @@ const PERMISSION_MATRIX: Record<UserRole, Record<Resource, Action[]>> = {
     estimates: ['create', 'read', 'update', 'write'],
     milestones: ['read', 'update'],
     settings: ['create', 'read', 'update'], // Users can manage their own settings
+    suppliers: [], // Only admins can manage suppliers
   },
   VIEWER: {
     users: [],
@@ -70,6 +72,7 @@ const PERMISSION_MATRIX: Record<UserRole, Record<Resource, Action[]>> = {
     estimates: ['read'],
     milestones: ['read'],
     settings: ['read'], // Viewers can only read settings
+    suppliers: [], // Only admins can manage suppliers
   },
 }
 

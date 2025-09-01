@@ -10,6 +10,7 @@ import {
 } from '@/components/navigation/PhaseBasedNavigation'
 import { PhaseBasedContent } from '@/components/dashboard/PhaseBasedContent'
 import { EnhancedInvoiceUpload } from '@/components/invoices/EnhancedInvoiceUpload'
+import { CostTrackingWidget } from '@/components/tracking/CostTrackingWidget'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { AppLayout } from '@/components/layout/AppLayout'
@@ -150,6 +151,18 @@ function DashboardContent() {
                 console.log('Upload completed:', result)
               }}
             />
+
+            {/* Cost Tracking Section */}
+            <div className="mb-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Cost Tracking</h2>
+              <CostTrackingWidget 
+                showProjectSelector={true}
+                onProjectChange={(projectId) => {
+                  // Optional: sync with activeView if needed
+                  console.log('Cost tracking project changed:', projectId)
+                }}
+              />
+            </div>
 
             {/* Phase-Based Content */}
             <PhaseBasedContent

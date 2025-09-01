@@ -41,10 +41,10 @@ export const GET = withAuth(
     } catch (error) {
       console.error('Debug user settings error:', error)
       return NextResponse.json(
-        { 
-          success: false, 
+        {
+          success: false,
           error: 'Failed to debug user settings',
-          details: error instanceof Error ? error.message : 'Unknown error'
+          details: error instanceof Error ? error.message : 'Unknown error',
         },
         { status: 500 }
       )

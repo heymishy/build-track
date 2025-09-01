@@ -31,6 +31,9 @@ interface Milestone {
   sortOrder: number
   createdAt: string
   updatedAt: string
+  // Dependency tracking
+  dependencies?: { id: string; name: string; status: string }[] // Milestones this one depends on
+  dependentOn?: { id: string; name: string; status: string }[] // Milestones that depend on this one
 }
 
 interface MilestoneSummary {
@@ -75,6 +78,7 @@ export function MilestoneManagement({ project, className = '' }: MilestoneManage
     paymentAmount: '',
     percentComplete: '',
     status: 'PENDING' as const,
+    dependencies: [] as string[], // Array of milestone IDs this milestone depends on
   })
 
   useEffect(() => {
@@ -132,6 +136,7 @@ export function MilestoneManagement({ project, className = '' }: MilestoneManage
           targetDate: formData.targetDate,
           paymentAmount: parseFloat(formData.paymentAmount),
           sortOrder: milestones.length,
+          dependencies: formData.dependencies,
         }),
       })
 
@@ -147,6 +152,7 @@ export function MilestoneManagement({ project, className = '' }: MilestoneManage
           paymentAmount: '',
           percentComplete: '',
           status: 'PENDING',
+          dependencies: [],
         })
       } else {
         setError(data.error || 'Failed to create milestone')
@@ -189,6 +195,7 @@ export function MilestoneManagement({ project, className = '' }: MilestoneManage
       paymentAmount: milestone.paymentAmount.toString(),
       percentComplete: milestone.percentComplete.toString(),
       status: milestone.status,
+      dependencies: milestone.dependencies?.map(dep => dep.id) || [],
     })
     setShowEditModal(true)
   }
@@ -199,13 +206,14 @@ export function MilestoneManagement({ project, className = '' }: MilestoneManage
     if (!editingMilestone) return
 
     try {
-      const updates: Partial<Milestone> = {
+      const updates: Partial<Milestone> & { dependencies?: string[] } = {
         name: formData.name,
         description: formData.description || undefined,
         targetDate: formData.targetDate,
         paymentAmount: parseFloat(formData.paymentAmount),
         percentComplete: parseFloat(formData.percentComplete),
         status: formData.status,
+        dependencies: formData.dependencies,
       }
 
       // Auto-set actual date if completing
@@ -286,6 +294,26 @@ export function MilestoneManagement({ project, className = '' }: MilestoneManage
       default:
         return <FlagIcon className="h-4 w-4" />
     }
+  }
+
+  // Check if a milestone can be started based on its dependencies
+  const canStartMilestone = (milestone: Milestone): boolean => {
+    if (!milestone.dependencies || milestone.dependencies.length === 0) {
+      return true
+    }
+    return milestone.dependencies.every(dep => dep.status === 'COMPLETED')
+  }
+
+  // Get blocked reason for a milestone
+  const getBlockedReason = (milestone: Milestone): string | null => {
+    if (canStartMilestone(milestone)) {
+      return null
+    }
+    const incomplete = milestone.dependencies?.filter(dep => dep.status !== 'COMPLETED') || []
+    if (incomplete.length === 1) {
+      return `Waiting for "${incomplete[0].name}" to be completed`
+    }
+    return `Waiting for ${incomplete.length} dependencies to be completed`
   }
 
   if (loading) {
@@ -419,6 +447,38 @@ export function MilestoneManagement({ project, className = '' }: MilestoneManage
                         )}
                       </div>
 
+                      {/* Dependencies Display */}
+                      {milestone.dependencies && milestone.dependencies.length > 0 && (
+                        <div className="mt-2 text-xs">
+                          <div className="flex items-center space-x-2">
+                            <span className="text-gray-500">Depends on:</span>
+                            <div className="flex flex-wrap gap-1">
+                              {milestone.dependencies.map(dep => (
+                                <span
+                                  key={dep.id}
+                                  className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                    dep.status === 'COMPLETED'
+                                      ? 'bg-green-100 text-green-800'
+                                      : 'bg-yellow-100 text-yellow-800'
+                                  }`}
+                                >
+                                  {dep.name}
+                                  {dep.status === 'COMPLETED' ? ' ✓' : ' ⏳'}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Blocked Status */}
+                      {!canStartMilestone(milestone) && milestone.status === 'PENDING' && (
+                        <div className="mt-2 flex items-center text-xs text-orange-600">
+                          <ExclamationTriangleIcon className="h-3 w-3 mr-1" />
+                          {getBlockedReason(milestone)}
+                        </div>
+                      )}
+
                       {/* Progress Bar */}
                       {milestone.percentComplete > 0 && milestone.status !== 'COMPLETED' && (
                         <div className="mt-2">
@@ -470,17 +530,32 @@ export function MilestoneManagement({ project, className = '' }: MilestoneManage
                   {/* Status Dropdown */}
                   <select
                     value={milestone.status}
-                    onChange={e =>
+                    onChange={e => {
+                      const newStatus = e.target.value as any
+                      // Prevent starting milestone if dependencies aren't met
+                      if (newStatus === 'IN_PROGRESS' && !canStartMilestone(milestone)) {
+                        alert(getBlockedReason(milestone))
+                        return
+                      }
                       handleUpdateMilestone(milestone.id, {
-                        status: e.target.value as any,
+                        status: newStatus,
                         actualDate:
-                          e.target.value === 'COMPLETED' ? new Date().toISOString() : undefined,
+                          newStatus === 'COMPLETED' ? new Date().toISOString() : undefined,
                       })
-                    }
-                    className="text-xs border-gray-300 rounded-md focus:border-blue-500 focus:ring-blue-500"
+                    }}
+                    className={`text-xs border-gray-300 rounded-md focus:border-blue-500 focus:ring-blue-500 ${
+                      !canStartMilestone(milestone) && milestone.status === 'PENDING'
+                        ? 'bg-gray-100 text-gray-500'
+                        : ''
+                    }`}
                   >
                     <option value="PENDING">Pending</option>
-                    <option value="IN_PROGRESS">In Progress</option>
+                    <option 
+                      value="IN_PROGRESS" 
+                      disabled={!canStartMilestone(milestone) && milestone.status === 'PENDING'}
+                    >
+                      In Progress
+                    </option>
                     <option value="COMPLETED">Completed</option>
                     <option value="OVERDUE">Overdue</option>
                   </select>
@@ -579,6 +654,54 @@ export function MilestoneManagement({ project, className = '' }: MilestoneManage
                         required
                       />
                     </div>
+
+                    {/* Dependencies Selector */}
+                    {milestones.length > 0 && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Dependencies
+                        </label>
+                        <p className="text-xs text-gray-500 mb-2">
+                          Select milestones that must be completed before this one can start
+                        </p>
+                        <div className="space-y-2 max-h-32 overflow-y-auto border border-gray-200 rounded-md p-2">
+                          {milestones.map(milestone => (
+                            <label key={milestone.id} className="flex items-center space-x-2">
+                              <input
+                                type="checkbox"
+                                checked={formData.dependencies.includes(milestone.id)}
+                                onChange={e => {
+                                  if (e.target.checked) {
+                                    setFormData({
+                                      ...formData,
+                                      dependencies: [...formData.dependencies, milestone.id],
+                                    })
+                                  } else {
+                                    setFormData({
+                                      ...formData,
+                                      dependencies: formData.dependencies.filter(id => id !== milestone.id),
+                                    })
+                                  }
+                                }}
+                                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                              />
+                              <span className="text-sm text-gray-700">{milestone.name}</span>
+                              <span
+                                className={`px-2 py-0.5 text-xs rounded-full ${
+                                  milestone.status === 'COMPLETED'
+                                    ? 'bg-green-100 text-green-800'
+                                    : milestone.status === 'IN_PROGRESS'
+                                      ? 'bg-blue-100 text-blue-800'
+                                      : 'bg-gray-100 text-gray-800'
+                                }`}
+                              >
+                                {milestone.status.replace('_', ' ')}
+                              </span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -712,6 +835,54 @@ export function MilestoneManagement({ project, className = '' }: MilestoneManage
                         <option value="COMPLETED">Completed</option>
                         <option value="OVERDUE">Overdue</option>
                       </select>
+                    </div>
+
+                    {/* Dependencies Selector */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Dependencies
+                      </label>
+                      <p className="text-xs text-gray-500 mb-2">
+                        Select milestones that must be completed before this one can start
+                      </p>
+                      <div className="space-y-2 max-h-32 overflow-y-auto border border-gray-200 rounded-md p-2">
+                        {milestones
+                          .filter(m => m.id !== editingMilestone?.id) // Exclude self when editing
+                          .map(milestone => (
+                            <label key={milestone.id} className="flex items-center space-x-2">
+                              <input
+                                type="checkbox"
+                                checked={formData.dependencies.includes(milestone.id)}
+                                onChange={e => {
+                                  if (e.target.checked) {
+                                    setFormData({
+                                      ...formData,
+                                      dependencies: [...formData.dependencies, milestone.id],
+                                    })
+                                  } else {
+                                    setFormData({
+                                      ...formData,
+                                      dependencies: formData.dependencies.filter(id => id !== milestone.id),
+                                    })
+                                  }
+                                }}
+                                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                              />
+                              <span className="text-sm text-gray-700">{milestone.name}</span>
+                              <span
+                                className={`px-2 py-0.5 text-xs rounded-full ${
+                                  milestone.status === 'COMPLETED'
+                                    ? 'bg-green-100 text-green-800'
+                                    : milestone.status === 'IN_PROGRESS'
+                                      ? 'bg-blue-100 text-blue-800'
+                                      : 'bg-gray-100 text-gray-800'
+                                }`}
+                              >
+                                {milestone.status.replace('_', ' ')}
+                              </span>
+                            </label>
+                          ))}
+                      </div>
                     </div>
                   </div>
                 </div>

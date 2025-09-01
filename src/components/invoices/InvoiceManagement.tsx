@@ -20,12 +20,14 @@ import {
   XMarkIcon,
   Square3Stack3DIcon,
   CheckIcon,
+  DocumentArrowUpIcon,
 } from '@heroicons/react/24/outline'
 import { InvoiceApprovalModal } from './InvoiceApprovalModal'
 import { InvoiceCategorySummary } from './InvoiceCategorySummary'
 import { ParsedInvoice, MultiInvoiceResult } from '@/lib/pdf-parser'
 import ClientOnlyPdfViewer from './ClientOnlyPdfViewer'
 import ExtractionQualityDisplay from './ExtractionQualityDisplay'
+import { GoogleSheetsExport } from './GoogleSheetsExport'
 
 interface Invoice {
   id: string
@@ -108,7 +110,12 @@ export function InvoiceManagement({
   const [showBulkActions, setShowBulkActions] = useState(false)
   const [isSelectAllMode, setIsSelectAllMode] = useState(false)
   const [projectFilter, setProjectFilter] = useState<string>('')
-  const [availableProjects, setAvailableProjects] = useState<Array<{id: string, name: string}>>([])
+  const [availableProjects, setAvailableProjects] = useState<Array<{ id: string; name: string }>>(
+    []
+  )
+  
+  // Google Sheets Export state
+  const [showExportModal, setShowExportModal] = useState(false)
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1)
@@ -331,17 +338,17 @@ export function InvoiceManagement({
       const deletePromises = selectedIds.map(id =>
         fetch(`/api/invoices/${id}`, { method: 'DELETE' })
       )
-      
+
       const results = await Promise.all(deletePromises)
       const successful = results.filter(r => r.ok).length
-      
+
       if (successful > 0) {
         setInvoices(prev => prev.filter(inv => !selectedInvoiceIds.has(inv.id)))
         setSelectedInvoiceIds(new Set())
         setShowBulkActions(false)
         setIsSelectAllMode(false)
       }
-      
+
       if (successful < selectedIds.length) {
         setError(`Successfully deleted ${successful} of ${selectedIds.length} invoices`)
       }
@@ -363,13 +370,13 @@ export function InvoiceManagement({
           body: JSON.stringify({ status: newStatus }),
         })
       )
-      
+
       const results = await Promise.all(updatePromises)
       const successful = results.filter(r => r.ok).length
-      
+
       if (successful > 0) {
         setInvoices(prev =>
-          prev.map(inv => 
+          prev.map(inv =>
             selectedInvoiceIds.has(inv.id) ? { ...inv, status: newStatus as any } : inv
           )
         )
@@ -377,7 +384,7 @@ export function InvoiceManagement({
         setShowBulkActions(false)
         setIsSelectAllMode(false)
       }
-      
+
       if (successful < selectedIds.length) {
         setError(`Successfully updated ${successful} of ${selectedIds.length} invoices`)
       }
@@ -394,19 +401,26 @@ export function InvoiceManagement({
       return
     }
 
-    const projectName = projectId 
-      ? 'current project' 
+    const projectName = projectId
+      ? 'current project'
       : availableProjects.find(p => p.id === projectFilter)?.name || 'selected project'
 
-    if (!confirm(`Are you sure you want to delete ALL invoices in ${projectName}? This action cannot be undone.`)) {
+    if (
+      !confirm(
+        `Are you sure you want to delete ALL invoices in ${projectName}? This action cannot be undone.`
+      )
+    ) {
       return
     }
 
     try {
-      const response = await fetch(`/api/invoices/delete-all-project?projectId=${currentProjectId}`, {
-        method: 'DELETE',
-      })
-      
+      const response = await fetch(
+        `/api/invoices/delete-all-project?projectId=${currentProjectId}`,
+        {
+          method: 'DELETE',
+        }
+      )
+
       const data = await response.json()
       if (data.success) {
         fetchInvoices() // Refresh the list
@@ -465,13 +479,23 @@ export function InvoiceManagement({
               </p>
             )}
           </div>
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-          >
-            <FunnelIcon className="h-4 w-4 mr-2" />
-            Filters
-          </button>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => setShowExportModal(true)}
+              className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+              title="Export to Google Sheets"
+            >
+              <DocumentArrowUpIcon className="h-4 w-4 mr-2" />
+              Export
+            </button>
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+            >
+              <FunnelIcon className="h-4 w-4 mr-2" />
+              Filters
+            </button>
+          </div>
         </div>
 
         {/* View Mode Tabs */}
@@ -566,7 +590,9 @@ export function InvoiceManagement({
                     <option value="">All Projects</option>
                     <option value="unlinked">Unlinked</option>
                     {availableProjects.map(project => (
-                      <option key={project.id} value={project.id}>{project.name}</option>
+                      <option key={project.id} value={project.id}>
+                        {project.name}
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -621,7 +647,7 @@ export function InvoiceManagement({
                   <option value="DISPUTED">Mark as Disputed</option>
                   <option value="REJECTED">Mark as Rejected</option>
                 </select>
-                
+
                 <button
                   onClick={handleBulkDelete}
                   className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700"
@@ -689,7 +715,7 @@ export function InvoiceManagement({
                             className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                           />
                         </div>
-                        
+
                         <div className="flex items-center space-x-3 flex-1 min-w-0">
                           <div>
                             <p className="text-sm font-medium text-gray-900 truncate">
@@ -1174,6 +1200,39 @@ export function InvoiceManagement({
           onApproval={handlePdfApproval}
           onRejection={handlePdfRejection}
         />
+      )}
+
+      {/* Google Sheets Export Modal */}
+      {showExportModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-11/12 max-w-4xl shadow-lg rounded-md bg-white">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-medium text-gray-900">Export to Google Sheets</h3>
+              <button
+                onClick={() => setShowExportModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <XMarkIcon className="h-6 w-6" />
+              </button>
+            </div>
+            
+            <GoogleSheetsExport
+              defaultProjectId={projectId || projectFilter || undefined}
+              showProjectSelector={!projectId}
+              compact={false}
+              className="border-0 shadow-none p-0"
+            />
+            
+            <div className="flex justify-end mt-6">
+              <button
+                onClick={() => setShowExportModal(false)}
+                className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

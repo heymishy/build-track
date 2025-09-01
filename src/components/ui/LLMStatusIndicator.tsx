@@ -15,9 +15,7 @@ export function LLMStatusIndicator() {
   const [showTooltip, setShowTooltip] = useState(false)
 
   if (loading) {
-    return (
-      <div className="h-6 w-6 animate-pulse bg-gray-200 rounded"></div>
-    )
+    return <div className="h-6 w-6 animate-pulse bg-gray-200 rounded"></div>
   }
 
   const getStatusColor = () => {
@@ -28,7 +26,7 @@ export function LLMStatusIndicator() {
   const getStatusIcon = () => {
     if (loading) return <KeyIcon className="h-5 w-5" />
     if (error) return <ExclamationTriangleIcon className="h-5 w-5" />
-    
+
     if (hasConfiguredProvider) {
       return <CheckCircleIcon className="h-5 w-5" />
     } else {
@@ -39,7 +37,7 @@ export function LLMStatusIndicator() {
   const getTooltipText = () => {
     if (loading) return 'Loading LLM status...'
     if (error) return `Error checking LLM status: ${error}`
-    
+
     if (hasConfiguredProvider) {
       const providerName = getProviderDisplayName(primaryProvider)
       return `LLM configured: ${providerName} (${totalProviders} total)`
@@ -59,19 +57,19 @@ export function LLMStatusIndicator() {
   }
 
   return (
-    <div 
+    <div
       className="relative"
       onMouseEnter={() => setShowTooltip(true)}
       onMouseLeave={() => setShowTooltip(false)}
     >
       <button
-        onClick={() => window.location.href = '/settings'}
+        onClick={() => (window.location.href = '/settings')}
         className={`p-1 rounded-md hover:bg-gray-100 transition-colors ${getStatusColor()}`}
         title={getTooltipText()}
       >
         {getStatusIcon()}
       </button>
-      
+
       {showTooltip && (
         <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 z-50">
           <div className="bg-gray-900 text-white text-xs rounded py-1 px-2 whitespace-nowrap">

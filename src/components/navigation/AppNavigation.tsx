@@ -8,6 +8,7 @@
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '@/hooks/useAuth'
+import { useState, useEffect } from 'react'
 import {
   HomeIcon,
   FolderIcon,
@@ -18,6 +19,8 @@ import {
   UsersIcon,
   ChartBarIcon,
   DocumentArrowDownIcon,
+  CpuChipIcon,
+  ClockIcon,
 } from '@heroicons/react/24/outline'
 
 interface NavigationItem {
@@ -31,6 +34,36 @@ interface NavigationItem {
 export function AppNavigation() {
   const pathname = usePathname()
   const { user, isLoading } = useAuth()
+  const [llmProcessing, setLlmProcessing] = useState(false)
+  const [processingDetails, setProcessingDetails] = useState<string>('')
+
+  // Listen for global LLM processing events
+  useEffect(() => {
+    const handleLlmStart = (event: CustomEvent) => {
+      console.log('LLM Processing Started:', event.detail)
+      setLlmProcessing(true)
+      setProcessingDetails(event.detail?.operation || 'Processing...')
+    }
+
+    const handleLlmEnd = () => {
+      console.log('LLM Processing Ended')
+      setLlmProcessing(false)
+      setProcessingDetails('')
+    }
+
+    // Listen for custom events that can be dispatched from anywhere in the app
+    window.addEventListener('llm-processing-start', handleLlmStart as EventListener)
+    window.addEventListener('llm-processing-end', handleLlmEnd as EventListener)
+
+    // For debugging - you can test the indicator by running this in console:
+    // window.dispatchEvent(new CustomEvent('llm-processing-start', { detail: { operation: 'Test processing...' } }))
+    console.log('LLM status event listeners attached')
+
+    return () => {
+      window.removeEventListener('llm-processing-start', handleLlmStart as EventListener)
+      window.removeEventListener('llm-processing-end', handleLlmEnd as EventListener)
+    }
+  }, [])
 
   // Don't render navigation until auth is loaded to prevent inconsistent states
   if (isLoading) {
@@ -151,27 +184,59 @@ export function AppNavigation() {
             </div>
           </div>
 
-          <div className="flex items-center space-x-4">
-            {user && (
-              <div className="flex items-center space-x-3">
-                <span className="text-sm text-gray-700">{user.name}</span>
-                <span
-                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                    user.role === 'ADMIN'
-                      ? 'bg-red-100 text-red-800'
-                      : user.role === 'USER'
-                        ? 'bg-blue-100 text-blue-800'
-                        : 'bg-gray-100 text-gray-800'
-                  }`}
-                >
-                  {user.role}
+          <div className="flex items-center space-x-2 lg:space-x-4">
+            {/* LLM Processing Indicator */}
+            {llmProcessing && (
+              <div className="flex items-center space-x-2 bg-blue-50 px-3 py-1 rounded-full border border-blue-200">
+                <CpuChipIcon className="h-4 w-4 text-blue-600 animate-pulse" />
+                <span className="text-xs text-blue-700 hidden sm:inline">
+                  {processingDetails}
                 </span>
+                <ClockIcon className="h-3 w-3 text-blue-500 animate-spin sm:hidden" />
+              </div>
+            )}
+            
+            {user && (
+              <div className="flex items-center space-x-2 lg:space-x-3">
+                <div className="hidden sm:flex items-center space-x-2 lg:space-x-3">
+                  <span className="text-sm text-gray-700 truncate max-w-32 lg:max-w-48" title={user.name}>
+                    {user.name}
+                  </span>
+                  <span
+                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      user.role === 'ADMIN'
+                        ? 'bg-red-100 text-red-800'
+                        : user.role === 'USER'
+                          ? 'bg-blue-100 text-blue-800'
+                          : 'bg-gray-100 text-gray-800'
+                    }`}
+                  >
+                    {user.role}
+                  </span>
+                </div>
+                
+                {/* Mobile user display */}
+                <div className="sm:hidden">
+                  <span
+                    className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                      user.role === 'ADMIN'
+                        ? 'bg-red-100 text-red-800'
+                        : user.role === 'USER'
+                          ? 'bg-blue-100 text-blue-800'
+                          : 'bg-gray-100 text-gray-800'
+                    }`}
+                    title={`${user.name} (${user.role})`}
+                  >
+                    {user.name.split(' ').map(n => n[0]).join('')}
+                  </span>
+                </div>
+                
                 <button
                   onClick={() => {
                     // Handle logout by redirecting to home with logout param
                     window.location.href = '/?logout=true'
                   }}
-                  className="text-sm text-gray-500 hover:text-gray-700"
+                  className="text-sm text-gray-500 hover:text-gray-700 whitespace-nowrap"
                 >
                   Sign out
                 </button>

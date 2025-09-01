@@ -7,7 +7,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -164,6 +164,11 @@ model Milestone {
 
   // Relationships
   project         Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  // Self-referencing many-to-many relationship for dependencies
+  // A milestone can depend on multiple other milestones (dependencies)
+  dependencies    Milestone[] @relation("MilestoneDependencies")
+  dependentOn     Milestone[] @relation("MilestoneDependencies")
   
   @@index([projectId])
   @@index([status])

@@ -35,11 +35,19 @@ async function GET(
       }
     }
 
-    // Get the milestone
+    // Get the milestone with dependencies
     const milestone = await prisma.milestone.findFirst({
       where: {
         id: milestoneId,
         projectId,
+      },
+      include: {
+        dependencies: {
+          select: { id: true, name: true, status: true }
+        },
+        dependentOn: {
+          select: { id: true, name: true, status: true }
+        }
       },
     })
 
@@ -91,6 +99,7 @@ async function PUT(
       percentComplete,
       status,
       sortOrder,
+      dependencies,
     } = body
 
     // Verify user has access to modify this project
@@ -144,10 +153,43 @@ async function PUT(
     if (status !== undefined) updateData.status = status
     if (sortOrder !== undefined) updateData.sortOrder = Number(sortOrder)
 
+    // Handle dependencies update if provided
+    let dependenciesUpdate = {}
+    if (dependencies !== undefined) {
+      // Validate dependencies exist and belong to the same project, excluding self
+      let validatedDependencies: string[] = []
+      if (Array.isArray(dependencies) && dependencies.length > 0) {
+        const existingMilestones = await prisma.milestone.findMany({
+          where: {
+            id: { in: dependencies },
+            projectId, // Ensure dependencies are from same project
+            NOT: { id: milestoneId }, // Exclude self
+          },
+          select: { id: true },
+        })
+        validatedDependencies = existingMilestones.map(m => m.id)
+      }
+
+      // Set up dependency relationships (replace all existing)
+      dependenciesUpdate = {
+        dependencies: {
+          set: validatedDependencies.map(id => ({ id }))
+        }
+      }
+    }
+
     // Update the milestone
     const updatedMilestone = await prisma.milestone.update({
       where: { id: milestoneId },
-      data: updateData,
+      data: {
+        ...updateData,
+        ...dependenciesUpdate,
+      },
+      include: {
+        dependencies: {
+          select: { id: true, name: true, status: true }
+        },
+      },
     })
 
     return NextResponse.json({

@@ -73,7 +73,11 @@ async function GET(request: NextRequest, user: AuthUser, { params }: { params: {
 }
 
 // PATCH /api/invoices/[id] - Update invoice (mainly status)
-async function PATCH(request: NextRequest, user: AuthUser, { params }: { params: Promise<{ id: string }> }) {
+async function PATCH(
+  request: NextRequest,
+  user: AuthUser,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
     const { id: invoiceId } = await params
     const body = await request.json()

@@ -35,9 +35,17 @@ async function GET(
       }
     }
 
-    // Get milestones for this project
+    // Get milestones for this project with dependencies
     const milestones = await prisma.milestone.findMany({
       where: { projectId },
+      include: {
+        dependencies: {
+          select: { id: true, name: true, status: true }
+        },
+        dependentOn: {
+          select: { id: true, name: true, status: true }
+        }
+      },
       orderBy: { sortOrder: 'asc' },
     })
 
@@ -86,7 +94,7 @@ async function POST(
     const { id: projectId } = await params
     const body = await request.json()
 
-    const { name, description, targetDate, paymentAmount, sortOrder } = body
+    const { name, description, targetDate, paymentAmount, sortOrder, dependencies } = body
 
     // Validate required fields
     if (!name || !targetDate || paymentAmount === undefined) {
@@ -120,6 +128,19 @@ async function POST(
       }
     }
 
+    // Validate dependencies exist and belong to the same project
+    let validatedDependencies: string[] = []
+    if (dependencies && Array.isArray(dependencies) && dependencies.length > 0) {
+      const existingMilestones = await prisma.milestone.findMany({
+        where: {
+          id: { in: dependencies },
+          projectId, // Ensure dependencies are from same project
+        },
+        select: { id: true },
+      })
+      validatedDependencies = existingMilestones.map(m => m.id)
+    }
+
     // Create the milestone
     const milestone = await prisma.milestone.create({
       data: {
@@ -131,6 +152,15 @@ async function POST(
         sortOrder: sortOrder || 0,
         status: 'PENDING',
         percentComplete: 0,
+        // Connect dependencies using implicit many-to-many relationship
+        dependencies: validatedDependencies.length > 0 ? {
+          connect: validatedDependencies.map(id => ({ id }))
+        } : undefined,
+      },
+      include: {
+        dependencies: {
+          select: { id: true, name: true, status: true }
+        },
       },
     })
 

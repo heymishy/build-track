@@ -27,16 +27,16 @@ export function useClientSettings() {
   const loadSettings = useCallback(async () => {
     try {
       setSettings(prev => ({ ...prev, loading: true, error: null }))
-      
+
       // Try to load from localStorage first (immediate feedback)
       const cached = localStorage.getItem('app-settings')
       if (cached) {
         try {
           const parsedCache = JSON.parse(cached)
-          setSettings(prev => ({ 
-            ...prev, 
-            ...parsedCache, 
-            loading: true // Still loading from server
+          setSettings(prev => ({
+            ...prev,
+            ...parsedCache,
+            loading: true, // Still loading from server
           }))
         } catch (e) {
           console.warn('Failed to parse cached settings:', e)
@@ -57,7 +57,7 @@ export function useClientSettings() {
           error: null,
           lastUpdated: new Date(),
         }
-        
+
         setSettings(newSettings)
         localStorage.setItem('app-settings', JSON.stringify(newSettings))
       } else {
@@ -73,48 +73,51 @@ export function useClientSettings() {
     }
   }, [])
 
-  const updateTheme = useCallback(async (theme: 'light' | 'dark' | 'system') => {
-    try {
-      // Optimistic update
-      const optimisticSettings = {
-        ...settings,
-        theme,
-        lastUpdated: new Date(),
+  const updateTheme = useCallback(
+    async (theme: 'light' | 'dark' | 'system') => {
+      try {
+        // Optimistic update
+        const optimisticSettings = {
+          ...settings,
+          theme,
+          lastUpdated: new Date(),
+        }
+        setSettings(optimisticSettings)
+        localStorage.setItem('app-settings', JSON.stringify(optimisticSettings))
+
+        // Apply theme immediately
+        document.documentElement.setAttribute('data-theme', theme)
+
+        // Persist to server
+        const response = await fetch('/api/settings', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ user: { theme } }),
+        })
+
+        if (!response.ok) {
+          throw new Error(`Theme update failed: ${response.status}`)
+        }
+
+        const data = await response.json()
+        if (!data.success) {
+          throw new Error(data.error || 'Theme update failed')
+        }
+
+        console.log('Theme updated successfully:', theme)
+      } catch (error) {
+        console.error('Failed to update theme:', error)
+        // Revert optimistic update on failure
+        loadSettings()
+        setSettings(prev => ({
+          ...prev,
+          error: error instanceof Error ? error.message : 'Failed to update theme',
+        }))
       }
-      setSettings(optimisticSettings)
-      localStorage.setItem('app-settings', JSON.stringify(optimisticSettings))
-
-      // Apply theme immediately
-      document.documentElement.setAttribute('data-theme', theme)
-
-      // Persist to server
-      const response = await fetch('/api/settings', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ user: { theme } }),
-      })
-
-      if (!response.ok) {
-        throw new Error(`Theme update failed: ${response.status}`)
-      }
-
-      const data = await response.json()
-      if (!data.success) {
-        throw new Error(data.error || 'Theme update failed')
-      }
-
-      console.log('Theme updated successfully:', theme)
-    } catch (error) {
-      console.error('Failed to update theme:', error)
-      // Revert optimistic update on failure
-      loadSettings()
-      setSettings(prev => ({
-        ...prev,
-        error: error instanceof Error ? error.message : 'Failed to update theme',
-      }))
-    }
-  }, [settings, loadSettings])
+    },
+    [settings, loadSettings]
+  )
 
   const clearError = useCallback(() => {
     setSettings(prev => ({ ...prev, error: null }))

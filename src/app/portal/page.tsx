@@ -10,6 +10,7 @@ import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { toast } from 'react-hot-toast'
+import { GoogleSheetsExport } from '@/components/invoices/GoogleSheetsExport'
 import {
   EnvelopeIcon,
   DocumentArrowUpIcon,
@@ -18,6 +19,7 @@ import {
   CheckCircleIcon,
   ClockIcon,
   ExclamationTriangleIcon,
+  XMarkIcon,
 } from '@heroicons/react/24/outline'
 
 interface Project {
@@ -58,6 +60,7 @@ export default function SupplierPortalPage() {
 
   const [loading, setLoading] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [showExportModal, setShowExportModal] = useState(false)
 
   const handleEmailValidation = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -372,10 +375,23 @@ export default function SupplierPortalPage() {
             {/* Upload History */}
             {step === 'history' && (
               <Card className="p-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
-                  <ClipboardDocumentListIcon className="h-5 w-5" />
-                  Upload History
-                </h2>
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                    <ClipboardDocumentListIcon className="h-5 w-5" />
+                    Upload History
+                  </h2>
+                  {uploads.length > 0 && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowExportModal(true)}
+                      className="flex items-center gap-2"
+                    >
+                      <DocumentArrowUpIcon className="h-4 w-4" />
+                      Export to Sheets
+                    </Button>
+                  )}
+                </div>
 
                 {uploads.length === 0 ? (
                   <div className="text-center py-8">
@@ -407,6 +423,46 @@ export default function SupplierPortalPage() {
           </>
         )}
       </div>
+
+      {/* Google Sheets Export Modal */}
+      {showExportModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-11/12 max-w-4xl shadow-lg rounded-md bg-white">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-medium text-gray-900">Export Your Invoices to Google Sheets</h3>
+              <button
+                onClick={() => setShowExportModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <XMarkIcon className="h-6 w-6" />
+              </button>
+            </div>
+            
+            <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-sm text-blue-800">
+                <strong>Note:</strong> This will export invoices uploaded through this portal using your email address ({email}). 
+                You can filter by project and status to customize the export.
+              </p>
+            </div>
+            
+            <GoogleSheetsExport
+              defaultProjectId={selectedProjectId || undefined}
+              showProjectSelector={true}
+              compact={false}
+              className="border-0 shadow-none p-0"
+            />
+            
+            <div className="flex justify-end mt-6">
+              <button
+                onClick={() => setShowExportModal(false)}
+                className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

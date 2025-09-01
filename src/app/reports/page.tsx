@@ -1,10 +1,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useAuth } from '@/contexts/AuthContext'
+import { useAuth } from '@/hooks/useAuth'
+import { AppLayout } from '@/components/layout/AppLayout'
 import { ReportManager } from '@/components/reports/ReportManager'
 import { Card } from '@/components/ui/Card'
-import { Button } from '@/components/ui/Button'
 import {
   DocumentArrowDownIcon,
   ChartBarIcon,
@@ -141,21 +141,10 @@ export default function ReportsPage() {
     }
   }
 
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-xl font-semibold text-gray-900 mb-2">Authentication Required</h1>
-          <p className="text-gray-600">Please log in to view reports.</p>
-        </div>
-      </div>
-    )
-  }
-
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <AppLayout>
+        <div className="p-6">
           <div className="animate-pulse space-y-6">
             <div className="h-8 bg-gray-200 rounded w-1/4"></div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -165,34 +154,31 @@ export default function ReportsPage() {
             </div>
           </div>
         </div>
-      </div>
+      </AppLayout>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="py-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">Reports & Export</h1>
-                <p className="mt-1 text-sm text-gray-600">
-                  Generate comprehensive reports for projects, invoices, and analytics
-                </p>
-              </div>
-              <div className="flex items-center space-x-2">
-                <span className="text-sm text-gray-500">
-                  {projects.length} {projects.length === 1 ? 'project' : 'projects'} available
-                </span>
-              </div>
+    <AppLayout>
+      <div className="p-6">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Reports & Export</h1>
+              <p className="mt-1 text-sm text-gray-600">
+                Generate comprehensive reports for projects, invoices, and analytics
+              </p>
+            </div>
+            <div className="flex items-center space-x-2">
+              <span className="text-sm text-gray-500">
+                {projects.length} {projects.length === 1 ? 'project' : 'projects'} available
+              </span>
             </div>
           </div>
         </div>
-      </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-7xl mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Main Report Generator */}
           <div className="lg:col-span-3">
@@ -348,7 +334,8 @@ export default function ReportsPage() {
             </Card>
           </div>
         </div>
+        </div>
       </div>
-    </div>
+    </AppLayout>
   )
 }

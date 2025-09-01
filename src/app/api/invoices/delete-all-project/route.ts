@@ -43,10 +43,7 @@ export const DELETE = withAuth(
       })
 
       if (!project) {
-        return NextResponse.json(
-          { success: false, error: 'Project not found' },
-          { status: 404 }
-        )
+        return NextResponse.json({ success: false, error: 'Project not found' }, { status: 404 })
       }
 
       // Delete all invoices in the project
@@ -63,10 +60,7 @@ export const DELETE = withAuth(
       })
     } catch (error) {
       console.error('Delete all project invoices error:', error)
-      return NextResponse.json(
-        { success: false, error: 'Internal server error' },
-        { status: 500 }
-      )
+      return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 })
     }
   },
   {
