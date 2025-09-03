@@ -78,8 +78,14 @@ export async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string[]> {
   try {
     console.log('PDF buffer size:', pdfBuffer.length, 'bytes')
 
-    // Use pdf-parse for simple, reliable text extraction
-    const pdfParse = (await import('pdf-parse')).default
+    // Use pdf-parse for simple, reliable text extraction with error handling
+    let pdfParse
+    try {
+      pdfParse = (await import('pdf-parse')).default
+    } catch (importError) {
+      console.error('Error importing pdf-parse:', importError)
+      throw new Error('PDF parsing library unavailable')
+    }
 
     const pdfData = await pdfParse(pdfBuffer, {
       // Keep text formatting and spacing

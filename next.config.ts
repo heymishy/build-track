@@ -141,6 +141,23 @@ const nextConfig: NextConfig = {
       }
     }
 
+    // Fix pdf-parse issues with test files
+    if (isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        path: false,
+      }
+      
+      // Ignore pdf-parse test directory to prevent ENOENT errors
+      config.plugins.push(
+        new webpack.IgnorePlugin({
+          resourceRegExp: /^\.\/test\/data\/.*\.pdf$/,
+          contextRegExp: /pdf-parse/,
+        })
+      )
+    }
+
     // Performance optimizations
     if (!dev && !isServer) {
       // Split vendor chunks for better caching
