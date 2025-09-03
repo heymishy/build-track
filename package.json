@@ -6,6 +6,7 @@
     "dev": "PORT=3006 next dev",
     "dev:turbo": "next dev --turbopack",
     "postinstall": "prisma generate",
+    "build:prod": "cp prisma/schema.prod.prisma prisma/schema.prisma && npx prisma generate && next build",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
