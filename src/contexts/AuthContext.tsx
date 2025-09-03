@@ -28,6 +28,7 @@ interface AuthContextType {
   register: (data: RegisterData) => Promise<void>
   logout: () => void
   updateUser: (user: User) => void
+  validateToken: () => Promise<boolean>
 }
 
 // Login credentials
@@ -50,28 +51,58 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true) // Start with loading=true
   const router = useRouter()
 
-  // Load user from localStorage on mount
+  // Validate token and load user on mount
   useEffect(() => {
-    try {
-      // Check if we're in a browser environment
-      if (typeof window === 'undefined' || !window.localStorage) {
-        setIsLoading(false)
-        return
-      }
+    const validateToken = async () => {
+      try {
+        // Check if we're in a browser environment
+        if (typeof window === 'undefined' || !window.localStorage) {
+          setIsLoading(false)
+          return
+        }
 
-      const savedUser = localStorage.getItem('user')
-      if (savedUser) {
-        const parsedUser = JSON.parse(savedUser)
-        setUser(parsedUser)
+        // First check if we have user data in localStorage
+        const savedUser = localStorage.getItem('user')
+        if (!savedUser) {
+          setIsLoading(false)
+          return
+        }
+
+        // Validate the JWT token with the server
+        const response = await fetch('/api/auth/validate', {
+          method: 'GET',
+          credentials: 'include',
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          if (data.success && data.user) {
+            // Token is valid, set user from server response
+            setUser(data.user)
+          } else {
+            // Token invalid, clear localStorage
+            localStorage.removeItem('user')
+            setUser(null)
+          }
+        } else {
+          // Token invalid or expired, clear localStorage
+          console.log('Token validation failed, clearing user session')
+          localStorage.removeItem('user')
+          setUser(null)
+        }
+      } catch (error) {
+        console.error('Error validating token:', error)
+        // Clear user session on error
+        if (typeof window !== 'undefined' && window.localStorage) {
+          localStorage.removeItem('user')
+        }
+        setUser(null)
+      } finally {
+        setIsLoading(false)
       }
-    } catch (error) {
-      console.error('Error loading user from localStorage:', error)
-      if (typeof window !== 'undefined' && window.localStorage) {
-        localStorage.removeItem('user')
-      }
-    } finally {
-      setIsLoading(false) // Set loading to false after attempting to load
     }
+
+    validateToken()
   }, [])
 
   // Save user to localStorage when user changes
@@ -177,6 +208,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(updatedUser)
   }
 
+  const validateToken = async (): Promise<boolean> => {
+    try {
+      const response = await fetch('/api/auth/validate', {
+        method: 'GET',
+        credentials: 'include',
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success && data.user) {
+          setUser(data.user)
+          return true
+        }
+      }
+
+      // Token invalid, clear session
+      localStorage.removeItem('user')
+      setUser(null)
+      return false
+    } catch (error) {
+      console.error('Token validation error:', error)
+      localStorage.removeItem('user')
+      setUser(null)
+      return false
+    }
+  }
+
   const value: AuthContextType = {
     user,
     isLoading,
@@ -185,6 +243,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     register,
     logout,
     updateUser,
+    validateToken,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
