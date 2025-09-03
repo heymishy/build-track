@@ -60,7 +60,7 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-title" content="BuildTrack" />
         <meta name="msapplication-TileColor" content="#2563eb" />
         <meta name="msapplication-tap-highlight" content="no" />
-        <link rel="apple-touch-icon" href="/icons/icon-180x180.png" />
+        <link rel="apple-touch-icon" href="/icons/icon-144x144.png" />
         <link rel="shortcut icon" href="/favicon.ico" />
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>

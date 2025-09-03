@@ -155,10 +155,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = async () => {
     try {
       // Call logout API to clear server-side cookie
-      await fetch('/api/auth/logout', {
+      const response = await fetch('/api/auth/logout', {
         method: 'POST',
         credentials: 'include', // Include cookies in the request
       })
+
+      if (!response.ok) {
+        console.error('Logout API failed:', response.status, response.statusText)
+      }
     } catch (error) {
       console.error('Error calling logout API:', error)
       // Continue with logout even if API call fails

@@ -10,7 +10,14 @@
   "scope": "/",
   "categories": ["business", "productivity", "utilities"],
   "lang": "en-US",
-  "icons": [],
+  "icons": [
+    {
+      "src": "/icons/icon-144x144.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
   "screenshots": [
     {
       "src": "/screenshots/dashboard-desktop.png",
