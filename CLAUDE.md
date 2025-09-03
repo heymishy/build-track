@@ -9,7 +9,7 @@
 
 ### Development Environment
 
-- **Database**: SQLite (`prisma/dev.db`) for rapid development
+- **Database**: SQLite (`prisma/dev.db`) via `prisma/schema.prisma` for rapid development
 - **Port**: 3006 (configured in package.json)
 - **Domain**: `http://localhost:3006`
 - **Features**: Hot reload, debug logging, Turbopack (experimental)
@@ -17,7 +17,7 @@
 ### Production Environment
 
 - **Platform**: Vercel deployment with Supabase PostgreSQL
-- **Database**: PostgreSQL via Supabase connection
+- **Database**: PostgreSQL via Supabase connection using `prisma/schema.prod.prisma`
 - **Domain**: `https://buildtrack.vercel.app` (configured in vercel.json)
 - **Features**: CDN, edge functions, auto-scaling, security headers
 
@@ -31,6 +31,98 @@
 | Security     | Relaxed CORS     | Strict CSP headers    |
 | File Storage | Local filesystem | Vercel Blob storage   |
 | Environment  | `.env.local`     | Vercel env variables  |
+
+## 🗄️ Dual-Environment Database Architecture
+
+### **Critical Design Decision**: Separate Database Providers
+
+**Problem Solved**: Prisma doesn't support dynamic database providers in a single schema file. Production requires PostgreSQL (Supabase), but local development benefits from SQLite simplicity.
+
+**Solution**: Environment-specific schema files with automated switching during build process.
+
+### Database Configuration
+
+#### Development Environment
+```bash
+# .env.local / .env.development
+DATABASE_URL="file:./dev.db"
+```
+- **Schema File**: `prisma/schema.prisma` (SQLite provider)
+- **Database**: Local SQLite file (`prisma/dev.db`)
+- **Benefits**: No external dependencies, instant setup, fast development
+- **Setup**: `npx prisma generate && npx prisma db push`
+
+#### Production Environment
+```bash
+# Vercel Environment Variables
+DATABASE_URL="postgresql://user:password@host:port/database"
+```
+- **Schema File**: `prisma/schema.prod.prisma` (PostgreSQL provider)
+- **Database**: Supabase PostgreSQL with connection pooling
+- **Benefits**: Scalable, robust, production-grade performance
+- **Build Process**: Automatically copies production schema before build
+
+### Build Process Automation
+
+#### Development Build
+```bash
+npm run dev          # Uses prisma/schema.prisma (SQLite)
+npx prisma generate  # Generates client with SQLite provider
+```
+
+#### Production Build (Vercel)
+```bash
+# vercel.json buildCommand:
+cp prisma/schema.prod.prisma prisma/schema.prisma && npx prisma generate && npm run build
+```
+
+**Key Process**:
+1. Copy production schema over development schema
+2. Generate Prisma client with PostgreSQL provider
+3. Build application with production database configuration
+
+### Schema File Management
+
+#### `prisma/schema.prisma` (Development - SQLite)
+```prisma
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+```
+
+#### `prisma/schema.prod.prisma` (Production - PostgreSQL)
+```prisma
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+```
+
+**Important**: Both files maintain identical model definitions. Only the datasource provider differs.
+
+### Migration Strategy
+
+#### Development Migrations
+```bash
+npx prisma db push              # Apply schema changes to SQLite
+npx prisma generate            # Update client
+```
+
+#### Production Migrations
+```bash
+# During deployment, Vercel automatically:
+# 1. Copies schema.prod.prisma to schema.prisma
+# 2. Generates client with PostgreSQL provider
+# 3. Applies migrations to Supabase database
+```
+
+### **⚠️ Critical Maintenance Rules**
+
+1. **Schema Synchronization**: Both `schema.prisma` and `schema.prod.prisma` must have identical models
+2. **Test Compatibility**: Changes must work with both SQLite and PostgreSQL
+3. **Migration Validation**: Test schema changes locally before production deployment
+4. **Environment Variables**: Ensure DATABASE_URL matches expected provider in each environment
 
 ## 🚀 Quick Start Commands
 
@@ -444,9 +536,36 @@ model InvoiceUpload {
 
 ### Database Migration Issues
 
-- **Problem**: SQLite → PostgreSQL compatibility
-- **Solution**: Test schema changes across both providers
-- **Prevention**: Use Prisma shadow database for validation
+#### **Fixed: Dual-Environment Database Architecture**
+
+- **Old Problem**: Single schema file caused provider mismatches between SQLite (dev) and PostgreSQL (prod)
+- **Symptoms**: 
+  - Production: `Invalid prisma.project.findMany() invocation: the URL must start with the protocol 'file:'`
+  - Development: `Can't reach database server at localhost:5432` when using PostgreSQL schema
+- **Root Cause**: Prisma doesn't support dynamic database providers in single schema
+- **Solution Implemented**: Dual schema file approach
+  - `prisma/schema.prisma` → SQLite for development
+  - `prisma/schema.prod.prisma` → PostgreSQL for production  
+  - Automated schema switching during Vercel build process
+- **Prevention**: 
+  - **Always maintain both schema files** with identical models
+  - **Test changes locally** with SQLite before production deployment
+  - **Verify schema synchronization** between development and production files
+  - **Use build process validation** to ensure correct schema is used per environment
+
+#### **Migration Workflow**
+
+**Development Changes**:
+1. Modify `prisma/schema.prisma` (SQLite version)
+2. Run `npx prisma db push` to apply to local SQLite database
+3. Copy identical model changes to `prisma/schema.prod.prisma` (PostgreSQL version)
+4. Test locally to ensure changes work with SQLite
+5. Deploy to trigger production build with PostgreSQL schema
+
+**Production Validation**:
+- Vercel automatically uses `schema.prod.prisma` during build
+- PostgreSQL compatibility validated during deployment
+- Monitor production logs for database connection issues
 
 ### Authentication Issues
 
@@ -465,6 +584,72 @@ model InvoiceUpload {
 - **Problem**: Email-only authentication for external suppliers
 - **Solution**: Validate email against whitelist, track all uploads
 - **Prevention**: Regular audit of supplier access, file validation
+
+### Database Provider Configuration Issues
+
+#### **Issue**: Wrong Database Provider in Environment
+
+**Symptoms**:
+- Development: `Can't reach database server at localhost:5432`
+- Production: `Invalid prisma.project.findMany() invocation: the URL must start with the protocol 'file:'`
+- Mixed environment errors with database connections
+
+**Root Cause**: Using wrong Prisma schema file for environment or mismatched DATABASE_URL
+
+**Diagnosis**:
+```bash
+# Check which schema is active
+cat prisma/schema.prisma | grep provider
+
+# Check DATABASE_URL configuration  
+echo $DATABASE_URL  # or check .env files
+
+# Verify schema files exist
+ls -la prisma/schema*.prisma
+```
+
+**Solutions**:
+
+1. **Development Environment Issues**:
+   ```bash
+   # Ensure using SQLite schema
+   cp prisma/schema.prisma prisma/schema.backup.prisma
+   # Verify provider is "sqlite" in prisma/schema.prisma
+   
+   # Set correct DATABASE_URL
+   echo 'DATABASE_URL="file:./dev.db"' > .env.local
+   
+   # Regenerate client and apply schema
+   npx prisma generate
+   npx prisma db push
+   ```
+
+2. **Production Environment Issues**:
+   ```bash
+   # Verify PostgreSQL schema exists
+   ls -la prisma/schema.prod.prisma
+   
+   # Check Vercel build command in vercel.json
+   grep "buildCommand" vercel.json
+   
+   # Should include: cp prisma/schema.prod.prisma prisma/schema.prisma
+   ```
+
+3. **Schema File Synchronization**:
+   ```bash
+   # Compare model definitions (should be identical)
+   diff prisma/schema.prisma prisma/schema.prod.prisma | grep -v "provider"
+   
+   # If differences found, synchronize models:
+   # 1. Copy models from development to production schema
+   # 2. Keep only datasource provider different
+   ```
+
+**Prevention**:
+- **Never modify schema providers directly** - use established dual-file approach
+- **Always maintain both schema files** when making model changes
+- **Test locally before production deployment**
+- **Validate build commands** in vercel.json include schema switching
 
 ## 📝 Change Validation Checklist
 
@@ -487,10 +672,13 @@ model InvoiceUpload {
 
 ### For Database Changes
 
-- [ ] **Schema**: Prisma schema updated
-- [ ] **Migration**: Compatible across SQLite and PostgreSQL
-- [ ] **Indexes**: Performance indexes added where needed
-- [ ] **Rollback**: Migration rollback strategy defined
+- [ ] **Dual Schema Update**: Both `prisma/schema.prisma` (SQLite) and `prisma/schema.prod.prisma` (PostgreSQL) updated with identical models
+- [ ] **Local Testing**: Changes tested with SQLite using `npx prisma db push`
+- [ ] **Model Compatibility**: Models work correctly with both SQLite and PostgreSQL data types
+- [ ] **Schema Synchronization**: Verified both schema files have identical model definitions (only datasource provider differs)
+- [ ] **Indexes**: Performance indexes compatible with both database providers
+- [ ] **Production Deployment**: Tested that Vercel build process uses correct production schema
+- [ ] **Rollback Strategy**: Both development and production rollback procedures defined
 
 ### For UI Changes
 
@@ -519,4 +707,12 @@ model InvoiceUpload {
 
 This codebase follows Next.js 15 best practices with TypeScript, comprehensive multi-tier testing, and a focus on construction project cost management with AI-powered automation. Every change must be validated across development and production tiers to ensure functionality integrity.
 
-**Critical**: Always test changes across both SQLite (development) and PostgreSQL (production) database providers, and validate that functionality works consistently across local and Vercel deployment environments.
+**Critical**: This application uses a dual-environment database architecture with SQLite for development (`prisma/schema.prisma`) and PostgreSQL for production (`prisma/schema.prod.prisma`). Always:
+
+1. **Maintain both schema files** with identical model definitions
+2. **Test changes locally** with SQLite before production deployment  
+3. **Verify schema synchronization** between development and production files
+4. **Validate functionality** works consistently across both database providers
+5. **Monitor build process** ensures correct schema is used per environment
+
+**Never modify database providers directly** - use the established dual-file approach to prevent environment mismatches.
