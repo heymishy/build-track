@@ -94,7 +94,7 @@ export const defaultProjectSettings: ProjectSettings = {
 export const defaultSystemSettings: SystemSettings = {
   pdfProcessing: {
     provider: 'gemini',
-    fallbackProvider: 'anthropic',
+    fallbackProvider: 'gemini',
     confidenceThreshold: 0.7,
     maxFileSize: 10 * 1024 * 1024, // 10MB
     allowedFormats: ['application/pdf', 'image/jpeg', 'image/png'],

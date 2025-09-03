@@ -136,9 +136,29 @@ export async function POST(request: NextRequest) {
     const parsedInvoice = await parsePDF(buffer, email)
 
     if (!parsedInvoice.success) {
+      console.warn('AI parsing failed, providing basic fallback preview')
+      
+      // Create a basic fallback preview without AI insights
+      const fallbackPreview = {
+        parsedInvoice: {
+          invoiceNumber: null,
+          supplierName: supplier.name,
+          invoiceDate: null,
+          totalAmount: null,
+          lineItems: []
+        },
+        confidence: 0,
+        projectSuggestions: [], // No AI suggestions available
+        extractedLineItems: 0,
+        totalAmount: 0,
+        processingTime: Date.now() - startTime,
+        processingMethod: 'fallback'
+      }
+
       return NextResponse.json({
-        success: false,
-        error: 'Failed to parse PDF invoice',
+        success: true,
+        preview: fallbackPreview,
+        message: 'AI processing failed, but you can still upload manually'
       })
     }
 
@@ -180,10 +200,30 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    return NextResponse.json({
-      success: true,
-      preview,
-    })
+    // If not preview-only, save the processed invoice to main app
+    try {
+      const savedInvoice = await saveSupplierInvoiceToMainApp(invoice, supplier, projectSuggestions[0])
+      
+      return NextResponse.json({
+        success: true,
+        preview,
+        savedInvoice: {
+          id: savedInvoice.id,
+          invoiceNumber: savedInvoice.invoiceNumber,
+          projectId: savedInvoice.projectId,
+        },
+        message: 'Invoice processed and saved to main app for matching'
+      })
+    } catch (saveError) {
+      console.error('Error saving invoice to main app:', saveError)
+      // Return preview even if save failed
+      return NextResponse.json({
+        success: true,
+        preview,
+        warning: 'Invoice processed but could not be saved to main app',
+        error: saveError instanceof Error ? saveError.message : 'Save failed'
+      })
+    }
   } catch (error) {
     console.error('AI preview error:', error)
     return NextResponse.json({
@@ -396,4 +436,71 @@ function calculateStringSimilarity(str1: string, str2: string): number {
 
   const maxLength = Math.max(n, m)
   return (maxLength - matrix[n][m]) / maxLength
+}
+
+/**
+ * Save processed supplier invoice to main app Invoice table
+ */
+async function saveSupplierInvoiceToMainApp(invoice: any, supplier: any, topProjectSuggestion?: any) {
+  // Determine project - use suggestion or default
+  let projectId = topProjectSuggestion?.projectId
+  
+  if (!projectId) {
+    // Find first available project as fallback
+    const project = await prisma.project.findFirst({
+      where: {
+        status: {
+          in: ['PLANNING', 'IN_PROGRESS'],
+        },
+      },
+      orderBy: {
+        updatedAt: 'desc',
+      },
+    })
+    projectId = project?.id
+  }
+
+  if (!projectId) {
+    throw new Error('No available project found for invoice')
+  }
+
+  // Create main app Invoice record
+  const savedInvoice = await prisma.invoice.create({
+    data: {
+      projectId,
+      userId: null, // Supplier uploads don't have a specific user
+      invoiceNumber: invoice.invoiceNumber || 'AUTO-' + Date.now(),
+      supplierName: invoice.supplierName || supplier.name,
+      supplierABN: null,
+      invoiceDate: invoice.invoiceDate ? new Date(invoice.invoiceDate) : new Date(),
+      dueDate: null,
+      totalAmount: invoice.totalAmount || 0,
+      gstAmount: 0, // Will be calculated from line items if needed
+      description: `Supplier portal upload by ${supplier.email}`,
+      status: 'PENDING',
+      filePath: null, // We could store file path here if needed
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    },
+  })
+
+  // Create line items if they exist
+  if (invoice.lineItems && invoice.lineItems.length > 0) {
+    await prisma.invoiceLineItem.createMany({
+      data: invoice.lineItems.map((item: any) => ({
+        invoiceId: savedInvoice.id,
+        lineItemId: null, // Not matched yet
+        description: item.description || 'No description',
+        quantity: item.quantity || 1,
+        unitPrice: item.unitPrice || 0,
+        totalPrice: item.totalPrice || item.unitPrice || 0,
+        category: item.category || 'MATERIAL',
+        createdAt: new Date(),
+      })),
+    })
+  }
+
+  console.log(`✅ Saved supplier invoice to main app: ${savedInvoice.id} for project ${projectId}`)
+  
+  return savedInvoice
 }

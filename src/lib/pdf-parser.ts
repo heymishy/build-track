@@ -71,20 +71,37 @@ export interface MultiInvoiceResult {
 }
 
 /**
- * Extract text from PDF buffer using pdf-parse (Node.js compatible)
- * Returns page-by-page text like the original working implementation
+ * Extract text from PDF buffer using pdf-parse with improved error handling
+ * Returns page-by-page text with fallback import methods
  */
 export async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string[]> {
   try {
     console.log('PDF buffer size:', pdfBuffer.length, 'bytes')
 
-    // Use pdf-parse for simple, reliable text extraction with error handling
+    // Use pdf-parse with better error handling and safer import
     let pdfParse
     try {
-      pdfParse = (await import('pdf-parse')).default
+      // Try dynamic import first (safer in Next.js environment)
+      const pdfParseModule = await import('pdf-parse')
+      pdfParse = pdfParseModule.default || pdfParseModule
+      
+      // Test the import by checking if it's a function
+      if (typeof pdfParse !== 'function') {
+        throw new Error('pdf-parse import is not a function')
+      }
     } catch (importError) {
-      console.error('Error importing pdf-parse:', importError)
-      throw new Error('PDF parsing library unavailable')
+      console.warn('Dynamic import failed, trying require:', importError)
+      try {
+        // Fallback to require (for Node.js environments)
+        pdfParse = require('pdf-parse')
+        if (typeof pdfParse !== 'function') {
+          throw new Error('pdf-parse require is not a function')
+        }
+      } catch (requireError) {
+        console.error('All PDF parsing import methods failed:', requireError)
+        console.log('PDF parsing will be skipped - returning empty text array')
+        return [] // Return empty array as expected by Promise<string[]>
+      }
     }
 
     const pdfData = await pdfParse(pdfBuffer, {

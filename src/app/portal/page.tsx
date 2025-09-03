@@ -11,6 +11,8 @@ import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { toast } from 'react-hot-toast'
 import { GoogleSheetsExport } from '@/components/invoices/GoogleSheetsExport'
+import { EnhancedSupplierUpload } from '@/components/suppliers/EnhancedSupplierUpload'
+import { SupplierIntelligenceDashboard } from '@/components/suppliers/SupplierIntelligenceDashboard'
 import {
   EnvelopeIcon,
   DocumentArrowUpIcon,
@@ -20,6 +22,7 @@ import {
   ClockIcon,
   ExclamationTriangleIcon,
   XMarkIcon,
+  ChartBarIcon,
 } from '@heroicons/react/24/outline'
 
 interface Project {
@@ -46,7 +49,7 @@ interface Upload {
 }
 
 export default function SupplierPortalPage() {
-  const [step, setStep] = useState<'validate' | 'upload' | 'history'>('validate')
+  const [step, setStep] = useState<'validate' | 'upload' | 'history' | 'analytics'>('validate')
   const [email, setEmail] = useState('')
   const [supplier, setSupplier] = useState<Supplier | null>(null)
   const [projects, setProjects] = useState<Project[]>([])
@@ -277,99 +280,29 @@ export default function SupplierPortalPage() {
                   >
                     Upload History
                   </Button>
+                  <Button
+                    variant={step === 'analytics' ? 'primary' : 'outline'}
+                    size="sm"
+                    onClick={() => setStep('analytics')}
+                  >
+                    <ChartBarIcon className="h-4 w-4 mr-1" />
+                    AI Insights
+                  </Button>
                 </div>
               </div>
             </Card>
 
-            {/* Upload Form */}
+            {/* Enhanced Upload Form */}
             {step === 'upload' && (
-              <Card className="p-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-6">Upload Invoice</h2>
-
-                <form onSubmit={handleFileUpload} className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Project (Optional)
-                      </label>
-                      <select
-                        value={selectedProjectId}
-                        onChange={e => setSelectedProjectId(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      >
-                        <option value="">Select a project...</option>
-                        {projects.map(project => (
-                          <option key={project.id} value={project.id}>
-                            {project.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Supplier/Company Name
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={supplierName}
-                        onChange={e => setSupplierName(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="Company Name"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Invoice File (PDF only)
-                    </label>
-                    <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
-                      <div className="space-y-1 text-center">
-                        <DocumentArrowUpIcon className="mx-auto h-12 w-12 text-gray-400" />
-                        <div className="flex text-sm text-gray-600">
-                          <label className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
-                            <span>Upload a file</span>
-                            <input
-                              type="file"
-                              accept=".pdf"
-                              className="sr-only"
-                              onChange={e => setSelectedFile(e.target.files?.[0] || null)}
-                            />
-                          </label>
-                          <p className="pl-1">or drag and drop</p>
-                        </div>
-                        <p className="text-xs text-gray-500">PDF files up to 10MB</p>
-                        {selectedFile && (
-                          <p className="text-sm text-green-600 mt-2">
-                            Selected: {selectedFile.name}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Notes (Optional)
-                    </label>
-                    <textarea
-                      value={notes}
-                      onChange={e => setNotes(e.target.value)}
-                      rows={3}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Any additional notes about this invoice..."
-                    />
-                  </div>
-
-                  <div className="flex justify-end">
-                    <Button type="submit" disabled={uploading || !selectedFile} className="px-8">
-                      {uploading ? 'Uploading...' : 'Upload Invoice'}
-                    </Button>
-                  </div>
-                </form>
-              </Card>
+              <EnhancedSupplierUpload
+                supplierEmail={email}
+                supplierName={supplierName}
+                projects={projects}
+                onUploadComplete={() => {
+                  loadUploadHistory()
+                  setStep('history')
+                }}
+              />
             )}
 
             {/* Upload History */}
@@ -419,6 +352,11 @@ export default function SupplierPortalPage() {
                   </div>
                 )}
               </Card>
+            )}
+
+            {/* AI Analytics Dashboard */}
+            {step === 'analytics' && (
+              <SupplierIntelligenceDashboard supplierEmail={email} supplierName={supplier.name} />
             )}
           </>
         )}

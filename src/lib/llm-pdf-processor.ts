@@ -184,6 +184,12 @@ export class LLMPdfProcessor {
       // If primary fails or low confidence, try fallback
       if (!result.success || result.confidence < pdfSettings.confidenceThreshold) {
         console.log('⚠️ Primary LLM failed or low confidence, trying fallback...')
+        if (!result.success) {
+          console.log(`   - Primary failure reason: ${result.error || 'Unknown error'}`)
+        }
+        if (result.confidence < pdfSettings.confidenceThreshold) {
+          console.log(`   - Low confidence: ${result.confidence} < ${pdfSettings.confidenceThreshold}`)
+        }
 
         if (pdfSettings.fallbackProvider !== pdfSettings.provider) {
           const fallbackResult = await this.tryProviderWithPdf(
@@ -309,11 +315,29 @@ export class LLMPdfProcessor {
       }
     } catch (error) {
       console.error(`❌ ${context} failed:`, error)
+      
+      // Enhanced error logging for debugging Gemini API issues
+      console.error(`   - Error type: ${error?.constructor?.name || 'Unknown'}`)
+      console.error(`   - Error message: ${error?.message || 'No message'}`)
+      console.error(`   - Error code: ${error?.code || 'No code'}`)
+      console.error(`   - Error status: ${error?.status || 'No status'}`)
+      
+      // Log additional error details if available
+      if (error?.response) {
+        console.error(`   - Response status: ${error.response.status}`)
+        console.error(`   - Response data:`, error.response.data)
+      }
+      
+      if (error?.stack) {
+        console.error(`   - Stack trace:`, error.stack)
+      }
+      
       return {
         success: false,
         invoices: [],
         confidence: 0,
         cost: 0,
+        error: error?.message || 'Unknown LLM processing error',
       }
     }
   }

@@ -20,6 +20,7 @@ import {
 import { ParsedInvoice } from '@/lib/pdf-parser'
 import { InvoiceProcessingProgress } from './InvoiceProcessingProgress'
 import { useInvoiceProcessing, ProcessedInvoiceResult } from '@/hooks/useInvoiceProcessing'
+import { GoogleDrivePicker } from '@/components/ui/GoogleDrivePicker'
 
 interface EnhancedInvoiceUploadProps {
   onUploadComplete?: (result: ProcessedInvoiceResult) => void
@@ -171,6 +172,42 @@ export const EnhancedInvoiceUpload: React.FC<EnhancedInvoiceUploadProps> = ({
             </p>
             <p className="text-xs text-gray-500">Maximum file size: 10MB • Supported format: PDF</p>
           </div>
+        </div>
+      )}
+
+      {/* Google Drive Import */}
+      {!isProcessing && !showResults && (
+        <div className="border-t pt-6">
+          <div className="text-center mb-4">
+            <p className="text-sm text-gray-500">Or import from Google Drive</p>
+          </div>
+          <GoogleDrivePicker
+            endpoint="/api/google-drive/import"
+            onSuccess={(result) => {
+              console.log('Google Drive import successful:', result)
+              // Simulate processing complete for consistency
+              setProcessingResult({
+                success: true,
+                invoices: result.processingResult?.invoices || [],
+                stats: result.processingResult?.parsingStats || {},
+                qualityMetrics: result.processingResult?.qualityMetrics || {},
+              })
+              setShowResults(true)
+              if (onUploadComplete) {
+                onUploadComplete({
+                  success: true,
+                  invoices: result.processingResult?.invoices || [],
+                  stats: result.processingResult?.parsingStats || {},
+                  qualityMetrics: result.processingResult?.qualityMetrics || {},
+                })
+              }
+            }}
+            onError={(error) => {
+              console.error('Google Drive import failed:', error)
+            }}
+            disabled={isProcessing}
+            className="max-w-lg mx-auto"
+          />
         </div>
       )}
 
