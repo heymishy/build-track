@@ -153,16 +153,53 @@ export class GoogleDriveService {
    */
   async listPdfFilesInFolder(folderId: string): Promise<GoogleDriveFile[]> {
     try {
-      const response = await this.drive.files.list({
+      console.log(`🔍 Listing PDF files in folder: ${folderId}`)
+      
+      // First, try to list all files to see what's in the folder
+      const allFilesResponse = await this.drive.files.list({
+        q: `'${folderId}' in parents`,
+        fields: 'files(id,name,mimeType,size,webViewLink)',
+      })
+
+      console.log(`📁 All files in folder (${allFilesResponse.data.files?.length || 0}):`)
+      allFilesResponse.data.files?.forEach(file => {
+        console.log(`  - ${file.name} (${file.mimeType})`)
+      })
+
+      // Now filter for PDFs specifically
+      const pdfResponse = await this.drive.files.list({
         q: `'${folderId}' in parents and mimeType='application/pdf'`,
         fields: 'files(id,name,mimeType,size,webViewLink)',
       })
 
-      if (!response.data.files) {
+      console.log(`📄 PDF files found: ${pdfResponse.data.files?.length || 0}`)
+      pdfResponse.data.files?.forEach(file => {
+        console.log(`  - ${file.name}`)
+      })
+
+      if (!pdfResponse.data.files || pdfResponse.data.files.length === 0) {
+        // Also try with broader PDF mime type patterns
+        const broadPdfResponse = await this.drive.files.list({
+          q: `'${folderId}' in parents and (mimeType='application/pdf' or name contains '.pdf')`,
+          fields: 'files(id,name,mimeType,size,webViewLink)',
+        })
+
+        console.log(`🔍 Broad PDF search found: ${broadPdfResponse.data.files?.length || 0}`)
+        if (broadPdfResponse.data.files && broadPdfResponse.data.files.length > 0) {
+          return broadPdfResponse.data.files
+            .filter(file => file.id && file.name)
+            .map(file => ({
+              id: file.id!,
+              name: file.name!,
+              mimeType: file.mimeType || 'application/pdf',
+              size: file.size || '0',
+              webViewLink: file.webViewLink || undefined,
+            }))
+        }
         return []
       }
 
-      return response.data.files
+      return pdfResponse.data.files
         .filter(file => file.id && file.name)
         .map(file => ({
           id: file.id!,
@@ -173,6 +210,13 @@ export class GoogleDriveService {
         }))
     } catch (error) {
       console.error('Error listing files in folder:', error)
+      if (error instanceof Error) {
+        console.error('Error details:', {
+          message: error.message,
+          name: error.name,
+          stack: error.stack?.slice(0, 500)
+        })
+      }
       return []
     }
   }
