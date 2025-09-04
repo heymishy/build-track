@@ -12,10 +12,13 @@ export async function POST(request: NextRequest) {
     const { fileUrl, email, projectId, supplierName, notes } = await request.json()
 
     if (!fileUrl || !email) {
-      return NextResponse.json({
-        success: false,
-        error: 'Google Drive file URL and email are required',
-      }, { status: 400 })
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Google Drive file URL and email are required',
+        },
+        { status: 400 }
+      )
     }
 
     // Validate supplier email
@@ -27,19 +30,25 @@ export async function POST(request: NextRequest) {
     })
 
     if (!supplier) {
-      return NextResponse.json({
-        success: false,
-        error: 'Email not authorized for portal access',
-      }, { status: 403 })
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Email not authorized for portal access',
+        },
+        { status: 403 }
+      )
     }
 
     // Extract file ID from URL
     const fileId = GoogleDriveService.extractFileId(fileUrl)
     if (!fileId) {
-      return NextResponse.json({
-        success: false,
-        error: 'Invalid Google Drive URL',
-      }, { status: 400 })
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Invalid Google Drive URL',
+        },
+        { status: 400 }
+      )
     }
 
     const driveService = getGoogleDriveService()
@@ -47,42 +56,51 @@ export async function POST(request: NextRequest) {
     // Get file metadata
     const fileMetadata = await driveService.getFile(fileId)
     if (!fileMetadata) {
-      return NextResponse.json({
-        success: false,
-        error: 'Could not access Google Drive file. Please check sharing permissions.',
-      }, { status: 404 })
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Could not access Google Drive file. Please check sharing permissions.',
+        },
+        { status: 404 }
+      )
     }
 
     // Validate file type (PDF only)
     if (!fileMetadata.mimeType?.includes('pdf')) {
-      return NextResponse.json({
-        success: false,
-        error: 'Only PDF files are supported for invoice processing',
-      }, { status: 400 })
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Only PDF files are supported for invoice processing',
+        },
+        { status: 400 }
+      )
     }
 
     // Download file content
     const fileBuffer = await driveService.downloadFile(fileId)
     if (!fileBuffer) {
-      return NextResponse.json({
-        success: false,
-        error: 'Could not download file from Google Drive',
-      }, { status: 500 })
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Could not download file from Google Drive',
+        },
+        { status: 500 }
+      )
     }
 
     console.log(`🚀 Processing Google Drive file for supplier: ${fileMetadata.name} (${email})`)
 
     // Process the PDF using advanced LLM processing
     const { processInvoicePdfWithLLM } = await import('@/lib/llm-pdf-processor')
-    const result = await processInvoicePdfWithLLM(fileBuffer, { 
+    const result = await processInvoicePdfWithLLM(fileBuffer, {
       userId: `supplier:${email}`,
-      projectId: projectId || undefined
+      projectId: projectId || undefined,
     })
 
     if (result.success && result.invoices && result.invoices.length > 0) {
       // Save the processed invoice to main app
       const invoice = result.invoices[0]
-      
+
       // Find project for invoice
       let targetProjectId = projectId
       if (!targetProjectId) {
@@ -150,17 +168,22 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({
-      success: false,
-      error: 'Could not process invoice from Google Drive file',
-      processingResult: result,
-    }, { status: 400 })
-
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Could not process invoice from Google Drive file',
+        processingResult: result,
+      },
+      { status: 400 }
+    )
   } catch (error) {
     console.error('Supplier portal Google Drive import error:', error)
-    return NextResponse.json({
-      success: false,
-      error: error instanceof Error ? error.message : 'Google Drive import failed',
-    }, { status: 500 })
+    return NextResponse.json(
+      {
+        success: false,
+        error: error instanceof Error ? error.message : 'Google Drive import failed',
+      },
+      { status: 500 }
+    )
   }
 }

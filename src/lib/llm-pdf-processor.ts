@@ -9,12 +9,14 @@ import { getSettings } from './settings-server'
 import { GeminiParser } from './llm-parsers/gemini-parser'
 import { AnthropicParser } from './llm-parsers/anthropic-parser'
 import { BaseLLMParser } from './llm-parsers/base-llm-parser'
+import { getSupplierPortalApiKeys } from './admin-api-keys'
 
 export interface LLMPdfProcessorOptions {
   userId?: string
   projectId?: string
   maxRetries?: number
   confidenceThreshold?: number
+  useSupplierPortalMode?: boolean // Enable admin API key fallback for supplier portal
 }
 
 export interface LLMProcessingResult {
@@ -46,80 +48,92 @@ export class LLMPdfProcessor {
   }
 
   private async initializeParsers() {
-    // Initialize available LLM parsers using settings-configured API keys
-    console.log('🔧 Initializing LLM parsers from user settings...')
+    // Initialize available LLM parsers with enhanced API key configuration
+    const mode = this.options.useSupplierPortalMode ? 'supplier portal' : 'main app'
+    console.log(`🔧 Initializing LLM parsers for ${mode}...`)
+
+    let apiKeysSource = 'none'
+    let availableKeys: any = {}
 
     try {
-      // Get API keys from settings service
-      const { SettingsService } = await import('./settings-service')
-      const settingsService = new SettingsService(this.options.userId || '')
-      const settings = await settingsService.getSettings()
+      if (this.options.useSupplierPortalMode) {
+        // Supplier portal mode: Use admin API keys ONLY (no environment fallback)
+        console.log('🏢 Supplier portal mode: Using Settings API keys exclusively...')
+        const portalKeys = await getSupplierPortalApiKeys()
+        availableKeys = portalKeys
+        apiKeysSource = portalKeys.source
 
-      console.log('🔑 Available API keys:', Object.keys(settings.apiKeys))
+        console.log(`🔑 API keys source for supplier portal: ${portalKeys.source}`)
+        if (portalKeys.source === 'none') {
+          console.warn('⚠️ No API keys available from admin Settings')
+          console.warn('💡 Admin users can add API keys through Settings → LLM page')
+        }
+      } else {
+        // Main app mode: Use user settings with environment fallback
+        console.log('👤 Main app mode: Getting user settings API keys...')
+        const { SettingsService } = await import('./settings-service')
+        const settingsService = new SettingsService(this.options.userId || '')
+        const settings = await settingsService.getSettings()
 
-      // Initialize Gemini parser if API key is available
-      if (settings.apiKeys.gemini) {
-        console.log('✅ Initializing Gemini parser with settings API key')
+        availableKeys = {
+          geminiApiKey: settings.apiKeys.gemini,
+          anthropicApiKey: settings.apiKeys.anthropic,
+          openaiApiKey: settings.apiKeys.openai,
+        }
+        apiKeysSource = 'user_settings'
+
+        console.log('🔑 Available API keys from user settings:', Object.keys(settings.apiKeys))
+
+        // Fallback to environment if no user keys
+        if (!availableKeys.geminiApiKey && !availableKeys.anthropicApiKey && !availableKeys.openaiApiKey) {
+          console.log('📋 No API keys in user settings, checking environment variables...')
+          availableKeys = {
+            geminiApiKey: process.env.GEMINI_API_KEY,
+            anthropicApiKey: process.env.ANTHROPIC_API_KEY,
+            openaiApiKey: process.env.OPENAI_API_KEY,
+          }
+          apiKeysSource = 'environment'
+        }
+      }
+
+      // Initialize parsers based on available API keys
+      if (availableKeys.geminiApiKey) {
+        console.log(`✅ Initializing Gemini parser (${apiKeysSource})`)
         this.parsers.set(
           'gemini',
           new GeminiParser({
-            apiKey: settings.apiKeys.gemini,
+            apiKey: availableKeys.geminiApiKey,
             model: 'gemini-1.5-flash',
             timeout: 30000,
             maxRetries: 2,
           })
         )
+      } else {
+        console.log(`❌ No Gemini API key available (${apiKeysSource})`)
       }
 
-      // Initialize Anthropic parser if API key is available
-      if (settings.apiKeys.anthropic) {
-        console.log('✅ Initializing Anthropic parser with settings API key')
+      if (availableKeys.anthropicApiKey) {
+        console.log(`✅ Initializing Anthropic parser (${apiKeysSource})`)
         this.parsers.set(
           'anthropic',
           new AnthropicParser({
-            apiKey: settings.apiKeys.anthropic,
+            apiKey: availableKeys.anthropicApiKey,
             model: 'claude-3-haiku-20240307',
             timeout: 30000,
             maxRetries: 2,
           })
         )
+      } else {
+        console.log(`❌ No Anthropic API key available (${apiKeysSource})`)
       }
 
-      // Fallback to environment variables if no settings API keys
-      if (this.parsers.size === 0) {
-        console.log('📋 No API keys in settings, checking environment variables...')
-
-        if (process.env.GEMINI_API_KEY) {
-          console.log('✅ Found Gemini API key in environment variables')
-          this.parsers.set(
-            'gemini',
-            new GeminiParser({
-              apiKey: process.env.GEMINI_API_KEY,
-              model: 'gemini-1.5-flash',
-              timeout: 30000,
-              maxRetries: 2,
-            })
-          )
-        }
-
-        if (process.env.ANTHROPIC_API_KEY) {
-          console.log('✅ Found Anthropic API key in environment variables')
-          this.parsers.set(
-            'anthropic',
-            new AnthropicParser({
-              apiKey: process.env.ANTHROPIC_API_KEY,
-              model: 'claude-3-haiku-20240307',
-              timeout: 30000,
-              maxRetries: 2,
-            })
-          )
-        }
-      }
     } catch (error) {
-      console.warn('⚠️ Error loading API keys from settings:', error)
-      console.log('📋 Falling back to environment variables only...')
+      console.warn('⚠️ Error loading API keys:', error)
+      console.log('📋 Falling back to environment variables as last resort...')
 
+      // Last resort: environment variables only
       if (process.env.GEMINI_API_KEY) {
+        console.log('✅ Found Gemini API key in environment (fallback)')
         this.parsers.set(
           'gemini',
           new GeminiParser({
@@ -130,15 +144,36 @@ export class LLMPdfProcessor {
           })
         )
       }
+
+      if (process.env.ANTHROPIC_API_KEY) {
+        console.log('✅ Found Anthropic API key in environment (fallback)')
+        this.parsers.set(
+          'anthropic',
+          new AnthropicParser({
+            apiKey: process.env.ANTHROPIC_API_KEY,
+            model: 'claude-3-haiku-20240307',
+            timeout: 30000,
+            maxRetries: 2,
+          })
+        )
+      }
     }
 
     // Final status
     if (this.parsers.size === 0) {
       console.warn(
-        '⚠️ No LLM API keys configured - PDF processing will use text extraction fallback only'
+        `⚠️ No LLM API keys configured for ${mode} - PDF processing will use text extraction fallback only`
       )
+      if (this.options.useSupplierPortalMode) {
+        console.warn('💡 Suggestion: Admin users can add API keys through Settings → LLM page')
+      }
     } else {
-      console.log('🚀 LLM parsers initialized:', Array.from(this.parsers.keys()))
+      console.log(`🚀 LLM parsers initialized for ${mode}:`, Array.from(this.parsers.keys()))
+      console.log(`📊 Configuration source: ${apiKeysSource}`)
+      
+      if (this.options.useSupplierPortalMode && apiKeysSource === 'admin_user') {
+        console.log('✅ Supplier portal is using Settings API keys (not .env.local)')
+      }
     }
   }
 
@@ -188,7 +223,9 @@ export class LLMPdfProcessor {
           console.log(`   - Primary failure reason: ${result.error || 'Unknown error'}`)
         }
         if (result.confidence < pdfSettings.confidenceThreshold) {
-          console.log(`   - Low confidence: ${result.confidence} < ${pdfSettings.confidenceThreshold}`)
+          console.log(
+            `   - Low confidence: ${result.confidence} < ${pdfSettings.confidenceThreshold}`
+          )
         }
 
         if (pdfSettings.fallbackProvider !== pdfSettings.provider) {
@@ -315,23 +352,23 @@ export class LLMPdfProcessor {
       }
     } catch (error) {
       console.error(`❌ ${context} failed:`, error)
-      
+
       // Enhanced error logging for debugging Gemini API issues
       console.error(`   - Error type: ${error?.constructor?.name || 'Unknown'}`)
       console.error(`   - Error message: ${error?.message || 'No message'}`)
       console.error(`   - Error code: ${error?.code || 'No code'}`)
       console.error(`   - Error status: ${error?.status || 'No status'}`)
-      
+
       // Log additional error details if available
       if (error?.response) {
         console.error(`   - Response status: ${error.response.status}`)
         console.error(`   - Response data:`, error.response.data)
       }
-      
+
       if (error?.stack) {
         console.error(`   - Stack trace:`, error.stack)
       }
-      
+
       return {
         success: false,
         invoices: [],

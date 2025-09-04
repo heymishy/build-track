@@ -22,7 +22,7 @@ export class GoogleDriveService {
   constructor() {
     // Initialize with service account from environment
     let serviceAccountKey: any = null
-    
+
     try {
       if (process.env.GOOGLE_SERVICE_ACCOUNT_KEY) {
         serviceAccountKey = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_KEY)
@@ -141,9 +141,9 @@ export class GoogleDriveService {
    */
   static extractFileId(url: string): string | null {
     const patterns = [
-      /\/file\/d\/([a-zA-Z0-9-_]+)/,  // https://drive.google.com/file/d/FILE_ID/view
-      /id=([a-zA-Z0-9-_]+)/,         // https://drive.google.com/open?id=FILE_ID
-      /\/d\/([a-zA-Z0-9-_]+)/,       // https://docs.google.com/document/d/FILE_ID/edit
+      /\/file\/d\/([a-zA-Z0-9-_]+)/, // https://drive.google.com/file/d/FILE_ID/view
+      /id=([a-zA-Z0-9-_]+)/, // https://drive.google.com/open?id=FILE_ID
+      /\/d\/([a-zA-Z0-9-_]+)/, // https://docs.google.com/document/d/FILE_ID/edit
     ]
 
     for (const pattern of patterns) {

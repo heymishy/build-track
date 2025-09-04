@@ -340,9 +340,13 @@ NEVER return single invoice objects without the "invoices" array wrapper. Always
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+        const errorMessage = `Gemini API error: ${response.status} - ${errorData.error?.message || errorData.error || 'Unknown error'}`
+        console.error('❌ Gemini API request failed:', errorMessage)
+        console.error('   - Status:', response.status)
+        console.error('   - Error data:', errorData)
         return {
           success: false,
-          error: `Gemini API error: ${response.status} - ${errorData.error?.message || errorData.error || 'Unknown error'}`,
+          error: errorMessage,
         }
       }
 
@@ -361,6 +365,9 @@ NEVER return single invoice objects without the "invoices" array wrapper. Always
         data,
       }
     } catch (error) {
+      console.error('❌ Gemini API network/parsing error:', error)
+      console.error('   - Error type:', error?.constructor?.name || 'Unknown')
+      console.error('   - Error message:', error?.message || 'No message')
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Network error',

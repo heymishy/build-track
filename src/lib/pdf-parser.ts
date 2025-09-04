@@ -84,7 +84,7 @@ export async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string[]> {
       // Try dynamic import first (safer in Next.js environment)
       const pdfParseModule = await import('pdf-parse')
       pdfParse = pdfParseModule.default || pdfParseModule
-      
+
       // Test the import by checking if it's a function
       if (typeof pdfParse !== 'function') {
         throw new Error('pdf-parse import is not a function')

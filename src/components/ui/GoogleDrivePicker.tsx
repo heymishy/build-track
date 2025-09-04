@@ -4,11 +4,11 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Card } from '@/components/ui/Card'
-import { 
-  LinkIcon, 
-  ArrowPathIcon, 
-  CheckCircleIcon, 
-  ExclamationCircleIcon 
+import {
+  LinkIcon,
+  ArrowPathIcon,
+  CheckCircleIcon,
+  ExclamationCircleIcon,
 } from '@heroicons/react/24/outline'
 
 interface GoogleDrivePickerProps {
@@ -105,7 +105,7 @@ export function GoogleDrivePicker({
               id="drive-url"
               type="url"
               value={driveUrl}
-              onChange={(e) => {
+              onChange={e => {
                 setDriveUrl(e.target.value)
                 if (error || success) {
                   setError(null)
@@ -139,13 +139,17 @@ export function GoogleDrivePicker({
 
       {/* Help text */}
       <div className="text-xs text-gray-500 space-y-1">
-        <p>📋 <strong>How to get the URL:</strong></p>
+        <p>
+          📋 <strong>How to get the URL:</strong>
+        </p>
         <ol className="list-decimal list-inside space-y-1 ml-4">
           <li>Open your file in Google Drive</li>
           <li>Click "Share" and ensure "Anyone with the link" can view</li>
           <li>Copy the sharing URL and paste it above</li>
         </ol>
-        <p className="mt-2">✅ <strong>Supported:</strong> PDF files only</p>
+        <p className="mt-2">
+          ✅ <strong>Supported:</strong> PDF files only
+        </p>
       </div>
 
       {/* Success message */}
@@ -171,12 +175,7 @@ export function GoogleDrivePicker({
       {/* Reset button when there's a success or error */}
       {(success || error) && (
         <div className="flex justify-end">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={resetState}
-            className="text-xs"
-          >
+          <Button variant="outline" size="sm" onClick={resetState} className="text-xs">
             Import Another File
           </Button>
         </div>

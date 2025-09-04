@@ -183,7 +183,7 @@ export const EnhancedInvoiceUpload: React.FC<EnhancedInvoiceUploadProps> = ({
           </div>
           <GoogleDrivePicker
             endpoint="/api/google-drive/import"
-            onSuccess={(result) => {
+            onSuccess={result => {
               console.log('Google Drive import successful:', result)
               // Simulate processing complete for consistency
               setProcessingResult({
@@ -202,7 +202,7 @@ export const EnhancedInvoiceUpload: React.FC<EnhancedInvoiceUploadProps> = ({
                 })
               }
             }}
-            onError={(error) => {
+            onError={error => {
               console.error('Google Drive import failed:', error)
             }}
             disabled={isProcessing}

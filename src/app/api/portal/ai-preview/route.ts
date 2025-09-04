@@ -12,11 +12,13 @@ async function parsePDF(buffer: Buffer, supplierEmail: string) {
   try {
     console.log('🚀 Starting advanced LLM-first PDF processing for supplier portal...')
 
-    // Use the same advanced processing as the dashboard
+    // Use the same advanced processing as the dashboard with supplier portal mode
+    // NOTE: Supplier portal ONLY uses admin Settings API keys, never .env.local
     const { processInvoicePdfWithLLM } = await import('@/lib/llm-pdf-processor')
-    const result = await processInvoicePdfWithLLM(buffer, { 
+    const result = await processInvoicePdfWithLLM(buffer, {
       userId: `supplier:${supplierEmail}`,
-      projectId: undefined 
+      projectId: undefined,
+      useSupplierPortalMode: true, // Uses admin Settings API keys exclusively
     })
 
     console.log('✅ Advanced LLM processing completed')
@@ -26,22 +28,38 @@ async function parsePDF(buffer: Buffer, supplierEmail: string) {
 
     // Transform the advanced result to match expected format
     if (result.invoices && result.invoices.length > 0) {
-      const invoice = result.invoices[0] // Take first invoice for single processing
+      // Handle both single and multi-invoice responses
+      const allInvoices = result.invoices.map(invoice => ({
+        invoiceNumber: invoice.invoiceNumber,
+        invoiceDate: invoice.date,
+        supplierName: invoice.vendorName,
+        totalAmount: invoice.total || 0,
+        lineItems: invoice.lineItems.map(item => ({
+          description: item.description,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          totalPrice: item.total,
+          category: 'MATERIAL', // Default category
+        })),
+      }))
+
+      // Calculate aggregated metrics across all invoices
+      const totalAmount = allInvoices.reduce((sum, inv) => sum + inv.totalAmount, 0)
+      const totalLineItems = allInvoices.reduce((sum, inv) => sum + inv.lineItems.length, 0)
+      const primaryInvoice = allInvoices[0] // Use first invoice as primary display
 
       return {
         success: true,
-        invoice: {
-          invoiceNumber: invoice.invoiceNumber,
-          invoiceDate: invoice.date,
-          supplierName: invoice.vendorName,
-          totalAmount: invoice.total || 0,
-          lineItems: invoice.lineItems.map(item => ({
-            description: item.description,
-            quantity: item.quantity,
-            unitPrice: item.unitPrice,
-            totalPrice: item.total,
-            category: 'MATERIAL', // Default category
-          })),
+        // For backward compatibility, include single invoice structure
+        invoice: primaryInvoice,
+        // NEW: Include all invoices for multi-invoice display
+        invoices: allInvoices,
+        multipleInvoices: allInvoices.length > 1,
+        totalInvoices: allInvoices.length,
+        aggregatedData: {
+          totalAmount,
+          totalLineItems,
+          averageAmount: totalAmount / allInvoices.length,
         },
         // Include advanced processing metadata
         processingMetadata: {
@@ -51,7 +69,7 @@ async function parsePDF(buffer: Buffer, supplierEmail: string) {
           processingTime: result.parsingStats?.totalTime,
           accuracy: result.qualityMetrics?.overallAccuracy,
           qualityScore: result.qualityMetrics?.qualityScore,
-        }
+        },
       }
     } else {
       return {
@@ -137,7 +155,7 @@ export async function POST(request: NextRequest) {
 
     if (!parsedInvoice.success) {
       console.warn('AI parsing failed, providing basic fallback preview')
-      
+
       // Create a basic fallback preview without AI insights
       const fallbackPreview = {
         parsedInvoice: {
@@ -145,39 +163,55 @@ export async function POST(request: NextRequest) {
           supplierName: supplier.name,
           invoiceDate: null,
           totalAmount: null,
-          lineItems: []
+          lineItems: [],
         },
         confidence: 0,
         projectSuggestions: [], // No AI suggestions available
         extractedLineItems: 0,
         totalAmount: 0,
         processingTime: Date.now() - startTime,
-        processingMethod: 'fallback'
+        processingMethod: 'fallback',
       }
 
       return NextResponse.json({
         success: true,
         preview: fallbackPreview,
-        message: 'AI processing failed, but you can still upload manually'
+        message: 'AI processing failed, but you can still upload manually',
       })
     }
 
     const invoice = parsedInvoice.invoice!
 
-    // Generate AI project suggestions
-    const projectSuggestions = await generateProjectSuggestions(invoice, projects, supplier.name)
+    // Generate AI project suggestions using aggregated invoice data
+    const projectSuggestions = await generateProjectSuggestions(
+      parsedInvoice.multipleInvoices ? parsedInvoice.aggregatedData : parsedInvoice.invoice, 
+      projects, 
+      supplier.name
+    )
 
-    // Calculate extracted data metrics
-    const extractedLineItems = invoice.lineItems?.length || 0
-    const totalAmount =
-      invoice.totalAmount ||
-      invoice.lineItems?.reduce((sum, item) => sum + (item.totalPrice || 0), 0) ||
-      0
+    // Calculate extracted data metrics (use aggregated if multiple invoices)
+    const extractedLineItems = parsedInvoice.multipleInvoices 
+      ? parsedInvoice.aggregatedData.totalLineItems
+      : parsedInvoice.invoice.lineItems?.length || 0
+    const totalAmount = parsedInvoice.multipleInvoices
+      ? parsedInvoice.aggregatedData.totalAmount
+      : parsedInvoice.invoice.totalAmount ||
+        parsedInvoice.invoice.lineItems?.reduce((sum, item) => sum + (item.totalPrice || 0), 0) ||
+        0
 
     // Create enhanced preview response with advanced processing metadata
     const preview = {
-      parsedInvoice: invoice,
-      confidence: parsedInvoice.processingMetadata?.confidence || calculateExtractionConfidence(invoice),
+      parsedInvoice: parsedInvoice.invoice, // Primary invoice for compatibility
+      allInvoices: parsedInvoice.invoices || [parsedInvoice.invoice], // All invoices
+      multipleInvoices: parsedInvoice.multipleInvoices || false,
+      totalInvoices: parsedInvoice.totalInvoices || 1,
+      aggregatedData: parsedInvoice.aggregatedData || {
+        totalAmount: parsedInvoice.invoice.totalAmount,
+        totalLineItems: parsedInvoice.invoice.lineItems?.length || 0,
+        averageAmount: parsedInvoice.invoice.totalAmount,
+      },
+      confidence:
+        parsedInvoice.processingMetadata?.confidence || calculateExtractionConfidence(parsedInvoice.invoice),
       projectSuggestions: projectSuggestions.slice(0, 3), // Top 3 suggestions
       extractedLineItems,
       totalAmount,
@@ -189,7 +223,7 @@ export async function POST(request: NextRequest) {
         qualityScore: parsedInvoice.processingMetadata?.qualityScore,
         llmCost: parsedInvoice.processingMetadata?.cost,
         llmProcessingTime: parsedInvoice.processingMetadata?.processingTime,
-      }
+      },
     }
 
     // If this is preview-only, don't store anything
@@ -202,8 +236,12 @@ export async function POST(request: NextRequest) {
 
     // If not preview-only, save the processed invoice to main app
     try {
-      const savedInvoice = await saveSupplierInvoiceToMainApp(invoice, supplier, projectSuggestions[0])
-      
+      const savedInvoice = await saveSupplierInvoiceToMainApp(
+        invoice,
+        supplier,
+        projectSuggestions[0]
+      )
+
       return NextResponse.json({
         success: true,
         preview,
@@ -212,7 +250,7 @@ export async function POST(request: NextRequest) {
           invoiceNumber: savedInvoice.invoiceNumber,
           projectId: savedInvoice.projectId,
         },
-        message: 'Invoice processed and saved to main app for matching'
+        message: 'Invoice processed and saved to main app for matching',
       })
     } catch (saveError) {
       console.error('Error saving invoice to main app:', saveError)
@@ -221,7 +259,7 @@ export async function POST(request: NextRequest) {
         success: true,
         preview,
         warning: 'Invoice processed but could not be saved to main app',
-        error: saveError instanceof Error ? saveError.message : 'Save failed'
+        error: saveError instanceof Error ? saveError.message : 'Save failed',
       })
     }
   } catch (error) {
@@ -441,10 +479,14 @@ function calculateStringSimilarity(str1: string, str2: string): number {
 /**
  * Save processed supplier invoice to main app Invoice table
  */
-async function saveSupplierInvoiceToMainApp(invoice: any, supplier: any, topProjectSuggestion?: any) {
+async function saveSupplierInvoiceToMainApp(
+  invoice: any,
+  supplier: any,
+  topProjectSuggestion?: any
+) {
   // Determine project - use suggestion or default
   let projectId = topProjectSuggestion?.projectId
-  
+
   if (!projectId) {
     // Find first available project as fallback
     const project = await prisma.project.findFirst({
@@ -501,6 +543,6 @@ async function saveSupplierInvoiceToMainApp(invoice: any, supplier: any, topProj
   }
 
   console.log(`✅ Saved supplier invoice to main app: ${savedInvoice.id} for project ${projectId}`)
-  
+
   return savedInvoice
 }

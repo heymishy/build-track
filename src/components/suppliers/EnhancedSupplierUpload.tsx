@@ -19,6 +19,7 @@ import {
   ArrowPathIcon,
   LightBulbIcon,
   ChartBarIcon,
+  ClipboardDocumentListIcon,
 } from '@heroicons/react/24/outline'
 import { ParsedInvoice } from '@/lib/pdf-parser'
 
@@ -38,6 +39,14 @@ interface AIProjectSuggestion {
 
 interface AIPreviewData {
   parsedInvoice: ParsedInvoice
+  allInvoices?: ParsedInvoice[]
+  multipleInvoices?: boolean
+  totalInvoices?: number
+  aggregatedData?: {
+    totalAmount: number
+    totalLineItems: number
+    averageAmount: number
+  }
   confidence: number
   projectSuggestions: AIProjectSuggestion[]
   extractedLineItems: number
@@ -342,7 +351,8 @@ export function EnhancedSupplierUpload({
           </h3>
           <div className="mb-4">
             <p className="text-sm text-gray-600">
-              Upload invoices directly from your Google Drive. Share your PDF invoice file and paste the link below.
+              Upload invoices directly from your Google Drive. Share your PDF invoice file and paste
+              the link below.
             </p>
           </div>
           <GoogleDrivePicker
@@ -353,11 +363,13 @@ export function EnhancedSupplierUpload({
               projectId: selectedProjectId || undefined,
               notes: notes || undefined,
             }}
-            onSuccess={(result) => {
-              toast.success(`Successfully imported ${result.file?.name || 'invoice'} from Google Drive!`)
+            onSuccess={result => {
+              toast.success(
+                `Successfully imported ${result.file?.name || 'invoice'} from Google Drive!`
+              )
               onUploadComplete?.(result)
             }}
-            onError={(error) => {
+            onError={error => {
               console.error('Google Drive import failed:', error)
             }}
             disabled={uploading || aiProcessing}
@@ -377,12 +389,45 @@ export function EnhancedSupplierUpload({
             </Badge>
           </div>
 
+          {/* Multi-Invoice Summary */}
+          {aiPreview.multipleInvoices && (
+            <div className="mb-6 p-4 bg-gradient-to-r from-green-50 to-blue-50 border-2 border-green-200 rounded-lg">
+              <div className="flex items-center gap-2 mb-2">
+                <CheckCircleIcon className="h-5 w-5 text-green-600" />
+                <h4 className="font-semibold text-green-900">Multiple Invoices Detected!</h4>
+                <Badge className="bg-green-100 text-green-800">
+                  {aiPreview.totalInvoices} invoices found
+                </Badge>
+              </div>
+              <p className="text-sm text-green-700 mb-3">
+                AI successfully identified and processed {aiPreview.totalInvoices} separate invoices in your PDF.
+                All will be saved when you upload.
+              </p>
+              <div className="grid grid-cols-3 gap-4 text-sm">
+                <div className="text-center p-2 bg-white rounded border">
+                  <div className="font-medium text-gray-900">${aiPreview.aggregatedData?.totalAmount.toFixed(2) || '0.00'}</div>
+                  <div className="text-gray-600">Total Value</div>
+                </div>
+                <div className="text-center p-2 bg-white rounded border">
+                  <div className="font-medium text-gray-900">{aiPreview.aggregatedData?.totalLineItems || 0}</div>
+                  <div className="text-gray-600">Total Line Items</div>
+                </div>
+                <div className="text-center p-2 bg-white rounded border">
+                  <div className="font-medium text-gray-900">${aiPreview.aggregatedData?.averageAmount.toFixed(2) || '0.00'}</div>
+                  <div className="text-gray-600">Average Amount</div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Extracted Data Summary */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <div className="bg-white p-4 rounded-lg border">
               <div className="flex items-center gap-2 mb-2">
                 <ChartBarIcon className="h-4 w-4 text-blue-600" />
-                <h4 className="font-medium text-gray-900">Data Extracted</h4>
+                <h4 className="font-medium text-gray-900">
+                  {aiPreview.multipleInvoices ? 'Combined Data' : 'Data Extracted'}
+                </h4>
               </div>
               <div className="space-y-1 text-sm">
                 <p>
@@ -392,6 +437,11 @@ export function EnhancedSupplierUpload({
                   Total Amount:{' '}
                   <span className="font-medium">${aiPreview.totalAmount.toFixed(2)}</span>
                 </p>
+                {aiPreview.multipleInvoices && (
+                  <p>
+                    Invoices: <span className="font-medium">{aiPreview.totalInvoices}</span>
+                  </p>
+                )}
                 <div className="flex items-center gap-1">
                   <span>Confidence:</span>
                   <Badge className={`${getConfidenceColor(aiPreview.confidence)} border`}>
@@ -404,12 +454,19 @@ export function EnhancedSupplierUpload({
             <div className="bg-white p-4 rounded-lg border">
               <div className="flex items-center gap-2 mb-2">
                 <LightBulbIcon className="h-4 w-4 text-green-600" />
-                <h4 className="font-medium text-gray-900">Invoice Details</h4>
+                <h4 className="font-medium text-gray-900">
+                  {aiPreview.multipleInvoices ? 'Primary Invoice' : 'Invoice Details'}
+                </h4>
               </div>
               <div className="space-y-1 text-sm text-gray-600">
                 <p>Number: {aiPreview.parsedInvoice.invoiceNumber || 'Not found'}</p>
                 <p>Date: {aiPreview.parsedInvoice.invoiceDate || 'Not found'}</p>
                 <p>Supplier: {aiPreview.parsedInvoice.supplierName || supplierName}</p>
+                {aiPreview.multipleInvoices && (
+                  <p className="text-blue-600 font-medium text-xs mt-1">
+                    + {(aiPreview.totalInvoices || 1) - 1} additional invoices
+                  </p>
+                )}
               </div>
             </div>
 
@@ -421,7 +478,7 @@ export function EnhancedSupplierUpload({
               <div className="space-y-1 text-sm text-gray-600">
                 <p>Categories: {aiPreview.parsedInvoice.lineItems?.length || 0} items</p>
                 <p>Matches: ~{aiPreview.projectSuggestions?.[0]?.estimatedMatches || 0}</p>
-                <p>Status: Ready for processing</p>
+                <p>Status: {aiPreview.multipleInvoices ? 'Multi-invoice ready' : 'Ready for processing'}</p>
               </div>
             </div>
           </div>
@@ -462,6 +519,49 @@ export function EnhancedSupplierUpload({
                     {index === 0 && (
                       <Badge className="bg-yellow-100 text-yellow-800">🏆 AI Recommended</Badge>
                     )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Detailed Multi-Invoice Breakdown */}
+          {aiPreview.multipleInvoices && aiPreview.allInvoices && aiPreview.allInvoices.length > 1 && (
+            <div className="mt-6">
+              <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
+                <ClipboardDocumentListIcon className="h-4 w-4 text-blue-600" />
+                All {aiPreview.totalInvoices} Invoices Found
+              </h4>
+              <div className="max-h-64 overflow-y-auto space-y-2">
+                {aiPreview.allInvoices.map((invoice, index) => (
+                  <div
+                    key={`invoice-${index}`}
+                    className="p-3 bg-white rounded border border-gray-200 hover:bg-gray-50"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Badge variant="outline" className="text-xs">
+                            Invoice #{index + 1}
+                          </Badge>
+                          {invoice.invoiceNumber && (
+                            <span className="text-sm font-medium text-gray-900">
+                              {invoice.invoiceNumber}
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-sm text-gray-600 space-x-4">
+                          {invoice.invoiceDate && <span>Date: {invoice.invoiceDate}</span>}
+                          {invoice.supplierName && <span>Supplier: {invoice.supplierName}</span>}
+                          <span>Items: {invoice.lineItems?.length || 0}</span>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-medium text-gray-900">
+                          ${invoice.totalAmount?.toFixed(2) || '0.00'}
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -514,24 +614,31 @@ export function EnhancedSupplierUpload({
 
           {/* Upload Button */}
           <div className="flex justify-end">
-            <Button
-              onClick={handleUpload}
-              disabled={uploading || !selectedFile}
-              className="px-8 py-3"
-              data-testid="upload-button"
-            >
-              {uploading ? (
-                <>
-                  <ArrowPathIcon className="h-4 w-4 mr-2 animate-spin" />
-                  Uploading with AI Processing...
-                </>
-              ) : (
-                <>
-                  <SparklesIcon className="h-4 w-4 mr-2" />
-                  Upload with AI Enhancement
-                </>
+            <div className="text-right">
+              {aiPreview?.multipleInvoices && (
+                <p className="text-sm text-green-700 mb-2 font-medium">
+                  ✨ {aiPreview.totalInvoices} invoices will be uploaded and processed
+                </p>
               )}
-            </Button>
+              <Button
+                onClick={handleUpload}
+                disabled={uploading || !selectedFile}
+                className="px-8 py-3"
+                data-testid="upload-button"
+              >
+                {uploading ? (
+                  <>
+                    <ArrowPathIcon className="h-4 w-4 mr-2 animate-spin" />
+                    Uploading{aiPreview?.multipleInvoices ? ` ${aiPreview.totalInvoices} invoices` : ''} with AI Processing...
+                  </>
+                ) : (
+                  <>
+                    <SparklesIcon className="h-4 w-4 mr-2" />
+                    Upload{aiPreview?.multipleInvoices ? ` ${aiPreview.totalInvoices} Invoices` : ''} with AI Enhancement
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
         </div>
       </Card>

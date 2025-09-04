@@ -13,10 +13,13 @@ export const POST = withAuth(
       const { uploadId, projectId } = await request.json()
 
       if (!uploadId) {
-        return NextResponse.json({
-          success: false,
-          error: 'Upload ID is required',
-        }, { status: 400 })
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'Upload ID is required',
+          },
+          { status: 400 }
+        )
       }
 
       // Get the upload record
@@ -25,17 +28,23 @@ export const POST = withAuth(
       })
 
       if (!upload) {
-        return NextResponse.json({
-          success: false,
-          error: 'Upload not found',
-        }, { status: 404 })
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'Upload not found',
+          },
+          { status: 404 }
+        )
       }
 
       if (upload.status === 'PROCESSED') {
-        return NextResponse.json({
-          success: false,
-          error: 'Upload already processed',
-        }, { status: 400 })
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'Upload already processed',
+          },
+          { status: 400 }
+        )
       }
 
       // Use provided project or find a default one
@@ -55,10 +64,13 @@ export const POST = withAuth(
       }
 
       if (!targetProjectId) {
-        return NextResponse.json({
-          success: false,
-          error: 'No available project found',
-        }, { status: 400 })
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'No available project found',
+          },
+          { status: 400 }
+        )
       }
 
       // Create the invoice
@@ -94,13 +106,15 @@ export const POST = withAuth(
         invoice: savedInvoice,
         message: 'Upload successfully converted to invoice',
       })
-
     } catch (error) {
       console.error('Error converting upload:', error)
-      return NextResponse.json({
-        success: false,
-        error: error instanceof Error ? error.message : 'Conversion failed',
-      }, { status: 500 })
+      return NextResponse.json(
+        {
+          success: false,
+          error: error instanceof Error ? error.message : 'Conversion failed',
+        },
+        { status: 500 }
+      )
     }
   },
   {

@@ -148,7 +148,7 @@ const nextConfig: NextConfig = {
         fs: false,
         path: false,
       }
-      
+
       // Ignore pdf-parse test directory to prevent ENOENT errors
       config.plugins.push(
         new webpack.IgnorePlugin({
