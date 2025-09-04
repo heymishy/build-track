@@ -137,11 +137,53 @@ export class GoogleDriveService {
   }
 
   /**
+   * Check if ID represents a folder
+   */
+  async isFolder(fileId: string): Promise<boolean> {
+    try {
+      const file = await this.getFile(fileId)
+      return file?.mimeType === 'application/vnd.google-apps.folder'
+    } catch (error) {
+      return false
+    }
+  }
+
+  /**
+   * List PDF files in a folder
+   */
+  async listPdfFilesInFolder(folderId: string): Promise<GoogleDriveFile[]> {
+    try {
+      const response = await this.drive.files.list({
+        q: `'${folderId}' in parents and mimeType='application/pdf'`,
+        fields: 'files(id,name,mimeType,size,webViewLink)',
+      })
+
+      if (!response.data.files) {
+        return []
+      }
+
+      return response.data.files
+        .filter(file => file.id && file.name)
+        .map(file => ({
+          id: file.id!,
+          name: file.name!,
+          mimeType: file.mimeType || 'application/pdf',
+          size: file.size || '0',
+          webViewLink: file.webViewLink || undefined,
+        }))
+    } catch (error) {
+      console.error('Error listing files in folder:', error)
+      return []
+    }
+  }
+
+  /**
    * Extract file ID from various Google Drive URL formats
    */
   static extractFileId(url: string): string | null {
     const patterns = [
       /\/file\/d\/([a-zA-Z0-9-_]+)/, // https://drive.google.com/file/d/FILE_ID/view
+      /\/folders\/([a-zA-Z0-9-_]+)/, // https://drive.google.com/drive/folders/FOLDER_ID
       /id=([a-zA-Z0-9-_]+)/, // https://drive.google.com/open?id=FILE_ID
       /\/d\/([a-zA-Z0-9-_]+)/, // https://docs.google.com/document/d/FILE_ID/edit
     ]

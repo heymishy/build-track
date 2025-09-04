@@ -81,8 +81,11 @@ export function GoogleDrivePicker({
 
   const isValidGoogleDriveUrl = (url: string): boolean => {
     const patterns = [
-      /https:\/\/drive\.google\.com\/file\/d\/[a-zA-Z0-9-_]+/,
-      /https:\/\/docs\.google\.com\/(document|spreadsheets|presentation)\/d\/[a-zA-Z0-9-_]+/,
+      /https:\/\/drive\.google\.com\/file\/d\/[a-zA-Z0-9-_]+/, // Individual files
+      /https:\/\/docs\.google\.com\/(document|spreadsheets|presentation)\/d\/[a-zA-Z0-9-_]+/, // Google Docs
+      /https:\/\/drive\.google\.com\/drive\/folders\/[a-zA-Z0-9-_]+/, // Shared folders
+      /https:\/\/drive\.google\.com\/drive\/u\/\d+\/folders\/[a-zA-Z0-9-_]+/, // User-specific folder URLs
+      /https:\/\/drive\.google\.com\/open\?id=[a-zA-Z0-9-_]+/, // Legacy format
     ]
     return patterns.some(pattern => pattern.test(url))
   }
@@ -143,12 +146,12 @@ export function GoogleDrivePicker({
           📋 <strong>How to get the URL:</strong>
         </p>
         <ol className="list-decimal list-inside space-y-1 ml-4">
-          <li>Open your file in Google Drive</li>
+          <li>Open your file or folder in Google Drive</li>
           <li>Click "Share" and ensure "Anyone with the link" can view</li>
           <li>Copy the sharing URL and paste it above</li>
         </ol>
         <p className="mt-2">
-          ✅ <strong>Supported:</strong> PDF files only
+          ✅ <strong>Supported:</strong> Individual PDF files and shared folders containing PDFs
         </p>
       </div>
 

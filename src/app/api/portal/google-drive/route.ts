@@ -53,86 +53,143 @@ export async function POST(request: NextRequest) {
 
     const driveService = getGoogleDriveService()
 
-    // Get file metadata
-    const fileMetadata = await driveService.getFile(fileId)
-    if (!fileMetadata) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Could not access Google Drive file. Please check sharing permissions.',
-        },
-        { status: 404 }
-      )
+    // Check if it's a folder or file
+    const isFolder = await driveService.isFolder(fileId)
+    let filesToProcess = []
+
+    if (isFolder) {
+      console.log(`📁 Detected Google Drive folder, listing PDF files...`)
+      const folderFiles = await driveService.listPdfFilesInFolder(fileId)
+
+      if (folderFiles.length === 0) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'No PDF files found in the shared folder',
+          },
+          { status: 400 }
+        )
+      }
+
+      filesToProcess = folderFiles
+      console.log(`📄 Found ${folderFiles.length} PDF files in folder`)
+    } else {
+      // Single file processing
+      const fileMetadata = await driveService.getFile(fileId)
+      if (!fileMetadata) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'Could not access Google Drive file. Please check sharing permissions.',
+          },
+          { status: 404 }
+        )
+      }
+
+      // Validate file type (PDF only)
+      if (!fileMetadata.mimeType?.includes('pdf')) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'Only PDF files are supported for invoice processing',
+          },
+          { status: 400 }
+        )
+      }
+
+      filesToProcess = [fileMetadata]
     }
 
-    // Validate file type (PDF only)
-    if (!fileMetadata.mimeType?.includes('pdf')) {
+    // Process each file
+    const processedInvoices = []
+    const { processInvoicePdfWithLLM } = await import('@/lib/llm-pdf-processor')
+
+    for (const file of filesToProcess) {
+      try {
+        console.log(`🚀 Processing file: ${file.name} for supplier: ${email}`)
+
+        // Download file content
+        const fileBuffer = await driveService.downloadFile(file.id)
+        if (!fileBuffer) {
+          console.warn(`⚠️ Could not download file: ${file.name}`)
+          continue
+        }
+
+        // Process the PDF using advanced LLM processing
+        const result = await processInvoicePdfWithLLM(fileBuffer, {
+          userId: `supplier:${email}`,
+          projectId: projectId || undefined,
+        })
+
+        if (result.success && result.invoices && result.invoices.length > 0) {
+          processedInvoices.push({
+            file,
+            result,
+            invoice: result.invoices[0],
+          })
+        }
+      } catch (error) {
+        console.error(`❌ Error processing file ${file.name}:`, error)
+      }
+    }
+
+    if (processedInvoices.length === 0) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Only PDF files are supported for invoice processing',
+          error: 'Could not process any invoices from the provided Google Drive location',
         },
         { status: 400 }
       )
     }
 
-    // Download file content
-    const fileBuffer = await driveService.downloadFile(fileId)
-    if (!fileBuffer) {
+    // Find project for invoices
+    let targetProjectId = projectId
+    if (!targetProjectId) {
+      const project = await prisma.project.findFirst({
+        where: {
+          status: {
+            in: ['PLANNING', 'IN_PROGRESS'],
+          },
+        },
+        orderBy: {
+          updatedAt: 'desc',
+        },
+      })
+      targetProjectId = project?.id
+    }
+
+    if (!targetProjectId) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Could not download file from Google Drive',
+          error: 'No active project found to assign invoices',
         },
-        { status: 500 }
+        { status: 400 }
       )
     }
 
-    console.log(`🚀 Processing Google Drive file for supplier: ${fileMetadata.name} (${email})`)
+    // Save all processed invoices to main app
+    const savedInvoices = []
 
-    // Process the PDF using advanced LLM processing
-    const { processInvoicePdfWithLLM } = await import('@/lib/llm-pdf-processor')
-    const result = await processInvoicePdfWithLLM(fileBuffer, {
-      userId: `supplier:${email}`,
-      projectId: projectId || undefined,
-    })
+    for (const processedInvoice of processedInvoices) {
+      try {
+        const { file, invoice } = processedInvoice
 
-    if (result.success && result.invoices && result.invoices.length > 0) {
-      // Save the processed invoice to main app
-      const invoice = result.invoices[0]
-
-      // Find project for invoice
-      let targetProjectId = projectId
-      if (!targetProjectId) {
-        const project = await prisma.project.findFirst({
-          where: {
-            status: {
-              in: ['PLANNING', 'IN_PROGRESS'],
-            },
-          },
-          orderBy: {
-            updatedAt: 'desc',
-          },
-        })
-        targetProjectId = project?.id
-      }
-
-      if (targetProjectId) {
-        // Save to main Invoice table
         const savedInvoice = await prisma.invoice.create({
           data: {
             projectId: targetProjectId,
             userId: null,
-            invoiceNumber: invoice.invoiceNumber || `GDRIVE-${fileId.slice(-8)}`,
+            invoiceNumber: invoice.invoiceNumber || `GDRIVE-${file.id.slice(-8)}`,
             supplierName: invoice.vendorName || supplierName || supplier.name,
             supplierABN: null,
             invoiceDate: invoice.date ? new Date(invoice.date) : new Date(),
             dueDate: null,
             totalAmount: invoice.total || 0,
             gstAmount: 0,
-            description: `Google Drive import by ${email}: ${fileMetadata.name}`,
+            notes: `Google Drive import by ${email}: ${file.name}`,
             status: 'PENDING',
-            filePath: fileMetadata.webViewLink,
+            filePath: file.webViewLink,
           },
         })
 
@@ -147,35 +204,32 @@ export async function POST(request: NextRequest) {
               unitPrice: item.unitPrice || 0,
               totalPrice: item.total || 0,
               category: 'MATERIAL',
-              createdAt: new Date(),
             })),
           })
         }
 
-        console.log(`✅ Saved Google Drive invoice to main app: ${savedInvoice.id}`)
-
-        return NextResponse.json({
-          success: true,
-          file: fileMetadata,
-          invoice: {
-            id: savedInvoice.id,
-            invoiceNumber: savedInvoice.invoiceNumber,
-            projectId: savedInvoice.projectId,
-          },
-          processingResult: result,
-          message: `Successfully imported and processed ${fileMetadata.name} from Google Drive`,
+        savedInvoices.push({
+          id: savedInvoice.id,
+          invoiceNumber: savedInvoice.invoiceNumber,
+          projectId: savedInvoice.projectId,
+          fileName: file.name,
         })
+
+        console.log(`✅ Saved Google Drive invoice to main app: ${savedInvoice.id} (${file.name})`)
+      } catch (error) {
+        console.error(`❌ Error saving invoice from file ${processedInvoice.file.name}:`, error)
       }
     }
 
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Could not process invoice from Google Drive file',
-        processingResult: result,
-      },
-      { status: 400 }
-    )
+    const totalSaved = savedInvoices.length
+    const location = isFolder ? 'folder' : 'file'
+
+    return NextResponse.json({
+      success: true,
+      invoicesProcessed: totalSaved,
+      invoices: savedInvoices,
+      message: `Successfully imported and processed ${totalSaved} invoice${totalSaved > 1 ? 's' : ''} from Google Drive ${location}`,
+    })
   } catch (error) {
     console.error('Supplier portal Google Drive import error:', error)
     return NextResponse.json(
