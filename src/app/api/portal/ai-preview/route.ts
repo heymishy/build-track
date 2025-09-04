@@ -184,13 +184,13 @@ export async function POST(request: NextRequest) {
 
     // Generate AI project suggestions using aggregated invoice data
     const projectSuggestions = await generateProjectSuggestions(
-      parsedInvoice.multipleInvoices ? parsedInvoice.aggregatedData : parsedInvoice.invoice, 
-      projects, 
+      parsedInvoice.multipleInvoices ? parsedInvoice.aggregatedData : parsedInvoice.invoice,
+      projects,
       supplier.name
     )
 
     // Calculate extracted data metrics (use aggregated if multiple invoices)
-    const extractedLineItems = parsedInvoice.multipleInvoices 
+    const extractedLineItems = parsedInvoice.multipleInvoices
       ? parsedInvoice.aggregatedData.totalLineItems
       : parsedInvoice.invoice.lineItems?.length || 0
     const totalAmount = parsedInvoice.multipleInvoices
@@ -211,7 +211,8 @@ export async function POST(request: NextRequest) {
         averageAmount: parsedInvoice.invoice.totalAmount,
       },
       confidence:
-        parsedInvoice.processingMetadata?.confidence || calculateExtractionConfidence(parsedInvoice.invoice),
+        parsedInvoice.processingMetadata?.confidence ||
+        calculateExtractionConfidence(parsedInvoice.invoice),
       projectSuggestions: projectSuggestions.slice(0, 3), // Top 3 suggestions
       extractedLineItems,
       totalAmount,
@@ -234,23 +235,47 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // If not preview-only, save the processed invoice to main app
+    // If not preview-only, save ALL processed invoices to main app
     try {
-      const savedInvoice = await saveSupplierInvoiceToMainApp(
-        invoice,
-        supplier,
-        projectSuggestions[0]
-      )
+      let savedInvoices = []
+
+      // Save all invoices if multiple were found
+      if (parsedInvoice.multipleInvoices && parsedInvoice.allInvoices) {
+        console.log(`💾 Saving ${parsedInvoice.allInvoices.length} invoices to main app...`)
+        
+        for (const [index, invoiceData] of parsedInvoice.allInvoices.entries()) {
+          const savedInvoice = await saveSupplierInvoiceToMainApp(
+            invoiceData,
+            supplier,
+            projectSuggestions[0]
+          )
+          savedInvoices.push(savedInvoice)
+          console.log(`✅ Saved invoice ${index + 1}/${parsedInvoice.allInvoices.length}: ${savedInvoice.invoiceNumber}`)
+        }
+      } else {
+        // Save single invoice
+        console.log(`💾 Saving 1 invoice to main app...`)
+        const savedInvoice = await saveSupplierInvoiceToMainApp(
+          invoice,
+          supplier,
+          projectSuggestions[0]
+        )
+        savedInvoices.push(savedInvoice)
+      }
+
+      const totalSaved = savedInvoices.length
+      console.log(`🎉 Successfully saved ${totalSaved} invoice${totalSaved > 1 ? 's' : ''} to main app`)
 
       return NextResponse.json({
         success: true,
         preview,
-        savedInvoice: {
-          id: savedInvoice.id,
-          invoiceNumber: savedInvoice.invoiceNumber,
-          projectId: savedInvoice.projectId,
-        },
-        message: 'Invoice processed and saved to main app for matching',
+        savedInvoices: savedInvoices.map(inv => ({
+          id: inv.id,
+          invoiceNumber: inv.invoiceNumber,
+          projectId: inv.projectId,
+        })),
+        totalInvoicesSaved: totalSaved,
+        message: `Successfully processed and saved ${totalSaved} invoice${totalSaved > 1 ? 's' : ''} to main app for matching`,
       })
     } catch (saveError) {
       console.error('Error saving invoice to main app:', saveError)
@@ -510,19 +535,15 @@ async function saveSupplierInvoiceToMainApp(
   const savedInvoice = await prisma.invoice.create({
     data: {
       projectId,
-      userId: null, // Supplier uploads don't have a specific user
       invoiceNumber: invoice.invoiceNumber || 'AUTO-' + Date.now(),
       supplierName: invoice.supplierName || supplier.name,
-      supplierABN: null,
+      supplierABN: invoice.supplierABN || '',
       invoiceDate: invoice.invoiceDate ? new Date(invoice.invoiceDate) : new Date(),
-      dueDate: null,
+      dueDate: invoice.dueDate ? new Date(invoice.dueDate) : null,
       totalAmount: invoice.totalAmount || 0,
-      gstAmount: 0, // Will be calculated from line items if needed
-      description: `Supplier portal upload by ${supplier.email}`,
+      gstAmount: invoice.gstAmount || 0,
+      notes: `Supplier portal upload by ${supplier.email}. Original filename: ${upload.fileName}`,
       status: 'PENDING',
-      filePath: null, // We could store file path here if needed
-      createdAt: new Date(),
-      updatedAt: new Date(),
     },
   })
 
@@ -537,7 +558,6 @@ async function saveSupplierInvoiceToMainApp(
         unitPrice: item.unitPrice || 0,
         totalPrice: item.totalPrice || item.unitPrice || 0,
         category: item.category || 'MATERIAL',
-        createdAt: new Date(),
       })),
     })
   }

@@ -182,33 +182,82 @@ export function EnhancedSupplierUpload({
     setUploadProgress(0)
 
     try {
-      const formData = new FormData()
-      formData.append('file', selectedFile)
-      formData.append('email', supplierEmail)
-      formData.append('supplierName', supplierName)
-
-      if (selectedProjectId) {
-        formData.append('projectId', selectedProjectId)
-      }
-
-      if (notes.trim()) {
-        formData.append('notes', notes.trim())
-      }
-
-      // Add AI preview data if available for enhanced processing
+      // If we have AI preview data, use it directly instead of reprocessing
+      let aiResult
       if (aiPreview) {
-        formData.append('aiPreview', JSON.stringify(aiPreview))
+        console.log('✅ Using existing AI preview data - skipping duplicate LLM processing')
+        
+        // Call the save-preview endpoint to save already-processed data
+        const saveData = {
+          email: supplierEmail,
+          supplierName,
+          projectId: selectedProjectId || null,
+          notes: notes.trim() || null,
+          aiPreviewData: aiPreview,
+          fileName: selectedFile.name,
+          fileSize: selectedFile.size,
+        }
+
+        const saveResponse = await fetch('/api/portal/save-preview', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(saveData),
+        })
+
+        aiResult = await saveResponse.json()
+      } else {
+        // Fallback: process with LLM if no preview available
+        const formData = new FormData()
+        formData.append('file', selectedFile)
+        formData.append('email', supplierEmail)
+        formData.append('supplierName', supplierName)
+        formData.append('previewOnly', 'false')
+
+        if (selectedProjectId) {
+          formData.append('projectId', selectedProjectId)
+        }
+
+        if (notes.trim()) {
+          formData.append('notes', notes.trim())
+        }
+
+        console.log('🔄 No AI preview available, processing with LLM...')
+
+        const aiResponse = await fetch('/api/portal/ai-preview', {
+          method: 'POST',
+          body: formData,
+        })
+
+        aiResult = await aiResponse.json()
       }
 
-      const response = await fetch('/api/portal/upload', {
-        method: 'POST',
-        body: formData,
-      })
+      if (aiResult.success) {
+        // Also create InvoiceUpload record for tracking
+        const uploadFormData = new FormData()
+        uploadFormData.append('file', selectedFile)
+        uploadFormData.append('email', supplierEmail)
+        uploadFormData.append('supplierName', supplierName)
 
-      const result = await response.json()
+        if (selectedProjectId) {
+          uploadFormData.append('projectId', selectedProjectId)
+        }
 
-      if (result.success) {
-        toast.success('Invoice uploaded successfully with AI processing!')
+        if (notes.trim()) {
+          uploadFormData.append('notes', notes.trim())
+        }
+
+        // Create upload tracking record
+        await fetch('/api/portal/upload', {
+          method: 'POST',
+          body: uploadFormData,
+        })
+
+        const invoiceCount = aiPreview?.totalInvoices || 1
+        toast.success(
+          `Successfully processed and saved ${invoiceCount} invoice${invoiceCount > 1 ? 's' : ''} to main app!`
+        )
 
         // Reset form
         setSelectedFile(null)
@@ -219,9 +268,9 @@ export function EnhancedSupplierUpload({
           fileInputRef.current.value = ''
         }
 
-        onUploadComplete?.(result)
+        onUploadComplete?.(aiResult)
       } else {
-        toast.error(result.error || 'Upload failed')
+        toast.error(aiResult.error || 'Invoice processing failed')
       }
     } catch (error) {
       console.error('Upload error:', error)
@@ -400,20 +449,26 @@ export function EnhancedSupplierUpload({
                 </Badge>
               </div>
               <p className="text-sm text-green-700 mb-3">
-                AI successfully identified and processed {aiPreview.totalInvoices} separate invoices in your PDF.
-                All will be saved when you upload.
+                AI successfully identified and processed {aiPreview.totalInvoices} separate invoices
+                in your PDF. All will be saved when you upload.
               </p>
               <div className="grid grid-cols-3 gap-4 text-sm">
                 <div className="text-center p-2 bg-white rounded border">
-                  <div className="font-medium text-gray-900">${aiPreview.aggregatedData?.totalAmount.toFixed(2) || '0.00'}</div>
+                  <div className="font-medium text-gray-900">
+                    ${aiPreview.aggregatedData?.totalAmount.toFixed(2) || '0.00'}
+                  </div>
                   <div className="text-gray-600">Total Value</div>
                 </div>
                 <div className="text-center p-2 bg-white rounded border">
-                  <div className="font-medium text-gray-900">{aiPreview.aggregatedData?.totalLineItems || 0}</div>
+                  <div className="font-medium text-gray-900">
+                    {aiPreview.aggregatedData?.totalLineItems || 0}
+                  </div>
                   <div className="text-gray-600">Total Line Items</div>
                 </div>
                 <div className="text-center p-2 bg-white rounded border">
-                  <div className="font-medium text-gray-900">${aiPreview.aggregatedData?.averageAmount.toFixed(2) || '0.00'}</div>
+                  <div className="font-medium text-gray-900">
+                    ${aiPreview.aggregatedData?.averageAmount.toFixed(2) || '0.00'}
+                  </div>
                   <div className="text-gray-600">Average Amount</div>
                 </div>
               </div>
@@ -478,7 +533,10 @@ export function EnhancedSupplierUpload({
               <div className="space-y-1 text-sm text-gray-600">
                 <p>Categories: {aiPreview.parsedInvoice.lineItems?.length || 0} items</p>
                 <p>Matches: ~{aiPreview.projectSuggestions?.[0]?.estimatedMatches || 0}</p>
-                <p>Status: {aiPreview.multipleInvoices ? 'Multi-invoice ready' : 'Ready for processing'}</p>
+                <p>
+                  Status:{' '}
+                  {aiPreview.multipleInvoices ? 'Multi-invoice ready' : 'Ready for processing'}
+                </p>
               </div>
             </div>
           </div>
@@ -526,47 +584,49 @@ export function EnhancedSupplierUpload({
           )}
 
           {/* Detailed Multi-Invoice Breakdown */}
-          {aiPreview.multipleInvoices && aiPreview.allInvoices && aiPreview.allInvoices.length > 1 && (
-            <div className="mt-6">
-              <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
-                <ClipboardDocumentListIcon className="h-4 w-4 text-blue-600" />
-                All {aiPreview.totalInvoices} Invoices Found
-              </h4>
-              <div className="max-h-64 overflow-y-auto space-y-2">
-                {aiPreview.allInvoices.map((invoice, index) => (
-                  <div
-                    key={`invoice-${index}`}
-                    className="p-3 bg-white rounded border border-gray-200 hover:bg-gray-50"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <Badge variant="outline" className="text-xs">
-                            Invoice #{index + 1}
-                          </Badge>
-                          {invoice.invoiceNumber && (
-                            <span className="text-sm font-medium text-gray-900">
-                              {invoice.invoiceNumber}
-                            </span>
-                          )}
+          {aiPreview.multipleInvoices &&
+            aiPreview.allInvoices &&
+            aiPreview.allInvoices.length > 1 && (
+              <div className="mt-6">
+                <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
+                  <ClipboardDocumentListIcon className="h-4 w-4 text-blue-600" />
+                  All {aiPreview.totalInvoices} Invoices Found
+                </h4>
+                <div className="max-h-64 overflow-y-auto space-y-2">
+                  {aiPreview.allInvoices.map((invoice, index) => (
+                    <div
+                      key={`invoice-${index}`}
+                      className="p-3 bg-white rounded border border-gray-200 hover:bg-gray-50"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Badge variant="outline" className="text-xs">
+                              Invoice #{index + 1}
+                            </Badge>
+                            {invoice.invoiceNumber && (
+                              <span className="text-sm font-medium text-gray-900">
+                                {invoice.invoiceNumber}
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-sm text-gray-600 space-x-4">
+                            {invoice.invoiceDate && <span>Date: {invoice.invoiceDate}</span>}
+                            {invoice.supplierName && <span>Supplier: {invoice.supplierName}</span>}
+                            <span>Items: {invoice.lineItems?.length || 0}</span>
+                          </div>
                         </div>
-                        <div className="text-sm text-gray-600 space-x-4">
-                          {invoice.invoiceDate && <span>Date: {invoice.invoiceDate}</span>}
-                          {invoice.supplierName && <span>Supplier: {invoice.supplierName}</span>}
-                          <span>Items: {invoice.lineItems?.length || 0}</span>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="font-medium text-gray-900">
-                          ${invoice.totalAmount?.toFixed(2) || '0.00'}
+                        <div className="text-right">
+                          <div className="font-medium text-gray-900">
+                            ${invoice.totalAmount?.toFixed(2) || '0.00'}
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            )}
         </Card>
       )}
 
@@ -629,12 +689,16 @@ export function EnhancedSupplierUpload({
                 {uploading ? (
                   <>
                     <ArrowPathIcon className="h-4 w-4 mr-2 animate-spin" />
-                    Uploading{aiPreview?.multipleInvoices ? ` ${aiPreview.totalInvoices} invoices` : ''} with AI Processing...
+                    Uploading
+                    {aiPreview?.multipleInvoices ? ` ${aiPreview.totalInvoices} invoices` : ''} with
+                    AI Processing...
                   </>
                 ) : (
                   <>
                     <SparklesIcon className="h-4 w-4 mr-2" />
-                    Upload{aiPreview?.multipleInvoices ? ` ${aiPreview.totalInvoices} Invoices` : ''} with AI Enhancement
+                    Upload
+                    {aiPreview?.multipleInvoices ? ` ${aiPreview.totalInvoices} Invoices` : ''} with
+                    AI Enhancement
                   </>
                 )}
               </Button>
