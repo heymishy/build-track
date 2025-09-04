@@ -78,16 +78,18 @@ export async function getSupplierPortalApiKeys(): Promise<{
 }> {
   console.log('🏢 Supplier portal: Checking admin Settings API keys only...')
   console.log('📋 Note: Environment variables (.env.local) are ignored for supplier portal')
-  
+
   const adminKeys = await getAdminApiKeys()
   const hasAdminKeys = Object.values(adminKeys).some(key => key && key.trim() !== '')
 
   if (hasAdminKeys) {
     console.log('👑 Using admin Settings API keys for supplier portal')
-    console.log('🔑 Available providers:', Object.entries(adminKeys)
-      .filter(([_, key]) => key && key.trim() !== '')
-      .map(([provider, _]) => provider.replace('ApiKey', ''))
-      .join(', ')
+    console.log(
+      '🔑 Available providers:',
+      Object.entries(adminKeys)
+        .filter(([_, key]) => key && key.trim() !== '')
+        .map(([provider, _]) => provider.replace('ApiKey', ''))
+        .join(', ')
     )
     return {
       ...adminKeys,

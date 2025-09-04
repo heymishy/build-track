@@ -186,7 +186,7 @@ export function EnhancedSupplierUpload({
       let aiResult
       if (aiPreview) {
         console.log('✅ Using existing AI preview data - skipping duplicate LLM processing')
-        
+
         // Call the save-preview endpoint to save already-processed data
         const saveData = {
           email: supplierEmail,

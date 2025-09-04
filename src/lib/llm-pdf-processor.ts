@@ -85,7 +85,11 @@ export class LLMPdfProcessor {
         console.log('🔑 Available API keys from user settings:', Object.keys(settings.apiKeys))
 
         // Fallback to environment if no user keys
-        if (!availableKeys.geminiApiKey && !availableKeys.anthropicApiKey && !availableKeys.openaiApiKey) {
+        if (
+          !availableKeys.geminiApiKey &&
+          !availableKeys.anthropicApiKey &&
+          !availableKeys.openaiApiKey
+        ) {
           console.log('📋 No API keys in user settings, checking environment variables...')
           availableKeys = {
             geminiApiKey: process.env.GEMINI_API_KEY,
@@ -126,7 +130,6 @@ export class LLMPdfProcessor {
       } else {
         console.log(`❌ No Anthropic API key available (${apiKeysSource})`)
       }
-
     } catch (error) {
       console.warn('⚠️ Error loading API keys:', error)
       console.log('📋 Falling back to environment variables as last resort...')
@@ -170,7 +173,7 @@ export class LLMPdfProcessor {
     } else {
       console.log(`🚀 LLM parsers initialized for ${mode}:`, Array.from(this.parsers.keys()))
       console.log(`📊 Configuration source: ${apiKeysSource}`)
-      
+
       if (this.options.useSupplierPortalMode && apiKeysSource === 'admin_user') {
         console.log('✅ Supplier portal is using Settings API keys (not .env.local)')
       }

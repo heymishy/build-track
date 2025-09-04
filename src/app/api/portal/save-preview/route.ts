@@ -10,24 +10,19 @@ import { prisma } from '@/lib/prisma'
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const {
-      email,
-      supplierName,
-      projectId,
-      notes,
-      aiPreviewData,
-      fileName,
-      fileSize
-    } = body
+    const { email, supplierName, projectId, notes, aiPreviewData, fileName, fileSize } = body
 
     console.log('🔄 Saving AI preview data to database without re-processing...')
 
     // Validate required fields
     if (!email || !aiPreviewData) {
-      return NextResponse.json({
-        success: false,
-        error: 'Email and AI preview data are required'
-      }, { status: 400 })
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Email and AI preview data are required',
+        },
+        { status: 400 }
+      )
     }
 
     // Verify supplier access
@@ -39,15 +34,18 @@ export async function POST(request: NextRequest) {
     })
 
     if (!supplier) {
-      return NextResponse.json({
-        success: false,
-        error: 'Email address not authorized for portal access'
-      }, { status: 403 })
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Email address not authorized for portal access',
+        },
+        { status: 403 }
+      )
     }
 
     // Create InvoiceUpload record (for tracking)
     const mockFileUrl = `/uploads/preview-${Date.now()}-${fileName || 'invoice.pdf'}`
-    
+
     const invoiceUpload = await prisma.invoiceUpload.create({
       data: {
         supplierEmail: supplier.email,
@@ -122,12 +120,14 @@ export async function POST(request: NextRequest) {
         status: invoiceUpload.status,
       },
     })
-
   } catch (error) {
     console.error('Save preview API error:', error)
-    return NextResponse.json({
-      success: false,
-      error: 'Failed to save preview data'
-    }, { status: 500 })
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Failed to save preview data',
+      },
+      { status: 500 }
+    )
   }
 }

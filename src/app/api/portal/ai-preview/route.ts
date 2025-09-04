@@ -242,7 +242,7 @@ export async function POST(request: NextRequest) {
       // Save all invoices if multiple were found
       if (parsedInvoice.multipleInvoices && parsedInvoice.allInvoices) {
         console.log(`💾 Saving ${parsedInvoice.allInvoices.length} invoices to main app...`)
-        
+
         for (const [index, invoiceData] of parsedInvoice.allInvoices.entries()) {
           const savedInvoice = await saveSupplierInvoiceToMainApp(
             invoiceData,
@@ -250,7 +250,9 @@ export async function POST(request: NextRequest) {
             projectSuggestions[0]
           )
           savedInvoices.push(savedInvoice)
-          console.log(`✅ Saved invoice ${index + 1}/${parsedInvoice.allInvoices.length}: ${savedInvoice.invoiceNumber}`)
+          console.log(
+            `✅ Saved invoice ${index + 1}/${parsedInvoice.allInvoices.length}: ${savedInvoice.invoiceNumber}`
+          )
         }
       } else {
         // Save single invoice
@@ -264,7 +266,9 @@ export async function POST(request: NextRequest) {
       }
 
       const totalSaved = savedInvoices.length
-      console.log(`🎉 Successfully saved ${totalSaved} invoice${totalSaved > 1 ? 's' : ''} to main app`)
+      console.log(
+        `🎉 Successfully saved ${totalSaved} invoice${totalSaved > 1 ? 's' : ''} to main app`
+      )
 
       return NextResponse.json({
         success: true,

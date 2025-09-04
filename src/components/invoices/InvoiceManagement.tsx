@@ -21,6 +21,7 @@ import {
   Square3Stack3DIcon,
   CheckIcon,
   DocumentArrowUpIcon,
+  CloudArrowUpIcon,
 } from '@heroicons/react/24/outline'
 import { InvoiceApprovalModal } from './InvoiceApprovalModal'
 import { InvoiceCategorySummary } from './InvoiceCategorySummary'
@@ -117,6 +118,10 @@ export function InvoiceManagement({
   // Google Sheets Export state
   const [showExportModal, setShowExportModal] = useState(false)
 
+  // Process Uploads state
+  const [processingUploads, setProcessingUploads] = useState(false)
+  const [pendingUploadsCount, setPendingUploadsCount] = useState(0)
+
   // Pagination
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
@@ -141,6 +146,26 @@ export function InvoiceManagement({
     }
     fetchProjects()
   }, [])
+
+  // Fetch pending uploads count
+  useEffect(() => {
+    const fetchPendingUploads = async () => {
+      try {
+        const params = new URLSearchParams({ status: 'PENDING' })
+        if (projectId) {
+          params.append('projectId', projectId)
+        }
+        const response = await fetch(`/api/invoices/uploads?${params}`)
+        const data = await response.json()
+        if (data.success) {
+          setPendingUploadsCount(data.uploads.length)
+        }
+      } catch (err) {
+        console.error('Failed to fetch pending uploads count:', err)
+      }
+    }
+    fetchPendingUploads()
+  }, [projectId])
 
   const fetchInvoices = async () => {
     try {
@@ -394,6 +419,43 @@ export function InvoiceManagement({
     }
   }
 
+  const handleProcessUploads = async () => {
+    try {
+      setProcessingUploads(true)
+      const params = new URLSearchParams()
+      if (projectId) {
+        params.append('auto', 'true') // Auto-process for current project
+      }
+
+      const response = await fetch(`/api/invoices/process-uploads?${params}`)
+      const data = await response.json()
+
+      if (data.success) {
+        const { processed, errors } = data
+        if (processed > 0) {
+          // Refresh invoice list and uploads count
+          await fetchInvoices()
+          setPendingUploadsCount(prev => Math.max(0, prev - processed))
+
+          if (errors > 0) {
+            setError(`Processed ${processed} uploads successfully, but ${errors} failed`)
+          }
+        } else if (errors > 0) {
+          setError(`Failed to process ${errors} uploads`)
+        } else {
+          setError('No pending uploads found to process')
+        }
+      } else {
+        setError(data.error || 'Failed to process uploads')
+      }
+    } catch (err) {
+      setError('Failed to process uploads')
+      console.error('Process uploads error:', err)
+    } finally {
+      setProcessingUploads(false)
+    }
+  }
+
   const handleDeleteAllInProject = async () => {
     const currentProjectId = projectId || projectFilter
     if (!currentProjectId) {
@@ -480,6 +542,19 @@ export function InvoiceManagement({
             )}
           </div>
           <div className="flex items-center space-x-2">
+            {pendingUploadsCount > 0 && (
+              <button
+                onClick={handleProcessUploads}
+                disabled={processingUploads}
+                className="inline-flex items-center px-3 py-2 border border-orange-300 shadow-sm text-sm leading-4 font-medium rounded-md text-orange-700 bg-orange-50 hover:bg-orange-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                title={`Process ${pendingUploadsCount} pending upload${pendingUploadsCount === 1 ? '' : 's'}`}
+              >
+                <CloudArrowUpIcon
+                  className={`h-4 w-4 mr-2 ${processingUploads ? 'animate-pulse' : ''}`}
+                />
+                {processingUploads ? 'Processing...' : `Process (${pendingUploadsCount})`}
+              </button>
+            )}
             <button
               onClick={() => setShowExportModal(true)}
               className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
