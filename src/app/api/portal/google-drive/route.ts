@@ -7,9 +7,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getGoogleDriveService, GoogleDriveService } from '@/lib/google-drive-service'
 import { prisma } from '@/lib/prisma'
 
-export async function POST(request: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
-    const { fileUrl, email, projectId, supplierName, notes } = await request.json()
+    const { searchParams } = new URL(request.url)
+    const fileUrl = searchParams.get('fileUrl')
+    const email = searchParams.get('email')
 
     if (!fileUrl || !email) {
       return NextResponse.json(
@@ -55,10 +57,10 @@ export async function POST(request: NextRequest) {
 
     // Check if it's a folder or file
     const isFolder = await driveService.isFolder(fileId)
-    let filesToProcess = []
+    let availableFiles = []
 
     if (isFolder) {
-      console.log(`📁 Detected Google Drive folder, listing PDF files...`)
+      console.log(`📁 Listing PDF files in Google Drive folder...`)
       const folderFiles = await driveService.listPdfFilesInFolder(fileId)
 
       if (folderFiles.length === 0) {
@@ -71,10 +73,10 @@ export async function POST(request: NextRequest) {
         )
       }
 
-      filesToProcess = folderFiles
+      availableFiles = folderFiles
       console.log(`📄 Found ${folderFiles.length} PDF files in folder`)
     } else {
-      // Single file processing
+      // Single file
       const fileMetadata = await driveService.getFile(fileId)
       if (!fileMetadata) {
         return NextResponse.json(
@@ -97,12 +99,118 @@ export async function POST(request: NextRequest) {
         )
       }
 
-      filesToProcess = [fileMetadata]
+      availableFiles = [fileMetadata]
     }
 
-    // Process each file
+    return NextResponse.json({
+      success: true,
+      isFolder,
+      files: availableFiles,
+      message: `Found ${availableFiles.length} PDF file${availableFiles.length > 1 ? 's' : ''} available for processing`,
+    })
+  } catch (error) {
+    console.error('Google Drive file listing error:', error)
+    return NextResponse.json(
+      {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to list Google Drive files',
+      },
+      { status: 500 }
+    )
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const { fileUrl, email, projectId, supplierName, notes, selectedFileIds } = await request.json()
+
+    if (!fileUrl || !email) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Google Drive file URL and email are required',
+        },
+        { status: 400 }
+      )
+    }
+
+    if (!selectedFileIds || !Array.isArray(selectedFileIds) || selectedFileIds.length === 0) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'At least one file must be selected for processing',
+        },
+        { status: 400 }
+      )
+    }
+
+    // Validate supplier email
+    const supplier = await prisma.supplierAccess.findUnique({
+      where: {
+        email: email.toLowerCase().trim(),
+        isActive: true,
+      },
+    })
+
+    if (!supplier) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Email not authorized for portal access',
+        },
+        { status: 403 }
+      )
+    }
+
+    // Extract file ID from URL
+    const fileId = GoogleDriveService.extractFileId(fileUrl)
+    if (!fileId) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Invalid Google Drive URL',
+        },
+        { status: 400 }
+      )
+    }
+
+    const driveService = getGoogleDriveService()
+
+    // Process only the selected files
+    const filesToProcess = []
+    
+    console.log(`📁 Processing ${selectedFileIds.length} selected files...`)
+    
+    // Get metadata for each selected file
+    for (const selectedFileId of selectedFileIds) {
+      try {
+        const fileMetadata = await driveService.getFile(selectedFileId)
+        if (fileMetadata && fileMetadata.mimeType?.includes('pdf')) {
+          filesToProcess.push(fileMetadata)
+        } else {
+          console.warn(`⚠️ Skipping invalid or non-PDF file: ${selectedFileId}`)
+        }
+      } catch (error) {
+        console.warn(`⚠️ Could not access file: ${selectedFileId}`, error)
+        continue
+      }
+    }
+
+    if (filesToProcess.length === 0) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'No valid PDF files found in selection',
+        },
+        { status: 400 }
+      )
+    }
+
+    // Process each selected file
     const processedInvoices = []
     const { processInvoicePdfWithLLM } = await import('@/lib/llm-pdf-processor')
+    
+    console.log(`🚀 Processing ${filesToProcess.length} selected PDF files for supplier: ${email}`)
 
     for (const file of filesToProcess) {
       try {
@@ -116,8 +224,9 @@ export async function POST(request: NextRequest) {
         }
 
         // Process the PDF using advanced LLM processing
+        // Use null userId to force environment variable usage for supplier portal
         const result = await processInvoicePdfWithLLM(fileBuffer, {
-          userId: `supplier:${email}`,
+          userId: null,
           projectId: projectId || undefined,
         })
 

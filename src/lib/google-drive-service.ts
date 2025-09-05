@@ -19,25 +19,27 @@ export class GoogleDriveService {
   private drive: drive_v3.Drive
   private auth: JWT
 
-  constructor() {
-    // Initialize with service account from environment
-    let serviceAccountKey: any = null
+  constructor(serviceAccountKey?: any) {
+    // Try user-provided key first, then fall back to environment
+    let credentials: any = serviceAccountKey
 
-    try {
-      if (process.env.GOOGLE_SERVICE_ACCOUNT_KEY) {
-        serviceAccountKey = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_KEY)
+    if (!credentials) {
+      try {
+        if (process.env.GOOGLE_SERVICE_ACCOUNT_KEY) {
+          credentials = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_KEY)
+        }
+      } catch (error) {
+        console.error('Error parsing Google service account key from environment:', error)
       }
-    } catch (error) {
-      console.error('Error parsing Google service account key:', error)
     }
 
-    if (!serviceAccountKey) {
-      throw new Error('Google service account key not configured')
+    if (!credentials) {
+      throw new Error('Google service account key not configured - please configure in user settings')
     }
 
     this.auth = new JWT({
-      email: serviceAccountKey.client_email,
-      key: serviceAccountKey.private_key?.replace(/\\n/g, '\n'),
+      email: credentials.client_email,
+      key: credentials.private_key?.replace(/\\n/g, '\n'),
       scopes: [
         'https://www.googleapis.com/auth/drive.readonly',
         'https://www.googleapis.com/auth/drive.file',
@@ -149,13 +151,13 @@ export class GoogleDriveService {
   }
 
   /**
-   * List PDF files in a folder
+   * List PDF files in a folder (recursively searches subfolders)
    */
   async listPdfFilesInFolder(folderId: string): Promise<GoogleDriveFile[]> {
     try {
       console.log(`🔍 Listing PDF files in folder: ${folderId}`)
       
-      // First, try to list all files to see what's in the folder
+      // Get all items in current folder
       const allFilesResponse = await this.drive.files.list({
         q: `'${folderId}' in parents`,
         fields: 'files(id,name,mimeType,size,webViewLink)',
@@ -166,19 +168,56 @@ export class GoogleDriveService {
         console.log(`  - ${file.name} (${file.mimeType})`)
       })
 
-      // Now filter for PDFs specifically
+      const allPdfs: GoogleDriveFile[] = []
+
+      // Search for PDFs in current folder
       const pdfResponse = await this.drive.files.list({
         q: `'${folderId}' in parents and mimeType='application/pdf'`,
         fields: 'files(id,name,mimeType,size,webViewLink)',
       })
 
-      console.log(`📄 PDF files found: ${pdfResponse.data.files?.length || 0}`)
-      pdfResponse.data.files?.forEach(file => {
-        console.log(`  - ${file.name}`)
-      })
+      console.log(`📄 PDF files found in current folder: ${pdfResponse.data.files?.length || 0}`)
+      
+      // Add PDFs from current folder
+      if (pdfResponse.data.files && pdfResponse.data.files.length > 0) {
+        const currentFolderPdfs = pdfResponse.data.files
+          .filter(file => file.id && file.name)
+          .map(file => ({
+            id: file.id!,
+            name: file.name!,
+            mimeType: file.mimeType || 'application/pdf',
+            size: file.size || '0',
+            webViewLink: file.webViewLink || undefined,
+          }))
+        
+        currentFolderPdfs.forEach(file => console.log(`  - ${file.name}`))
+        allPdfs.push(...currentFolderPdfs)
+      }
 
-      if (!pdfResponse.data.files || pdfResponse.data.files.length === 0) {
-        // Also try with broader PDF mime type patterns
+      // Find subfolders and search them recursively
+      const subfolders = allFilesResponse.data.files?.filter(
+        file => file.mimeType === 'application/vnd.google-apps.folder'
+      ) || []
+
+      console.log(`📁 Found ${subfolders.length} subfolders to search`)
+      
+      for (const subfolder of subfolders) {
+        if (subfolder.id && subfolder.name) {
+          console.log(`🔍 Searching subfolder: ${subfolder.name}`)
+          const subfolderPdfs = await this.listPdfFilesInFolder(subfolder.id)
+          
+          // Prefix subfolder PDFs with folder name for clarity
+          const prefixedPdfs = subfolderPdfs.map(pdf => ({
+            ...pdf,
+            name: `${subfolder.name}/${pdf.name}`,
+          }))
+          
+          allPdfs.push(...prefixedPdfs)
+        }
+      }
+
+      // If still no PDFs found, try broader search in current folder
+      if (allPdfs.length === 0) {
         const broadPdfResponse = await this.drive.files.list({
           q: `'${folderId}' in parents and (mimeType='application/pdf' or name contains '.pdf')`,
           fields: 'files(id,name,mimeType,size,webViewLink)',
@@ -186,7 +225,7 @@ export class GoogleDriveService {
 
         console.log(`🔍 Broad PDF search found: ${broadPdfResponse.data.files?.length || 0}`)
         if (broadPdfResponse.data.files && broadPdfResponse.data.files.length > 0) {
-          return broadPdfResponse.data.files
+          const broadPdfs = broadPdfResponse.data.files
             .filter(file => file.id && file.name)
             .map(file => ({
               id: file.id!,
@@ -195,19 +234,13 @@ export class GoogleDriveService {
               size: file.size || '0',
               webViewLink: file.webViewLink || undefined,
             }))
+          allPdfs.push(...broadPdfs)
         }
-        return []
       }
 
-      return pdfResponse.data.files
-        .filter(file => file.id && file.name)
-        .map(file => ({
-          id: file.id!,
-          name: file.name!,
-          mimeType: file.mimeType || 'application/pdf',
-          size: file.size || '0',
-          webViewLink: file.webViewLink || undefined,
-        }))
+      console.log(`🎯 Total PDFs found (including subfolders): ${allPdfs.length}`)
+      
+      return allPdfs
     } catch (error) {
       console.error('Error listing files in folder:', error)
       if (error instanceof Error) {
@@ -255,12 +288,7 @@ export class GoogleDriveService {
   }
 }
 
-// Singleton instance
-let driveService: GoogleDriveService | null = null
-
-export function getGoogleDriveService(): GoogleDriveService {
-  if (!driveService) {
-    driveService = new GoogleDriveService()
-  }
-  return driveService
+// Factory function to create service with user-specific credentials
+export function getGoogleDriveService(serviceAccountKey?: any): GoogleDriveService {
+  return new GoogleDriveService(serviceAccountKey)
 }
