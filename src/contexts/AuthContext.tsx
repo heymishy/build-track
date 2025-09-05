@@ -198,7 +198,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.error('Error calling logout API:', error)
       // Continue with logout even if API call fails
     } finally {
+      // Clear user data from both state and localStorage
       setUser(null)
+      if (typeof window !== 'undefined' && window.localStorage) {
+        localStorage.removeItem('user')
+      }
       toast.success('Logged out successfully')
       router.push('/')
     }
