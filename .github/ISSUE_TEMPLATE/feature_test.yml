@@ -1,0 +1,195 @@
+name: 🧪 Feature Test Scenario
+description: Create a new BDD test scenario for a specific feature
+title: "[TEST] Feature: "
+labels: ["testing", "bdd", "feature"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template to create comprehensive BDD test scenarios. 
+        This issue will be linked to a markdown feature file in `tests/bdd/features/`.
+
+  - type: input
+    id: feature_name
+    attributes:
+      label: Feature Name
+      description: The name of the feature to test
+      placeholder: "User Authentication and Authorization"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: epic
+    attributes:
+      label: Epic
+      description: Which epic does this feature belong to?
+      options:
+        - User Management
+        - Project Management
+        - Invoice Processing
+        - File Management & Integrations
+        - Analytics & Reporting
+        - Settings & Configuration
+        - Mobile & PWA
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: What is the test priority for this feature?
+      options:
+        - Critical
+        - High
+        - Medium
+        - Low
+      default: 1
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: test_types
+    attributes:
+      label: Test Types Needed
+      description: What types of testing should be included?
+      options:
+        - label: Happy path scenarios
+          required: false
+        - label: Error handling scenarios
+          required: false
+        - label: Edge cases
+          required: false
+        - label: Security scenarios
+          required: false
+        - label: Performance scenarios
+          required: false
+        - label: Mobile responsiveness
+          required: false
+        - label: Cross-browser compatibility
+          required: false
+
+  - type: textarea
+    id: user_stories
+    attributes:
+      label: User Stories
+      description: Define the key user stories for this feature
+      placeholder: |
+        As a project manager
+        I want to create new projects
+        So that I can track costs and manage project lifecycle
+
+        As a team member
+        I want to view project details
+        So that I can understand project status and requirements
+    validations:
+      required: true
+
+  - type: textarea
+    id: scenarios
+    attributes:
+      label: Test Scenarios
+      description: List the specific scenarios to be tested
+      placeholder: |
+        1. User successfully creates a new project
+        2. User handles validation errors during project creation
+        3. User views project dashboard with correct data
+        4. User manages project team members
+        5. User archives completed projects
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance_criteria
+    attributes:
+      label: Acceptance Criteria
+      description: Define what must be true for these tests to pass
+      placeholder: |
+        - [ ] All happy path scenarios pass
+        - [ ] Error messages are clear and actionable
+        - [ ] Data validation works correctly
+        - [ ] Security controls are enforced
+        - [ ] Performance meets requirements
+    validations:
+      required: true
+
+  - type: textarea
+    id: test_data
+    attributes:
+      label: Test Data Requirements
+      description: What test data is needed for these scenarios?
+      placeholder: |
+        ```yaml
+        users:
+          admin:
+            email: admin@buildtrack.com
+            role: ADMIN
+          user:
+            email: user@buildtrack.com
+            role: USER
+        
+        projects:
+          sample:
+            name: "Test Construction Project"
+            budget: 100000
+            status: "ACTIVE"
+        ```
+
+  - type: input
+    id: feature_file
+    attributes:
+      label: Feature File Path
+      description: Path to the markdown feature file (will be created/updated)
+      placeholder: "tests/bdd/features/project-management.feature.md"
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: integration_points
+    attributes:
+      label: Integration Points
+      description: What other systems does this feature integrate with?
+      options:
+        - label: Authentication system
+        - label: Database operations
+        - label: File storage
+        - label: External APIs (Google Drive, Sheets)
+        - label: Email notifications
+        - label: Real-time updates
+        - label: Mobile app features
+        - label: PWA functionality
+
+  - type: textarea
+    id: manual_testing_notes
+    attributes:
+      label: Manual Testing Notes
+      description: Any special considerations for manual testing
+      placeholder: |
+        - Test with different browsers (Chrome, Firefox, Safari)
+        - Verify mobile responsiveness on actual devices
+        - Test with slow network conditions
+        - Verify accessibility with screen readers
+
+  - type: checkboxes
+    id: pipeline_integration
+    attributes:
+      label: Pipeline Integration
+      description: How should this test be integrated into the CI/CD pipeline?
+      options:
+        - label: Run on every pull request
+        - label: Run on main branch pushes
+        - label: Run nightly for comprehensive testing
+        - label: Run before production deployments
+        - label: Include in smoke tests
+
+  - type: markdown
+    attributes:
+      value: |
+        ## Next Steps
+        After creating this issue:
+        1. The feature file will be created at the specified path
+        2. BDD scenarios will be written in Gherkin-style markdown
+        3. Tests will be added to the automated pipeline
+        4. Manual testing checklist will be provided
