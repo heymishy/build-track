@@ -11,6 +11,7 @@ import {
 import { PhaseBasedContent } from '@/components/dashboard/PhaseBasedContent'
 import { EnhancedInvoiceUpload } from '@/components/invoices/EnhancedInvoiceUpload'
 import { CostTrackingWidget } from '@/components/tracking/CostTrackingWidget'
+import { EnhancedCostTrackingDashboard } from '@/components/tracking/EnhancedCostTrackingDashboard'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { AppLayout } from '@/components/layout/AppLayout'
@@ -152,13 +153,12 @@ function DashboardContent() {
               }}
             />
 
-            {/* Cost Tracking Section */}
+            {/* Enhanced Cost Tracking Section */}
             <div className="mb-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">Cost Tracking</h2>
-              <CostTrackingWidget
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Estimate vs Invoice Tracking</h2>
+              <EnhancedCostTrackingDashboard
                 showProjectSelector={true}
                 onProjectChange={projectId => {
-                  // Optional: sync with activeView if needed
                   console.log('Cost tracking project changed:', projectId)
                 }}
               />

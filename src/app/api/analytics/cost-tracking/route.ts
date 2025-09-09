@@ -202,10 +202,11 @@ function categorizeLineItem(description: string): string {
   return 'OTHER'
 }
 
-export const GET_WITH_AUTH = withAuth(GET, {
+// Apply authentication middleware
+const protectedGET = withAuth(GET, {
   resource: 'projects',
   action: 'read',
   requireAuth: true,
 })
 
-export { GET_WITH_AUTH as GET }
+export { protectedGET as GET }

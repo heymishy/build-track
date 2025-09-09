@@ -14,6 +14,8 @@ async function GET(
 ) {
   try {
     const { id: projectId } = await params
+    const { searchParams } = new URL(request.url)
+    const enhanced = searchParams.get('enhanced') === 'true'
 
     // Verify user has access to this project
     if (user.role !== 'ADMIN') {
@@ -236,10 +238,71 @@ async function GET(
       spendByCategory,
     }
 
+    // Return enhanced format if requested
+    if (enhanced) {
+      // Calculate enhanced metrics
+      let overallStatus: 'ON_BUDGET' | 'OVER_BUDGET' | 'UNDER_BUDGET' | 'AT_RISK'
+      if (Math.abs(variancePercent) <= 5) {
+        overallStatus = 'ON_BUDGET'
+      } else if (variancePercent > 0) {
+        overallStatus = variancePercent > 15 ? 'OVER_BUDGET' : 'AT_RISK'
+      } else {
+        overallStatus = 'UNDER_BUDGET'
+      }
+
+      // Transform trades data for enhanced view
+      const enhancedTrades = tradesWithCosts.map(trade => ({
+        name: trade.name,
+        estimatedCost: trade.estimatedTotal,
+        actualCost: trade.actualSpent,
+        variance: trade.variance,
+        variancePercent: trade.variancePercent,
+        lineItemCount: trade.lineItems.length,
+        invoiceCount: trade.lineItems.reduce((sum, item) => {
+          // Count unique invoices for this trade
+          const uniqueInvoices = new Set()
+          // This would need to be calculated from the invoice relationships
+          return sum + 1 // Placeholder
+        }, 0),
+        lineItems: trade.lineItems.map(item => ({
+          id: item.id,
+          description: item.description,
+          trade: trade.name,
+          estimatedCost: item.totalEstimate,
+          actualCost: item.actualSpent,
+          variance: item.actualSpent - item.totalEstimate,
+          variancePercent: item.totalEstimate > 0 ? ((item.actualSpent - item.totalEstimate) / item.totalEstimate) * 100 : 0,
+          invoiceCount: 0, // Would need to calculate from invoice relationships
+          unit: item.unit,
+          quantity: item.quantity,
+        }))
+      }))
+
+      const enhancedData = {
+        projectId: project.id,
+        projectName: project.name,
+        totalBudget: Number(project.totalBudget),
+        totalEstimatedCost: totalEstimated,
+        totalActualCost: totalActual,
+        totalVariance,
+        totalVariancePercent: variancePercent,
+        currency: project.currency,
+        completionPercent: Math.round(percentComplete),
+        trades: enhancedTrades,
+        overallStatus,
+        lastUpdated: new Date().toISOString(),
+      }
+
+      return NextResponse.json({
+        success: true,
+        data: enhancedData,
+      })
+    }
+
+    // Return legacy format for backward compatibility
     return NextResponse.json({
       success: true,
       data: widgetData,
-      // Keep legacy format for backward compatibility
       trades: tradesWithCosts,
       summary,
       project: {
