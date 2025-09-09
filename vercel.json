@@ -29,7 +29,7 @@
       "headers": [
         {
           "key": "Access-Control-Allow-Origin",
-          "value": "https://buildtrack.vercel.app"
+          "value": "https://build-track-omega.vercel.app"
         },
         {
           "key": "Access-Control-Allow-Methods",

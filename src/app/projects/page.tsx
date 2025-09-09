@@ -303,7 +303,7 @@ export default function ProjectsPage() {
                                   : 'bg-gray-100 text-gray-800'
                           }`}
                         >
-                          {project.status.replace('_', ' ')}
+                          {project.status ? project.status.replace('_', ' ') : 'Unknown'}
                         </span>
                       </div>
 
