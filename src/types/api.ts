@@ -4,15 +4,17 @@
  */
 
 // Base API Response Structure
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   success: boolean
   data?: T
   error?: string
   message?: string
+  code?: string
+  timestamp?: string
 }
 
 // Pagination
-export interface PaginatedResponse<T = any> extends ApiResponse<T[]> {
+export interface PaginatedResponse<T = unknown> extends ApiResponse<T[]> {
   pagination: {
     page: number
     limit: number
@@ -27,7 +29,9 @@ export interface PaginatedResponse<T = any> extends ApiResponse<T[]> {
 export interface ApiError {
   code: string
   message: string
-  details?: Record<string, any>
+  details?: Record<string, unknown>
+  field?: string
+  value?: unknown
 }
 
 // Project Types
@@ -193,7 +197,33 @@ export interface User {
 export type UserRole = 'ADMIN' | 'USER' | 'VIEWER'
 
 export interface AuthUser extends User {
-  // Additional auth-specific properties can be added here
+  // Additional auth-specific properties
+  permissions?: string[]
+  lastLoginAt?: string
+  sessionTimeout?: number
+}
+
+// Auth Types
+export interface LoginRequest {
+  email: string
+  password: string
+  rememberMe?: boolean
+}
+
+export interface LoginResponse {
+  user: AuthUser
+  token: string
+  refreshToken?: string
+  expiresAt: string
+}
+
+export interface RefreshTokenRequest {
+  refreshToken: string
+}
+
+export interface RefreshTokenResponse {
+  token: string
+  expiresAt: string
 }
 
 // Analytics Types
@@ -337,6 +367,152 @@ export type PartialFields<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K
 export type DateString = string // ISO 8601 date string
 export type TimestampString = string // ISO 8601 datetime string
 
+// File Upload Types
+export interface FileUploadRequest {
+  file: File
+  projectId?: string
+  category?: string
+  description?: string
+}
+
+export interface FileUploadResponse {
+  id: string
+  filename: string
+  originalName: string
+  size: number
+  mimetype: string
+  url: string
+  projectId?: string
+  uploadedAt: string
+}
+
+export interface FileValidationResult {
+  valid: boolean
+  errors: string[]
+  warnings?: string[]
+}
+
+// Notification Types
+export interface NotificationData {
+  id: string
+  type: 'INVOICE_UPLOAD' | 'PROJECT_UPDATE' | 'MILESTONE_COMPLETE' | 'SYSTEM_ALERT'
+  title: string
+  message: string
+  projectId?: string
+  userId?: string
+  metadata: Record<string, unknown>
+  isRead: boolean
+  createdAt: string
+}
+
+export interface NotificationRequest {
+  type: NotificationData['type']
+  title: string
+  message: string
+  projectId?: string
+  userId?: string
+  metadata?: Record<string, unknown>
+}
+
+// Supplier Portal Types
+export interface SupplierAccessData {
+  id: string
+  email: string
+  name: string
+  type: 'SUPPLIER' | 'SUBCONTRACTOR'
+  isActive: boolean
+  createdAt: string
+}
+
+export interface InvoiceUploadData {
+  id: string
+  supplierEmail: string
+  projectId?: string
+  fileName: string
+  fileUrl: string
+  fileSize: number
+  supplierName?: string
+  notes?: string
+  status: 'PENDING' | 'PROCESSED' | 'REJECTED'
+  processedAt?: string
+  createdAt: string
+}
+
+export interface SupplierPortalRequest {
+  email: string
+  projectId?: string
+  supplierName?: string
+  notes?: string
+}
+
+// Settings Types
+export interface UserSettings {
+  id: string
+  userId: string
+  key: string
+  value: string
+  encrypted: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+export interface SettingsUpdateRequest {
+  settings: Array<{
+    key: string
+    value: string
+    encrypted?: boolean
+  }>
+}
+
+// Analytics Request Types
+export interface AnalyticsRequest {
+  projectId?: string
+  dateRange?: {
+    startDate: string
+    endDate: string
+  }
+  metrics?: string[]
+  includeProjections?: boolean
+}
+
+// Search Types
+export interface SearchRequest {
+  query: string
+  type?: 'projects' | 'invoices' | 'tasks' | 'all'
+  filters?: Record<string, unknown>
+  limit?: number
+  offset?: number
+}
+
+export interface SearchResult {
+  id: string
+  type: 'project' | 'invoice' | 'task' | 'milestone' | 'user'
+  title: string
+  description?: string
+  relevance: number
+  metadata: Record<string, unknown>
+}
+
+export interface SearchResponse extends ApiResponse<SearchResult[]> {
+  total: number
+  query: string
+  executionTime: number
+}
+
+// Validation Types
+export interface ValidationError {
+  field: string
+  message: string
+  code: string
+  value?: unknown
+}
+
+export interface ValidationResponse {
+  valid: boolean
+  errors: ValidationError[]
+  warnings?: ValidationError[]
+}
+
 // ID types
 export type ProjectId = string
 export type TaskId = string
@@ -346,3 +522,13 @@ export type LineItemId = string
 export type InvoiceId = string
 export type MilestoneId = string
 export type CommentId = string
+export type NotificationId = string
+export type UploadId = string
+export type SettingId = string
+
+// HTTP Method types
+export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
+
+// Status code types
+export type SuccessStatusCode = 200 | 201 | 204
+export type ErrorStatusCode = 400 | 401 | 403 | 404 | 409 | 422 | 429 | 500 | 502 | 503

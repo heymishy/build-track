@@ -155,7 +155,9 @@ function DashboardContent() {
 
             {/* Enhanced Cost Tracking Section */}
             <div className="mb-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">Estimate vs Invoice Tracking</h2>
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">
+                Estimate vs Invoice Tracking
+              </h2>
               <EnhancedCostTrackingDashboard
                 showProjectSelector={true}
                 onProjectChange={projectId => {

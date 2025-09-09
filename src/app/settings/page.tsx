@@ -22,6 +22,7 @@ import {
   ClockIcon,
   UsersIcon,
   Square3Stack3DIcon,
+  CloudArrowDownIcon,
 } from '@heroicons/react/24/outline'
 import { UserManagement } from '@/components/users/UserManagement'
 import { SupplierManagement } from '@/components/suppliers/SupplierManagement'
@@ -87,6 +88,14 @@ export default function SettingsPage() {
   const [googleSheetsLoading, setGoogleSheetsLoading] = useState(false)
   const [googleSheetsTesting, setGoogleSheetsTesting] = useState(false)
 
+  // Google Drive integration
+  const [googleDriveConfig, setGoogleDriveConfig] = useState({
+    serviceAccountKey: '',
+    isConfigured: false,
+  })
+  const [googleDriveLoading, setGoogleDriveLoading] = useState(false)
+  const [googleDriveTesting, setGoogleDriveTesting] = useState(false)
+
   useEffect(() => {
     // Wait for auth to load
     if (isLoading) return
@@ -125,6 +134,18 @@ export default function SettingsPage() {
           ...prev,
           isConfigured: gsConfig.isConfigured,
           method: gsConfig.hasServiceAccountKey ? 'json' : 'individual',
+        }))
+      }
+
+      // Load Google Drive configuration
+      const gdResponse = await fetch(`${window.location.origin}/api/settings/google-drive`, {
+        credentials: 'include',
+      })
+      if (gdResponse.ok) {
+        const gdConfig = await gdResponse.json()
+        setGoogleDriveConfig(prev => ({
+          ...prev,
+          isConfigured: gdConfig.config.isConfigured,
         }))
       }
     } catch (error) {

@@ -206,7 +206,7 @@ export function PhaseBasedNavigation({
         </div>
 
         {/* Phase navigation */}
-        <nav className="px-6">
+        <nav className="px-6" data-testid="phase-navigation">
           <div className="flex space-x-1 py-4">
             {navItems.map(item => {
               const isActive = item.key === activeView
@@ -216,6 +216,7 @@ export function PhaseBasedNavigation({
                 <button
                   key={item.key}
                   onClick={() => onViewChange(item.key)}
+                  data-testid={`phase-nav-${item.key}`}
                   className={`
                     relative flex items-center px-4 py-3 rounded-lg border transition-all duration-200
                     ${

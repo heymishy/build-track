@@ -53,14 +53,16 @@ export const EnhancedInvoiceUpload: React.FC<EnhancedInvoiceUploadProps> = ({
 
       // Convert FileList to Array for processing
       const fileArray = Array.from(files)
-      
+
       // Validate all files first
       const invalidFiles = fileArray.filter(
         file => file.type !== 'application/pdf' || file.size > 10 * 1024 * 1024
       )
-      
+
       if (invalidFiles.length > 0) {
-        const invalidNames = invalidFiles.map(f => `${f.name} (${f.type !== 'application/pdf' ? 'not PDF' : 'too large'})`).join(', ')
+        const invalidNames = invalidFiles
+          .map(f => `${f.name} (${f.type !== 'application/pdf' ? 'not PDF' : 'too large'})`)
+          .join(', ')
         alert(`Invalid files: ${invalidNames}\n\nOnly PDF files under 10MB are allowed.`)
         return
       }
@@ -81,7 +83,7 @@ export const EnhancedInvoiceUpload: React.FC<EnhancedInvoiceUploadProps> = ({
         for (const file of fileArray) {
           try {
             console.log(`Processing file ${processedFiles + 1}/${totalFiles}: ${file.name}`)
-            
+
             const result = await processInvoices(file, {
               onComplete: result => {
                 if (result.success && result.invoices) {
@@ -100,7 +102,9 @@ export const EnhancedInvoiceUpload: React.FC<EnhancedInvoiceUploadProps> = ({
           } catch (error) {
             console.error(`Failed to process ${file.name}:`, error)
             hasErrors = true
-            errorMessages.push(`${file.name}: ${error instanceof Error ? error.message : 'Unknown error'}`)
+            errorMessages.push(
+              `${file.name}: ${error instanceof Error ? error.message : 'Unknown error'}`
+            )
             processedFiles++
           }
         }
@@ -116,16 +120,15 @@ export const EnhancedInvoiceUpload: React.FC<EnhancedInvoiceUploadProps> = ({
             filesProcessed: processedFiles,
             totalFiles: totalFiles,
             successfulFiles: processedFiles - errorMessages.length,
-          }
+          },
         }
 
         setProcessingResult(combinedResult)
         setShowResults(true)
-        
+
         if (onUploadComplete) {
           onUploadComplete(combinedResult)
         }
-
       } catch (error) {
         console.error('Multi-file upload error:', error)
         setProcessingResult({
@@ -216,7 +219,9 @@ export const EnhancedInvoiceUpload: React.FC<EnhancedInvoiceUploadProps> = ({
             <p className="text-sm text-gray-600">
               Drag and drop PDF files here, or click to select multiple files
             </p>
-            <p className="text-xs text-gray-500">Maximum file size: 10MB per file • Supported format: PDF • Multiple files supported</p>
+            <p className="text-xs text-gray-500">
+              Maximum file size: 10MB per file • Supported format: PDF • Multiple files supported
+            </p>
           </div>
         </div>
       )}
@@ -366,7 +371,7 @@ export const EnhancedInvoiceUpload: React.FC<EnhancedInvoiceUploadProps> = ({
           </div>
         </div>
       )}
-      
+
       {/* Multiple Files Info */}
       {processingResult?.stats && processingResult.stats.totalFiles > 1 && (
         <div className="bg-gray-50 rounded-lg p-4">
@@ -378,7 +383,9 @@ export const EnhancedInvoiceUpload: React.FC<EnhancedInvoiceUploadProps> = ({
                   {processingResult.stats.totalFiles} files processed
                 </p>
                 <p className="text-xs text-gray-600">
-                  {processingResult.stats.successfulFiles} successful • {processingResult.stats.totalFiles - processingResult.stats.successfulFiles} failed
+                  {processingResult.stats.successfulFiles} successful •{' '}
+                  {processingResult.stats.totalFiles - processingResult.stats.successfulFiles}{' '}
+                  failed
                 </p>
               </div>
             </div>

@@ -1,0 +1,52 @@
+# Page snapshot
+
+```yaml
+- navigation:
+    - heading "BuildTrack" [level=1]
+    - link "Dashboard":
+        - /url: /dashboard
+    - link "Projects":
+        - /url: /projects
+    - link "Invoices":
+        - /url: /invoices
+    - link "Documents":
+        - /url: /documents
+    - link "Estimates":
+        - /url: /estimates
+    - link "Analytics":
+        - /url: /analytics
+    - link "Reports":
+        - /url: /reports
+    - link "Settings":
+        - /url: /settings
+    - text: Test User USER
+    - button "Sign out"
+- heading "BuildTrack" [level=1]
+- paragraph: Construction Project Management
+- navigation:
+    - button "Get Started Create your first project"
+- paragraph: Upload Invoice PDF
+- paragraph: Drag and drop a PDF file here, or click to select
+- paragraph: 'Maximum file size: 10MB • Supported format: PDF'
+- paragraph: Or import from Google Drive
+- text: Google Drive Folder URL
+- textbox "Google Drive Folder URL"
+- button "Load Files" [disabled]
+- paragraph:
+    - text: 📋
+    - strong: 'How to get the shared folder URL:'
+- list:
+    - listitem: Open your folder in Google Drive
+    - listitem: Click "Share" and ensure "Anyone with the link" can view
+    - listitem: Copy the sharing URL and paste it above
+- paragraph:
+    - text: ✅
+    - strong: 'Supported:'
+    - text: PDF files and folders containing PDFs
+- heading "Cost Tracking" [level=2]
+- heading "Project Overview" [level=2]
+- heading "All Projects" [level=2]
+- text: No projects found. Create your first project to get started.
+- paragraph: Create a new project to get started.
+- alert
+```

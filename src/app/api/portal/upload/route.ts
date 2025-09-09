@@ -5,6 +5,8 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { uploadFile, validateFile, generateSecureFilename } from '@/lib/file-storage'
+import { notifyProjectManagers } from '@/lib/notification-service'
 
 export async function POST(request: NextRequest) {
   try {
@@ -27,20 +29,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'File is required' }, { status: 400 })
     }
 
-    // Validate file type and size
-    if (!file.type.includes('pdf')) {
-      return NextResponse.json(
-        { success: false, error: 'Only PDF files are allowed' },
-        { status: 400 }
-      )
-    }
+    // Validate file using our validation service
+    const validation = validateFile(file, {
+      allowedTypes: ['application/pdf'],
+      maxSizeBytes: 10 * 1024 * 1024, // 10MB
+      minSizeBytes: 1024, // 1KB minimum
+    })
 
-    if (file.size > 10 * 1024 * 1024) {
-      // 10MB limit
-      return NextResponse.json(
-        { success: false, error: 'File size must be less than 10MB' },
-        { status: 400 }
-      )
+    if (!validation.valid) {
+      return NextResponse.json({ success: false, error: validation.errors[0] }, { status: 400 })
     }
 
     // Verify supplier access
@@ -71,43 +68,62 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // In production, you would upload to cloud storage (Vercel Blob, AWS S3, etc.)
-    // For development, we'll simulate the storage
-    const fileBuffer = await file.arrayBuffer()
-    const fileName = file.name
-    const fileSize = file.size
+    // Generate secure filename and upload to storage
+    const secureFileName = generateSecureFilename(file.name, 'invoice')
 
-    // TODO: Upload to actual storage and get URL
-    // const fileUrl = await uploadToStorage(fileBuffer, fileName)
-    const fileUrl = `/uploads/${Date.now()}-${fileName}` // Placeholder
+    try {
+      const uploadResult = await uploadFile(file, secureFileName, {
+        access: 'private', // Private access for invoices
+        contentType: file.type,
+      })
 
-    // Create invoice upload record
-    const invoiceUpload = await prisma.invoiceUpload.create({
-      data: {
-        supplierEmail: supplier.email,
-        projectId: projectId || null,
-        fileName,
-        fileUrl,
-        fileSize,
-        supplierName: supplierName || supplier.name,
-        notes: notes || null,
-        status: 'PENDING',
-      },
-    })
+      const fileUrl = uploadResult.url
+      const fileSize = uploadResult.size
 
-    // TODO: In production, trigger notification to project managers
-    // notifyProjectManagers(invoiceUpload)
+      // Create invoice upload record
+      const invoiceUpload = await prisma.invoiceUpload.create({
+        data: {
+          supplierEmail: supplier.email,
+          projectId: projectId || null,
+          fileName: secureFileName, // Use secure filename
+          fileUrl,
+          fileSize,
+          supplierName: supplierName || supplier.name,
+          notes: notes || null,
+          status: 'PENDING',
+        },
+      })
 
-    return NextResponse.json({
-      success: true,
-      message: 'Invoice uploaded successfully',
-      upload: {
+      // Notify project managers about the new upload
+      await notifyProjectManagers({
         id: invoiceUpload.id,
-        fileName: invoiceUpload.fileName,
-        uploadedAt: invoiceUpload.createdAt,
-        status: invoiceUpload.status,
-      },
-    })
+        supplierEmail: invoiceUpload.supplierEmail,
+        projectId: invoiceUpload.projectId,
+        fileName: file.name, // Use original filename for display
+        supplierName: invoiceUpload.supplierName,
+        notes: invoiceUpload.notes,
+      })
+
+      return NextResponse.json({
+        success: true,
+        message: 'Invoice uploaded successfully',
+        upload: {
+          id: invoiceUpload.id,
+          fileName: file.name, // Return original filename for user
+          uploadedAt: invoiceUpload.createdAt,
+          status: invoiceUpload.status,
+        },
+      })
+    } catch (uploadError) {
+      console.error('File upload failed:', uploadError)
+      return NextResponse.json(
+        {
+          success: false,
+          error: uploadError instanceof Error ? uploadError.message : 'File upload failed',
+        },
+        { status: 500 }
+      )
+    }
   } catch (error) {
     console.error('Portal upload API error:', error)
     return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 })

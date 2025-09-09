@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withAuth } from '@/lib/middleware'
 import { getGoogleDriveService, GoogleDriveService } from '@/lib/google-drive-service'
+import { getUserGoogleServiceAccountKey } from '@/lib/settings-service'
 
 export const POST = withAuth(
   async (request: NextRequest, user: any) => {
@@ -34,7 +35,9 @@ export const POST = withAuth(
         )
       }
 
-      const driveService = getGoogleDriveService()
+      // Get user-specific Google service account key
+      const userCredentials = await getUserGoogleServiceAccountKey(user.id)
+      const driveService = getGoogleDriveService(userCredentials)
 
       // Get file metadata
       const fileMetadata = await driveService.getFile(fileId)

@@ -13,10 +13,11 @@ const ALLOWED_FILE_TYPE = 'application/pdf'
 // const CACHE_BUST = Date.now() // Force rebuild: 1725070756000
 
 async function POST(request: NextRequest, user: AuthUser) {
-  if (process.env.DEBUG_PDF === 'true') {
-    console.error('🚀🚀🚀 PDF parse API called - ENHANCED LOGGING ACTIVE 🚀🚀🚀')
+  // Debug logging only in development mode
+  if (process.env.NODE_ENV === 'development' && process.env.DEBUG_PDF === 'true') {
+    console.log('[PDF DEBUG] PDF parse API called')
     const startMemory = process.memoryUsage()
-    console.error('Initial memory usage:', {
+    console.log('[PDF DEBUG] Initial memory usage:', {
       rss: Math.round(startMemory.rss / 1024 / 1024) + 'MB',
       heapUsed: Math.round(startMemory.heapUsed / 1024 / 1024) + 'MB',
     })
@@ -27,8 +28,8 @@ async function POST(request: NextRequest, user: AuthUser) {
     const formData = await request.formData()
     const file = formData.get('file') as File
 
-    if (process.env.DEBUG_PDF === 'true') {
-      console.log('File received:', file?.name, 'Size:', file?.size)
+    if (process.env.NODE_ENV === 'development' && process.env.DEBUG_PDF === 'true') {
+      console.log('[PDF DEBUG] File received:', file?.name, 'Size:', file?.size)
     }
 
     // Validate file presence
@@ -53,15 +54,15 @@ async function POST(request: NextRequest, user: AuthUser) {
     }
 
     // Convert file to buffer
-    if (process.env.DEBUG_PDF === 'true') {
-      console.log('Converting file to buffer...')
+    if (process.env.NODE_ENV === 'development' && process.env.DEBUG_PDF === 'true') {
+      console.log('[PDF DEBUG] Converting file to buffer...')
     }
     const arrayBuffer = await file.arrayBuffer()
     const buffer = Buffer.from(arrayBuffer)
 
-    const bufferMemory = process.memoryUsage()
-    if (process.env.DEBUG_PDF === 'true') {
-      console.log('After buffer conversion:', {
+    if (process.env.NODE_ENV === 'development' && process.env.DEBUG_PDF === 'true') {
+      const bufferMemory = process.memoryUsage()
+      console.log('[PDF DEBUG] After buffer conversion:', {
         rss: Math.round(bufferMemory.rss / 1024 / 1024) + 'MB',
         heapUsed: Math.round(bufferMemory.heapUsed / 1024 / 1024) + 'MB',
       })
@@ -70,8 +71,13 @@ async function POST(request: NextRequest, user: AuthUser) {
     // Parse multiple invoices from PDF
     let result
     try {
-      console.error('🚀 API ROUTE: Starting PDF multi-invoice parsing with enhanced logging...')
-      console.error('DEBUG: parseMultipleInvoices function type:', typeof parseMultipleInvoices)
+      if (process.env.NODE_ENV === 'development' && process.env.DEBUG_PDF === 'true') {
+        console.log('[PDF DEBUG] Starting PDF multi-invoice parsing')
+        console.log(
+          '[PDF DEBUG] parseMultipleInvoices function type:',
+          typeof parseMultipleInvoices
+        )
+      }
       // Get the user's project for database saving
       const userProject = await prisma.project.findFirst({
         where: {

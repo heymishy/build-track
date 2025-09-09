@@ -14,6 +14,7 @@ And Google Drive integration is configured
 And I am logged in as a "user"
 
 <!-- @critical,google-drive,oauth2 -->
+
 ## Scenario: Connect personal Google account via OAuth2
 
 **As a** project manager  
@@ -30,6 +31,7 @@ And the connection status should show "Connected"
 And I should see my Google account email
 
 <!-- @high,google-drive,file-import -->
+
 ## Scenario: Import PDFs from personal Google Drive
 
 **As a** user with connected Google account  
@@ -50,6 +52,7 @@ And I wait for "AI processing" to complete
 And I should see 3 imported invoices
 
 <!-- @medium,google-drive,shared-folders -->
+
 ## Scenario: Import PDFs from shared Google Drive folder
 
 **As a** user  
@@ -69,6 +72,7 @@ And I click the "Import Selected" button
 Then I should see "Processing files from shared folder"
 
 <!-- @high,google-drive,recursive-search -->
+
 ## Scenario: Recursive folder PDF discovery
 
 **As a** user  
@@ -77,18 +81,20 @@ Then I should see "Processing files from shared folder"
 
 Given I have a Google Drive folder with subfolders
 And the folder structure contains:
-  - Root folder: 2 PDFs
-  - Subfolder "January": 3 PDFs  
-  - Subfolder "February": 2 PDFs
-When I enter the root folder URL
-And I click the "Load Files" button
-Then I should see "Scanning folder recursively"
-And I should see 7 total PDF files listed
-And files should be labeled with their folder path
-And I should see "January/invoice-001.pdf"
-And I should see "February/invoice-005.pdf"
+
+- Root folder: 2 PDFs
+- Subfolder "January": 3 PDFs
+- Subfolder "February": 2 PDFs
+  When I enter the root folder URL
+  And I click the "Load Files" button
+  Then I should see "Scanning folder recursively"
+  And I should see 7 total PDF files listed
+  And files should be labeled with their folder path
+  And I should see "January/invoice-001.pdf"
+  And I should see "February/invoice-005.pdf"
 
 <!-- @critical,supplier-portal,google-drive -->
+
 ## Scenario: Supplier portal dual-mode access
 
 **As a** supplier  
@@ -101,14 +107,16 @@ When I navigate to the "Upload Invoice" tab
 Then I should see "Google Drive Import" option
 When I click "Google Drive Import"
 Then I should see both access methods:
-  - "Enter Shared Folder URL"
-  - "Connect Your Google Account"
-When I select "Connect Your Google Account"
-And I complete the OAuth2 flow
-Then I should see "Connected to [my email]"
-And I should be able to browse my personal Drive files
+
+- "Enter Shared Folder URL"
+- "Connect Your Google Account"
+  When I select "Connect Your Google Account"
+  And I complete the OAuth2 flow
+  Then I should see "Connected to [my email]"
+  And I should be able to browse my personal Drive files
 
 <!-- @medium,google-drive,error-handling -->
+
 ## Scenario: Handle invalid Google Drive URLs
 
 **As a** user  
@@ -124,6 +132,7 @@ And I click the "Load Files" button
 Then I should see "Please provide a folder URL, not a file URL"
 
 <!-- @high,google-drive,oauth2-errors -->
+
 ## Scenario: Handle OAuth2 authentication errors
 
 **As a** user  
@@ -139,6 +148,7 @@ Then I should see "Google integration configuration error"
 And I should see "Please contact support"
 
 <!-- @medium,google-drive,token-refresh -->
+
 ## Scenario: Automatic OAuth2 token refresh
 
 **As a** user with expired Google tokens  
@@ -155,6 +165,7 @@ But if token refresh fails
 Then I should see "Please reconnect your Google account"
 
 <!-- @low,google-drive,file-types -->
+
 ## Scenario: Filter non-PDF files
 
 **As a** user  
@@ -162,16 +173,17 @@ Then I should see "Please reconnect your Google account"
 **So that** I don't waste time with irrelevant files
 
 Given my Google Drive folder contains:
-  - invoice.pdf
-  - document.docx  
-  - image.jpg
-  - another-invoice.pdf
-When I load files from the folder
-Then I should see 2 files listed
-And I should see "invoice.pdf"
-And I should see "another-invoice.pdf"
-But I should not see "document.docx"
-And I should not see "image.jpg"
+
+- invoice.pdf
+- document.docx
+- image.jpg
+- another-invoice.pdf
+  When I load files from the folder
+  Then I should see 2 files listed
+  And I should see "invoice.pdf"
+  And I should see "another-invoice.pdf"
+  But I should not see "document.docx"
+  And I should not see "image.jpg"
 
 ---
 
@@ -180,27 +192,27 @@ And I should not see "image.jpg"
 ```yaml
 google_drive_test_data:
   shared_folder:
-    url: "https://drive.google.com/drive/folders/test123"
+    url: 'https://drive.google.com/drive/folders/test123'
     files:
-      - "invoice-001.pdf"
-      - "invoice-002.pdf"
-      - "January/invoice-jan-01.pdf"
-      - "February/invoice-feb-01.pdf"
-  
+      - 'invoice-001.pdf'
+      - 'invoice-002.pdf'
+      - 'January/invoice-jan-01.pdf'
+      - 'February/invoice-feb-01.pdf'
+
   oauth2_credentials:
-    client_id: "test-client-id.googleusercontent.com"
-    client_secret: "test-client-secret"
-    redirect_uri: "http://localhost:3000/api/auth/google/callback"
-  
+    client_id: 'test-client-id.googleusercontent.com'
+    client_secret: 'test-client-secret'
+    redirect_uri: 'http://localhost:3000/api/auth/google/callback'
+
   test_files:
-    valid_pdf: "test-invoice.pdf"
-    invalid_file: "document.docx"
+    valid_pdf: 'test-invoice.pdf'
+    invalid_file: 'document.docx'
 ```
 
 ## Acceptance Criteria
 
 - [ ] OAuth2 authentication flow works end-to-end
-- [ ] Personal Google Drive files can be listed and selected  
+- [ ] Personal Google Drive files can be listed and selected
 - [ ] Shared folder URLs are validated and processed
 - [ ] Recursive folder scanning finds all PDFs
 - [ ] Supplier portal supports both access modes

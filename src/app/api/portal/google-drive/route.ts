@@ -178,9 +178,9 @@ export async function POST(request: NextRequest) {
 
     // Process only the selected files
     const filesToProcess = []
-    
+
     console.log(`📁 Processing ${selectedFileIds.length} selected files...`)
-    
+
     // Get metadata for each selected file
     for (const selectedFileId of selectedFileIds) {
       try {
@@ -209,7 +209,7 @@ export async function POST(request: NextRequest) {
     // Process each selected file
     const processedInvoices = []
     const { processInvoicePdfWithLLM } = await import('@/lib/llm-pdf-processor')
-    
+
     console.log(`🚀 Processing ${filesToProcess.length} selected PDF files for supplier: ${email}`)
 
     for (const file of filesToProcess) {

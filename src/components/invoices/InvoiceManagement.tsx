@@ -102,6 +102,7 @@ export function InvoiceManagement({
   const [showPdfReviewModal, setShowPdfReviewModal] = useState(false)
   const [detailTab, setDetailTab] = useState<'details' | 'categories' | 'image'>('details')
   const [pdfFileData, setPdfFileData] = useState<File | null>(null)
+  const [invoiceEstimateMapping, setInvoiceEstimateMapping] = useState<Record<string, any>>({})
 
   // Mock current project (in real implementation, this would come from context)
   const currentProject = getCurrentProject()
@@ -194,6 +195,11 @@ export function InvoiceManagement({
         setInvoices(data.invoices)
         setTotalPages(data.pagination.totalPages)
         setSummary(data.summary)
+        
+        // Preload mapping data for all invoices
+        data.invoices.forEach((invoice: Invoice) => {
+          fetchInvoiceEstimateMapping(invoice.id)
+        })
       } else {
         setError(data.error || 'Failed to fetch invoices')
       }
@@ -274,6 +280,22 @@ export function InvoiceManagement({
   const handlePdfRejection = (reason: string) => {
     console.log('PDF Review - Rejection reason:', reason)
     handlePdfReviewClose()
+  }
+
+  const fetchInvoiceEstimateMapping = async (invoiceId: string) => {
+    try {
+      const response = await fetch(`/api/invoices/${invoiceId}/estimate-mappings`)
+      const data = await response.json()
+      
+      if (data.success) {
+        setInvoiceEstimateMapping(prev => ({
+          ...prev,
+          [invoiceId]: data.mappings || []
+        }))
+      }
+    } catch (err) {
+      console.error('Failed to fetch invoice estimate mapping:', err)
+    }
   }
 
   const formatCurrency = (amount: number) => {
@@ -811,6 +833,12 @@ export function InvoiceManagement({
                           <span>Date: {formatDate(invoice.invoiceDate)}</span>
                           <span>Amount: {formatCurrency(invoice.totalAmount)}</span>
                           <span>Items: {invoice._count.lineItems}</span>
+                          {invoiceEstimateMapping[invoice.id] && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                              {invoiceEstimateMapping[invoice.id].filter((m: any) => m.estimateLineItem).length}/
+                              {invoice._count.lineItems} mapped
+                            </span>
+                          )}
                           {!projectId && <span>Project: {invoice.project.name}</span>}
                         </div>
                       </div>
@@ -835,6 +863,7 @@ export function InvoiceManagement({
                             setSelectedInvoice(invoice)
                             setPdfFileData(null) // Clear PDF data when switching invoices
                             setDetailTab('details') // Reset to details tab
+                            fetchInvoiceEstimateMapping(invoice.id) // Fetch mapping data
                           }}
                           className="p-1 text-gray-400 hover:text-gray-600"
                           title="View details"
@@ -1131,30 +1160,61 @@ export function InvoiceManagement({
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                               Category
                             </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Mapped to Estimate
+                            </th>
                           </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
-                          {selectedInvoice.lineItems.map((item, index) => (
-                            <tr key={index}>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                {item.description}
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                {Number(item.quantity).toFixed(2)}
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                {formatCurrency(Number(item.unitPrice))}
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
-                                {formatCurrency(Number(item.totalPrice))}
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap">
-                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                                  {item.category}
-                                </span>
-                              </td>
-                            </tr>
-                          ))}
+                          {selectedInvoice.lineItems.map((item, index) => {
+                            const mappings = invoiceEstimateMapping[selectedInvoice.id] || []
+                            const mapping = mappings.find((m: any) => m.invoiceLineItemId === item.id)
+                            
+                            return (
+                              <tr key={index}>
+                                <td className="px-6 py-4 text-sm text-gray-900">
+                                  <div className="max-w-xs">
+                                    {item.description}
+                                  </div>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                  {Number(item.quantity).toFixed(2)}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                  {formatCurrency(Number(item.unitPrice))}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
+                                  {formatCurrency(Number(item.totalPrice))}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                    {item.category}
+                                  </span>
+                                </td>
+                                <td className="px-6 py-4 text-sm text-gray-900">
+                                  {mapping && mapping.estimateLineItem ? (
+                                    <div className="max-w-xs">
+                                      <div className="font-medium text-blue-600">
+                                        {mapping.estimateLineItem.description}
+                                      </div>
+                                      <div className="text-xs text-gray-500 mt-1">
+                                        Trade: {mapping.estimateLineItem.trade.name}
+                                      </div>
+                                      <div className="text-xs text-gray-500">
+                                        Est: {formatCurrency(
+                                          Number(mapping.estimateLineItem.materialCostEst || 0) +
+                                          Number(mapping.estimateLineItem.laborCostEst || 0) +
+                                          Number(mapping.estimateLineItem.equipmentCostEst || 0)
+                                        )}
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <span className="text-red-600 text-xs font-medium">Not mapped</span>
+                                  )}
+                                </td>
+                              </tr>
+                            )
+                          })}
                         </tbody>
                       </table>
                     </div>

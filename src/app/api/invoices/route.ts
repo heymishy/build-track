@@ -22,7 +22,33 @@ async function GET(request: NextRequest, user: AuthUser) {
     const skip = (page - 1) * limit
 
     // Build query filters
-    const whereClause: any = {
+    interface InvoiceWhereClause {
+      AND?: Array<{
+        projectId?: string | null
+        status?: string
+        project?: {
+          users: {
+            some: {
+              userId: string
+            }
+          }
+        }
+        invoiceNumber?: {
+          contains: string
+          mode?: 'insensitive'
+        }
+        supplierName?: {
+          contains: string
+          mode?: 'insensitive'
+        }
+        createdAt?: {
+          gte?: Date
+          lte?: Date
+        }
+      }>
+    }
+
+    const whereClause: InvoiceWhereClause = {
       AND: [],
     }
 
@@ -60,12 +86,12 @@ async function GET(request: NextRequest, user: AuthUser) {
           { supplierName: { contains: search, mode: 'insensitive' } },
           { notes: { contains: search, mode: 'insensitive' } },
         ],
-      })
+      } as any)
     }
 
     // Add date range filter if provided
     if (startDate || endDate) {
-      const dateFilter: any = {}
+      const dateFilter: { gte?: Date; lte?: Date } = {}
       if (startDate) dateFilter.gte = new Date(startDate)
       if (endDate) dateFilter.lte = new Date(endDate)
       whereClause.AND.push({ invoiceDate: dateFilter })
@@ -246,13 +272,22 @@ async function POST(request: NextRequest, user: AuthUser) {
         status,
         notes,
         lineItems: {
-          create: lineItems.map((item: any) => ({
-            description: item.description,
-            quantity: Number(item.quantity || 1),
-            unitPrice: Number(item.unitPrice || item.total || 0),
-            totalPrice: Number(item.total || item.totalPrice || 0),
-            category: item.category || 'MATERIAL',
-          })),
+          create: lineItems.map(
+            (item: {
+              description: string
+              quantity?: number
+              unitPrice?: number
+              total?: number
+              totalPrice?: number
+              category?: string
+            }) => ({
+              description: item.description,
+              quantity: Number(item.quantity || 1),
+              unitPrice: Number(item.unitPrice || item.total || 0),
+              totalPrice: Number(item.total || item.totalPrice || 0),
+              category: item.category || 'MATERIAL',
+            })
+          ),
         },
       },
       include: {

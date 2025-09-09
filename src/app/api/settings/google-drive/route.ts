@@ -12,7 +12,7 @@ export const GET = withAuth(
     try {
       const settingsService = new SettingsService(user.id)
       const serviceAccountKey = await settingsService.getGoogleServiceAccountKey()
-      
+
       return NextResponse.json({
         success: true,
         config: {
@@ -66,9 +66,8 @@ export const POST = withAuth(
       // Validate JSON format
       let parsedKey
       try {
-        parsedKey = typeof serviceAccountKey === 'string' 
-          ? JSON.parse(serviceAccountKey) 
-          : serviceAccountKey
+        parsedKey =
+          typeof serviceAccountKey === 'string' ? JSON.parse(serviceAccountKey) : serviceAccountKey
       } catch (error) {
         return NextResponse.json(
           {
@@ -82,7 +81,7 @@ export const POST = withAuth(
       // Validate required fields
       const requiredFields = ['type', 'project_id', 'private_key', 'client_email']
       const missingFields = requiredFields.filter(field => !parsedKey[field])
-      
+
       if (missingFields.length > 0) {
         return NextResponse.json(
           {

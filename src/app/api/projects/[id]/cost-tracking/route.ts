@@ -271,11 +271,14 @@ async function GET(
           estimatedCost: item.totalEstimate,
           actualCost: item.actualSpent,
           variance: item.actualSpent - item.totalEstimate,
-          variancePercent: item.totalEstimate > 0 ? ((item.actualSpent - item.totalEstimate) / item.totalEstimate) * 100 : 0,
+          variancePercent:
+            item.totalEstimate > 0
+              ? ((item.actualSpent - item.totalEstimate) / item.totalEstimate) * 100
+              : 0,
           invoiceCount: 0, // Would need to calculate from invoice relationships
           unit: item.unit,
           quantity: item.quantity,
-        }))
+        })),
       }))
 
       const enhancedData = {

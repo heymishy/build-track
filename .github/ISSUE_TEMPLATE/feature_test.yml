@@ -1,7 +1,7 @@
 name: 🧪 Feature Test Scenario
 description: Create a new BDD test scenario for a specific feature
-title: "[TEST] Feature: "
-labels: ["testing", "bdd", "feature"]
+title: '[TEST] Feature: '
+labels: ['testing', 'bdd', 'feature']
 assignees: []
 
 body:
@@ -16,7 +16,7 @@ body:
     attributes:
       label: Feature Name
       description: The name of the feature to test
-      placeholder: "User Authentication and Authorization"
+      placeholder: 'User Authentication and Authorization'
     validations:
       required: true
 
@@ -129,7 +129,7 @@ body:
           user:
             email: user@buildtrack.com
             role: USER
-        
+
         projects:
           sample:
             name: "Test Construction Project"
@@ -142,7 +142,7 @@ body:
     attributes:
       label: Feature File Path
       description: Path to the markdown feature file (will be created/updated)
-      placeholder: "tests/bdd/features/project-management.feature.md"
+      placeholder: 'tests/bdd/features/project-management.feature.md'
     validations:
       required: true
 

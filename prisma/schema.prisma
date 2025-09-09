@@ -31,10 +31,12 @@ model User {
   laborInvoices    LaborInvoice[]
   stageTransitions StageTransition[]
   supplierAccess   SupplierAccess[]
+  notifications    Notification[]
   
   // Performance Indexes
   @@index([email])
   @@index([role])
+  @@index([email, role]) // For authentication with role checking
   @@index([createdAt])
   @@map("users")
 }
@@ -63,6 +65,7 @@ model Project {
   laborInvoices     LaborInvoice[]
   stageTransitions  StageTransition[]
   supplierUploads   InvoiceUpload[]
+  notifications     Notification[]
   
   // Performance Indexes
   @@index([status])
@@ -215,6 +218,8 @@ model Invoice {
   @@index([projectId, status])
   @@index([projectId, invoiceDate])
   @@index([projectId, supplierName])
+  @@index([status, invoiceDate]) // For filtering by status with date ordering
+  @@index([supplierName, status]) // For supplier-specific filtering
   @@index([createdAt])
   @@map("invoices")
 }
@@ -538,6 +543,38 @@ model InvoiceUpload {
 enum SupplierType {
   SUPPLIER
   SUBCONTRACTOR
+}
+
+// Notification System
+model Notification {
+  id          String   @id @default(cuid())
+  type        NotificationType
+  title       String
+  message     String
+  projectId   String?  // Optional project reference
+  userId      String?  // Target user (null for system-wide)
+  metadata    String   @default("{}")
+  isRead      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  // Relationships
+  project     Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user        User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([projectId])
+  @@index([type])
+  @@index([isRead])
+  @@index([createdAt])
+  @@index([userId, isRead])
+  @@map("notifications")
+}
+
+enum NotificationType {
+  INVOICE_UPLOAD
+  PROJECT_UPDATE
+  MILESTONE_COMPLETE
+  SYSTEM_ALERT
 }
 
 enum UploadStatus {

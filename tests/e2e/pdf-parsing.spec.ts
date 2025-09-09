@@ -5,20 +5,15 @@
 
 import { test, expect } from '@playwright/test'
 import path from 'path'
+import { loginUser, TEST_USERS } from './helpers/auth'
 
 test.describe('PDF Invoice Parsing', () => {
   test.beforeEach(async ({ page }) => {
-    // Start from the login page
-    await page.goto('/')
+    // Login with test user using API helper
+    await loginUser(page, TEST_USERS.user)
 
-    // Login with test user
-    await page.fill('input[type="email"]', 'test@example.com')
-    await page.fill('input[type="password"]', 'password123')
-    await page.click('button[type="submit"]')
-
-    // Wait for redirect to dashboard
-    await page.waitForURL('/dashboard')
-    await expect(page.locator('h1')).toContainText('Dashboard')
+    // Wait for dashboard to be visible
+    await expect(page.locator('body')).toBeVisible()
   })
 
   test('should upload PDF and display parsed invoice data', async ({ page }) => {

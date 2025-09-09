@@ -9,6 +9,9 @@ import { prisma } from '@/lib/prisma'
 
 async function GET(request: NextRequest, user: AuthUser) {
   try {
+    const { searchParams } = new URL(request.url)
+    const enhanced = searchParams.get('enhanced') === 'true'
+    
     // Get projects user has access to
     const projectsQuery =
       user.role === 'ADMIN'

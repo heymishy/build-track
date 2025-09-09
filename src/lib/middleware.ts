@@ -180,28 +180,41 @@ export function getUserFromRequest(request: NextRequest): AuthUser | null {
 
     const token = cookieToken || bearerToken
 
+    // Debug logging only in development mode
     if (process.env.NODE_ENV === 'development' && process.env.DEBUG_AUTH === 'true') {
-      console.log('Auth debug:', {
+      console.log('[AUTH DEBUG]', {
         hasCookieToken: !!cookieToken,
         hasBearerToken: !!bearerToken,
         hasToken: !!token,
         cookieNames: request.cookies.getAll().map(cookie => cookie.name),
         url: request.url,
-        cookieValue: cookieToken ? cookieToken.substring(0, 20) + '...' : null,
         userAgent: request.headers.get('user-agent')?.substring(0, 50),
       })
     }
 
     if (!token) {
-      console.log('No token found in request')
+      // Only log in development mode
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[AUTH DEBUG] No token found in request')
+      }
       return null
     }
 
     // Decode and verify JWT token
     const jwt = require('jsonwebtoken')
-    const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-for-development'
+    const JWT_SECRET = process.env.JWT_SECRET
 
-    const decoded = jwt.verify(token, JWT_SECRET) as {
+    if (!JWT_SECRET) {
+      console.error('JWT_SECRET environment variable is not set')
+      // Only provide fallback in development
+      if (process.env.NODE_ENV !== 'development') {
+        return null
+      }
+    }
+
+    const secret = JWT_SECRET || 'fallback-secret-for-development-only'
+
+    const decoded = jwt.verify(token, secret) as {
       userId: string
       email: string
       role: UserRole
@@ -218,8 +231,9 @@ export function getUserFromRequest(request: NextRequest): AuthUser | null {
       updatedAt: new Date(),
     }
 
+    // Debug logging only in development mode
     if (process.env.NODE_ENV === 'development' && process.env.DEBUG_AUTH === 'true') {
-      console.log('Successfully authenticated user:', {
+      console.log('[AUTH DEBUG] Successfully authenticated user:', {
         id: user.id,
         email: user.email,
         role: user.role,

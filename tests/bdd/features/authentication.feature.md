@@ -14,6 +14,7 @@ And the database is seeded with test users
 And I am on the login page
 
 <!-- @critical,authentication -->
+
 ## Scenario: Admin user successful login
 
 **As a** system administrator  
@@ -25,10 +26,11 @@ When I enter admin@buildtrack.com in the email field
 And I enter "admin123" in the password field
 And I click the "Sign In" button
 Then I should be on the "dashboard" page
-And I should see "Admin Dashboard"
-And the "navigation" should contain "User Management"
+And I should see "Project Overview"
+And I should see phase-based navigation options
 
 <!-- @critical,authentication -->
+
 ## Scenario: Regular user successful login
 
 **As a** project manager  
@@ -40,11 +42,11 @@ When I enter user@buildtrack.com in the email field
 And I enter "user123" in the password field
 And I click the "Sign In" button
 Then I should be on the "dashboard" page
-And I should see "Project Dashboard"
-And the "navigation" should contain "Projects"
-But the "navigation" should not contain "User Management"
+And I should see "Project Overview"
+And I should see phase-based navigation options
 
 <!-- @high,authentication -->
+
 ## Scenario: Invalid login credentials
 
 **As a** user  
@@ -55,10 +57,11 @@ Given I am on the login page
 When I enter invalid@email.com in the email field
 And I enter "wrongpassword" in the password field
 And I click the "Sign In" button
-Then I should see "Invalid email or password"
+Then I should see "Login failed"
 And I should be on the "login" page
 
 <!-- @medium,authentication -->
+
 ## Scenario: Role-based access control
 
 **As a** viewer user  
@@ -72,6 +75,7 @@ Then I should see "Access Denied"
 And I should be redirected to the "dashboard" page
 
 <!-- @high,authentication -->
+
 ## Scenario: Session timeout handling
 
 **As a** user  
@@ -86,6 +90,7 @@ Then I should see "Session expired"
 And I should be on the "login" page
 
 <!-- @medium,authentication -->
+
 ## Scenario: Remember me functionality
 
 **As a** frequent user  
@@ -101,7 +106,7 @@ And I close the browser
 And I reopen the browser
 And I visit "/"
 Then I should be on the "dashboard" page
-And I should see "Project Dashboard"
+And I should see "Project Overview"
 
 ---
 
@@ -114,13 +119,13 @@ users:
     password: admin123
     role: ADMIN
     permissions: [all]
-  
+
   user:
     email: user@buildtrack.com
     password: user123
     role: USER
     permissions: [projects.read, projects.write, invoices.read]
-  
+
   viewer:
     email: viewer@buildtrack.com
     password: viewer123

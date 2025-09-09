@@ -124,6 +124,132 @@ export class SettingsService {
       where: { userId: this.userId },
     })
   }
+
+  // Google Drive service account key management
+  async setGoogleServiceAccountKey(serviceAccountKey: any): Promise<void> {
+    await this.updateSetting('google_service_account_key', serviceAccountKey)
+  }
+
+  async getGoogleServiceAccountKey(): Promise<any | null> {
+    const settings = await prisma.userSettings.findUnique({
+      where: {
+        userId_key: {
+          userId: this.userId,
+          key: 'google_service_account_key',
+        },
+      },
+    })
+
+    if (!settings) {
+      return null
+    }
+
+    try {
+      return JSON.parse(settings.value)
+    } catch (error) {
+      console.error('Failed to parse Google service account key:', error)
+      return null
+    }
+  }
+
+  async removeGoogleServiceAccountKey(): Promise<void> {
+    await prisma.userSettings.deleteMany({
+      where: {
+        userId: this.userId,
+        key: 'google_service_account_key',
+      },
+    })
+  }
+
+  // Google OAuth2 credentials management
+  async setGoogleOAuth2Config(config: {
+    clientId: string
+    clientSecret: string
+    redirectUri?: string
+  }): Promise<void> {
+    await this.updateSetting('google_oauth2_config', config)
+  }
+
+  async getGoogleOAuth2Config(): Promise<{
+    clientId: string
+    clientSecret: string
+    redirectUri?: string
+  } | null> {
+    const settings = await prisma.userSettings.findUnique({
+      where: {
+        userId_key: {
+          userId: this.userId,
+          key: 'google_oauth2_config',
+        },
+      },
+    })
+
+    if (!settings) {
+      return null
+    }
+
+    try {
+      return JSON.parse(settings.value)
+    } catch (error) {
+      console.error('Failed to parse Google OAuth2 config:', error)
+      return null
+    }
+  }
+
+  async removeGoogleOAuth2Config(): Promise<void> {
+    await prisma.userSettings.deleteMany({
+      where: {
+        userId: this.userId,
+        key: 'google_oauth2_config',
+      },
+    })
+  }
+
+  // Google OAuth2 tokens management (per-user tokens)
+  async setGoogleOAuth2Tokens(tokens: {
+    accessToken: string
+    refreshToken?: string
+    expiryDate?: number
+    scope?: string
+  }): Promise<void> {
+    await this.updateSetting('google_oauth2_tokens', tokens)
+  }
+
+  async getGoogleOAuth2Tokens(): Promise<{
+    accessToken: string
+    refreshToken?: string
+    expiryDate?: number
+    scope?: string
+  } | null> {
+    const settings = await prisma.userSettings.findUnique({
+      where: {
+        userId_key: {
+          userId: this.userId,
+          key: 'google_oauth2_tokens',
+        },
+      },
+    })
+
+    if (!settings) {
+      return null
+    }
+
+    try {
+      return JSON.parse(settings.value)
+    } catch (error) {
+      console.error('Failed to parse Google OAuth2 tokens:', error)
+      return null
+    }
+  }
+
+  async removeGoogleOAuth2Tokens(): Promise<void> {
+    await prisma.userSettings.deleteMany({
+      where: {
+        userId: this.userId,
+        key: 'google_oauth2_tokens',
+      },
+    })
+  }
 }
 
 // Static helper functions for API routes
@@ -135,4 +261,9 @@ export async function getUserSettings(userId: string): Promise<StoredSettings> {
 export async function updateUserSetting(userId: string, key: string, value: any): Promise<void> {
   const service = new SettingsService(userId)
   await service.updateSetting(key, value)
+}
+
+export async function getUserGoogleServiceAccountKey(userId: string): Promise<any | null> {
+  const service = new SettingsService(userId)
+  return await service.getGoogleServiceAccountKey()
 }

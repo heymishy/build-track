@@ -17,9 +17,21 @@ export interface GoogleDriveFile {
 
 export class GoogleDriveService {
   private drive: drive_v3.Drive
-  private auth: JWT
+  private auth: JWT | any
+  private authType: 'service_account' | 'oauth2'
 
-  constructor(serviceAccountKey?: any) {
+  constructor(serviceAccountKey?: any, oauth2Tokens?: any) {
+    // Determine authentication method
+    if (oauth2Tokens) {
+      this.authType = 'oauth2'
+      this.setupOAuth2Auth(oauth2Tokens)
+    } else {
+      this.authType = 'service_account'
+      this.setupServiceAccountAuth(serviceAccountKey)
+    }
+  }
+
+  private setupServiceAccountAuth(serviceAccountKey?: any) {
     // Try user-provided key first, then fall back to environment
     let credentials: any = serviceAccountKey
 
@@ -34,7 +46,9 @@ export class GoogleDriveService {
     }
 
     if (!credentials) {
-      throw new Error('Google service account key not configured - please configure in user settings')
+      throw new Error(
+        'Google service account key not configured - please configure in user settings'
+      )
     }
 
     this.auth = new JWT({
@@ -47,6 +61,32 @@ export class GoogleDriveService {
     })
 
     this.drive = google.drive({ version: 'v3', auth: this.auth })
+  }
+
+  private setupOAuth2Auth(oauth2Tokens: any) {
+    // Create OAuth2 client with tokens
+    this.auth = {
+      getAccessToken: async () => {
+        // Check if token is expired and refresh if needed
+        if (oauth2Tokens.expiryDate && Date.now() >= oauth2Tokens.expiryDate) {
+          throw new Error('OAuth2 token expired - please re-authenticate')
+        }
+        return { token: oauth2Tokens.accessToken }
+      },
+    }
+
+    // Create drive instance with OAuth2 auth
+    this.drive = google.drive({
+      version: 'v3',
+      auth: new google.auth.OAuth2(),
+    })
+
+    // Set credentials
+    ;(this.drive as any).auth.setCredentials({
+      access_token: oauth2Tokens.accessToken,
+      refresh_token: oauth2Tokens.refreshToken,
+      expiry_date: oauth2Tokens.expiryDate,
+    })
   }
 
   /**
@@ -156,7 +196,7 @@ export class GoogleDriveService {
   async listPdfFilesInFolder(folderId: string): Promise<GoogleDriveFile[]> {
     try {
       console.log(`🔍 Listing PDF files in folder: ${folderId}`)
-      
+
       // Get all items in current folder
       const allFilesResponse = await this.drive.files.list({
         q: `'${folderId}' in parents`,
@@ -177,7 +217,7 @@ export class GoogleDriveService {
       })
 
       console.log(`📄 PDF files found in current folder: ${pdfResponse.data.files?.length || 0}`)
-      
+
       // Add PDFs from current folder
       if (pdfResponse.data.files && pdfResponse.data.files.length > 0) {
         const currentFolderPdfs = pdfResponse.data.files
@@ -189,29 +229,30 @@ export class GoogleDriveService {
             size: file.size || '0',
             webViewLink: file.webViewLink || undefined,
           }))
-        
+
         currentFolderPdfs.forEach(file => console.log(`  - ${file.name}`))
         allPdfs.push(...currentFolderPdfs)
       }
 
       // Find subfolders and search them recursively
-      const subfolders = allFilesResponse.data.files?.filter(
-        file => file.mimeType === 'application/vnd.google-apps.folder'
-      ) || []
+      const subfolders =
+        allFilesResponse.data.files?.filter(
+          file => file.mimeType === 'application/vnd.google-apps.folder'
+        ) || []
 
       console.log(`📁 Found ${subfolders.length} subfolders to search`)
-      
+
       for (const subfolder of subfolders) {
         if (subfolder.id && subfolder.name) {
           console.log(`🔍 Searching subfolder: ${subfolder.name}`)
           const subfolderPdfs = await this.listPdfFilesInFolder(subfolder.id)
-          
+
           // Prefix subfolder PDFs with folder name for clarity
           const prefixedPdfs = subfolderPdfs.map(pdf => ({
             ...pdf,
             name: `${subfolder.name}/${pdf.name}`,
           }))
-          
+
           allPdfs.push(...prefixedPdfs)
         }
       }
@@ -239,7 +280,7 @@ export class GoogleDriveService {
       }
 
       console.log(`🎯 Total PDFs found (including subfolders): ${allPdfs.length}`)
-      
+
       return allPdfs
     } catch (error) {
       console.error('Error listing files in folder:', error)
@@ -247,7 +288,7 @@ export class GoogleDriveService {
         console.error('Error details:', {
           message: error.message,
           name: error.name,
-          stack: error.stack?.slice(0, 500)
+          stack: error.stack?.slice(0, 500),
         })
       }
       return []
@@ -289,6 +330,30 @@ export class GoogleDriveService {
 }
 
 // Factory function to create service with user-specific credentials
-export function getGoogleDriveService(serviceAccountKey?: any): GoogleDriveService {
+export function getGoogleDriveService(
+  serviceAccountKey?: any,
+  oauth2Tokens?: any
+): GoogleDriveService {
+  return new GoogleDriveService(serviceAccountKey, oauth2Tokens)
+}
+
+// Helper function to create service based on user settings
+export async function createGoogleDriveServiceForUser(
+  userId: string,
+  preferOAuth2: boolean = false
+): Promise<GoogleDriveService> {
+  const { SettingsService } = await import('@/lib/settings-service')
+  const settingsService = new SettingsService(userId)
+
+  if (preferOAuth2) {
+    // Try OAuth2 first
+    const oauth2Tokens = await settingsService.getGoogleOAuth2Tokens()
+    if (oauth2Tokens) {
+      return new GoogleDriveService(undefined, oauth2Tokens)
+    }
+  }
+
+  // Fall back to service account
+  const serviceAccountKey = await settingsService.getGoogleServiceAccountKey()
   return new GoogleDriveService(serviceAccountKey)
 }

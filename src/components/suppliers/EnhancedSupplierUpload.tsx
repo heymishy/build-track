@@ -414,7 +414,7 @@ export function EnhancedSupplierUpload({
             }}
             onSuccess={result => {
               toast.success(
-                `Successfully imported ${result.file?.name || 'invoice'} from Google Drive!`
+                `Successfully imported ${result.processedFiles || 1} file(s) from Google Drive!`
               )
               onUploadComplete?.(result)
             }}
@@ -422,6 +422,8 @@ export function EnhancedSupplierUpload({
               console.error('Google Drive import failed:', error)
             }}
             disabled={uploading || aiProcessing}
+            enablePersonalAuth={true}
+            supplierEmail={supplierEmail}
             className="max-w-lg"
           />
         </Card>

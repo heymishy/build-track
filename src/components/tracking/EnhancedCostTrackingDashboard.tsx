@@ -75,7 +75,7 @@ export function EnhancedCostTrackingDashboard({
   className = '',
   onProjectChange,
 }: EnhancedCostTrackingProps) {
-  const [selectedProjectId, setSelectedProjectId] = useState<string>(initialProjectId || '')
+  const [selectedProjectId, setSelectedProjectId] = useState<string>(initialProjectId || 'all')
   const [trackingData, setTrackingData] = useState<ProjectCostTracking | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -83,9 +83,7 @@ export function EnhancedCostTrackingDashboard({
   const [viewMode, setViewMode] = useState<'summary' | 'detailed' | 'line-items'>('summary')
 
   useEffect(() => {
-    if (selectedProjectId) {
-      fetchEnhancedCostTracking()
-    }
+    fetchEnhancedCostTracking()
   }, [selectedProjectId])
 
   const fetchEnhancedCostTracking = async () => {
@@ -93,12 +91,15 @@ export function EnhancedCostTrackingDashboard({
       setLoading(true)
       setError(null)
 
-      const response = await fetch(
-        `/api/projects/${selectedProjectId}/cost-tracking?enhanced=true`,
-        {
-          credentials: 'include',
-        }
-      )
+      // Determine the URL based on selected project
+      const url =
+        selectedProjectId === 'all'
+          ? '/api/analytics/cost-tracking?enhanced=true'
+          : `/api/projects/${selectedProjectId}/cost-tracking?enhanced=true`
+
+      const response = await fetch(url, {
+        credentials: 'include',
+      })
 
       if (!response.ok) {
         throw new Error('Failed to fetch enhanced cost tracking data')
@@ -106,7 +107,14 @@ export function EnhancedCostTrackingDashboard({
 
       const result = await response.json()
       if (result.success) {
-        setTrackingData(result.data)
+        // Handle both single project and multiple projects data
+        if (selectedProjectId === 'all' && Array.isArray(result.data)) {
+          // For now, show the first project if multiple, or aggregate data
+          // TODO: Implement proper multi-project view
+          setTrackingData(result.data[0] || null)
+        } else {
+          setTrackingData(result.data)
+        }
       } else {
         throw new Error(result.error || 'Failed to load cost tracking data')
       }
@@ -164,7 +172,9 @@ export function EnhancedCostTrackingDashboard({
   const getStatusBadge = (status: string) => {
     const colorClass = getStatusColor(status)
     return (
-      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${colorClass}`}>
+      <span
+        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${colorClass}`}
+      >
         {status.replace('_', ' ')}
       </span>
     )
@@ -237,12 +247,15 @@ export function EnhancedCostTrackingDashboard({
               <div>
                 <h2 className="text-xl font-semibold text-gray-900">{trackingData.projectName}</h2>
                 <p className="text-sm text-gray-500 mt-1">
-                  Cost Tracking • Last updated: {new Date(trackingData.lastUpdated).toLocaleDateString()}
+                  Cost Tracking • Last updated:{' '}
+                  {new Date(trackingData.lastUpdated).toLocaleDateString()}
                 </p>
               </div>
               <div className="flex items-center space-x-3">
                 {getStatusBadge(trackingData.overallStatus)}
-                <span className="text-sm text-gray-500">{trackingData.completionPercent}% Complete</span>
+                <span className="text-sm text-gray-500">
+                  {trackingData.completionPercent}% Complete
+                </span>
               </div>
             </div>
 
@@ -257,7 +270,7 @@ export function EnhancedCostTrackingDashboard({
                   {formatCurrency(trackingData.totalBudget, trackingData.currency)}
                 </p>
               </div>
-              
+
               <div className="bg-blue-50 p-4 rounded-lg">
                 <div className="flex items-center">
                   <ChartBarIcon className="h-5 w-5 text-blue-400 mr-2" />
@@ -278,7 +291,9 @@ export function EnhancedCostTrackingDashboard({
                 </p>
               </div>
 
-              <div className={`p-4 rounded-lg ${trackingData.totalVariance > 0 ? 'bg-red-50' : 'bg-green-50'}`}>
+              <div
+                className={`p-4 rounded-lg ${trackingData.totalVariance > 0 ? 'bg-red-50' : 'bg-green-50'}`}
+              >
                 <div className="flex items-center">
                   {trackingData.totalVariance > 0 ? (
                     <ArrowTrendingUpIcon className="h-5 w-5 text-red-400 mr-2" />
@@ -287,11 +302,15 @@ export function EnhancedCostTrackingDashboard({
                   )}
                   <span className="text-sm text-gray-600">Variance</span>
                 </div>
-                <p className={`text-2xl font-semibold mt-1 ${trackingData.totalVariance > 0 ? 'text-red-900' : 'text-green-900'}`}>
+                <p
+                  className={`text-2xl font-semibold mt-1 ${trackingData.totalVariance > 0 ? 'text-red-900' : 'text-green-900'}`}
+                >
                   {trackingData.totalVariance > 0 ? '+' : ''}
                   {formatCurrency(trackingData.totalVariance, trackingData.currency)}
                 </p>
-                <p className={`text-sm mt-1 ${trackingData.totalVariance > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                <p
+                  className={`text-sm mt-1 ${trackingData.totalVariance > 0 ? 'text-red-600' : 'text-green-600'}`}
+                >
                   {trackingData.totalVariancePercent > 0 ? '+' : ''}
                   {trackingData.totalVariancePercent.toFixed(1)}%
                 </p>
@@ -330,7 +349,7 @@ export function EnhancedCostTrackingDashboard({
               {[
                 { key: 'summary', label: 'Summary' },
                 { key: 'detailed', label: 'By Trade' },
-                { key: 'line-items', label: 'Line Items' }
+                { key: 'line-items', label: 'Line Items' },
               ].map(({ key, label }) => (
                 <button
                   key={key}
@@ -369,7 +388,7 @@ export function EnhancedCostTrackingDashboard({
                         </p>
                       </div>
                     </div>
-                    
+
                     <div className="text-right">
                       <div className="flex items-center space-x-4 text-sm">
                         <div>
@@ -384,12 +403,16 @@ export function EnhancedCostTrackingDashboard({
                             {formatCurrency(trade.actualCost, trackingData.currency)}
                           </span>
                         </div>
-                        <div className={`font-medium ${getVarianceColor(trade.variance, trade.variancePercent)}`}>
+                        <div
+                          className={`font-medium ${getVarianceColor(trade.variance, trade.variancePercent)}`}
+                        >
                           {trade.variance > 0 ? '+' : ''}
                           {formatCurrency(Math.abs(trade.variance), trackingData.currency)}
                         </div>
                       </div>
-                      <div className={`text-xs mt-1 ${getVarianceColor(trade.variance, trade.variancePercent)}`}>
+                      <div
+                        className={`text-xs mt-1 ${getVarianceColor(trade.variance, trade.variancePercent)}`}
+                      >
                         {trade.variancePercent > 0 ? '+' : ''}
                         {trade.variancePercent.toFixed(1)}%
                       </div>
@@ -409,7 +432,9 @@ export function EnhancedCostTrackingDashboard({
                             className="flex items-center justify-between py-2 px-3 bg-white rounded border"
                           >
                             <div className="flex-1">
-                              <p className="text-sm font-medium text-gray-900">{item.description}</p>
+                              <p className="text-sm font-medium text-gray-900">
+                                {item.description}
+                              </p>
                               <p className="text-xs text-gray-500">
                                 {item.quantity} {item.unit} • {item.invoiceCount} invoice(s)
                               </p>
@@ -427,7 +452,9 @@ export function EnhancedCostTrackingDashboard({
                                 </div>
                                 <div className="text-xs text-gray-500">invoiced</div>
                               </div>
-                              <div className={`text-right font-medium ${getVarianceColor(item.variance, item.variancePercent)}`}>
+                              <div
+                                className={`text-right font-medium ${getVarianceColor(item.variance, item.variancePercent)}`}
+                              >
                                 <div>
                                   {item.variance > 0 ? '+' : ''}
                                   {formatCurrency(Math.abs(item.variance), trackingData.currency)}

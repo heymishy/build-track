@@ -20,7 +20,18 @@ async function GET(request: NextRequest, user: AuthUser) {
     const startDate = new Date(now.getTime() - daysBack * 24 * 60 * 60 * 1000)
 
     // Build where clause for user access control
-    const whereClause: any = {
+    interface ProjectWhereClause {
+      AND?: Array<{
+        id?: string
+        users?: {
+          some: {
+            userId: string
+          }
+        }
+      }>
+    }
+
+    const whereClause: ProjectWhereClause = {
       AND: [],
     }
 
@@ -189,7 +200,13 @@ async function GET(request: NextRequest, user: AuthUser) {
   }
 }
 
-function generateMonthlySpending(invoices: any[], startDate: Date, endDate: Date) {
+interface InvoiceWithAmount {
+  invoiceDate: string | Date
+  totalAmount: number | string
+  supplierName: string
+}
+
+function generateMonthlySpending(invoices: InvoiceWithAmount[], startDate: Date, endDate: Date) {
   const months: { [key: string]: number } = {}
 
   // Initialize months
@@ -216,7 +233,7 @@ function generateMonthlySpending(invoices: any[], startDate: Date, endDate: Date
   }))
 }
 
-function calculateSpendingByCategory(invoices: any[]) {
+function calculateSpendingByCategory(invoices: InvoiceWithAmount[]) {
   // Simplified categorization based on invoice line items
   const categories = {
     Materials: 0,

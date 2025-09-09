@@ -4,8 +4,8 @@ test.describe('Basic E2E Tests', () => {
   test('should load the homepage', async ({ page }) => {
     await page.goto('/')
 
-    // Wait for the page to load and check for basic Next.js content
-    await expect(page).toHaveTitle(/build-track/i)
+    // Wait for the page to load and check for the app title
+    await expect(page).toHaveTitle(/BuildTrack/i)
 
     // Check that the page loaded successfully
     await expect(page.locator('body')).toBeVisible()

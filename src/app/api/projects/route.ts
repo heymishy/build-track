@@ -47,7 +47,7 @@ async function GET(request: NextRequest, user: AuthUser) {
           { name: { contains: search, mode: 'insensitive' } },
           { description: { contains: search, mode: 'insensitive' } },
         ],
-      })
+      } as any)
     }
 
     // Get projects where user is a member or admin can see all
