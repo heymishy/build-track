@@ -23,6 +23,12 @@ export interface ProcessedInvoiceResult {
   qualityScore?: number
   invoices?: any[]
   error?: string
+  stats?: {
+    filesProcessed?: number
+    totalFiles?: number
+    successfulFiles?: number
+  }
+  qualityMetrics?: any
 }
 
 export function useInvoiceProcessing() {

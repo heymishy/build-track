@@ -51,45 +51,90 @@ export const EnhancedInvoiceUpload: React.FC<EnhancedInvoiceUploadProps> = ({
     async (files: FileList | null) => {
       if (!files || files.length === 0) return
 
-      const file = files[0]
-
-      // Validate file type
-      if (file.type !== 'application/pdf') {
-        alert('Please select a PDF file')
+      // Convert FileList to Array for processing
+      const fileArray = Array.from(files)
+      
+      // Validate all files first
+      const invalidFiles = fileArray.filter(
+        file => file.type !== 'application/pdf' || file.size > 10 * 1024 * 1024
+      )
+      
+      if (invalidFiles.length > 0) {
+        const invalidNames = invalidFiles.map(f => `${f.name} (${f.type !== 'application/pdf' ? 'not PDF' : 'too large'})`).join(', ')
+        alert(`Invalid files: ${invalidNames}\n\nOnly PDF files under 10MB are allowed.`)
         return
       }
 
-      // Validate file size (10MB)
-      if (file.size > 10 * 1024 * 1024) {
-        alert('File size must be less than 10MB')
-        return
-      }
-
-      setUploadedFile(file)
+      // Set uploaded files info
+      setUploadedFile(fileArray.length === 1 ? fileArray[0] : null)
       setShowResults(false)
 
       try {
-        const result = await processInvoices(file, {
-          onComplete: result => {
-            setProcessingResult(result)
-            setShowResults(true)
-            if (onUploadComplete) {
-              onUploadComplete(result)
-            }
-          },
-          onError: error => {
-            console.error('Processing error:', error)
-            setProcessingResult({
-              success: false,
-              totalInvoices: 0,
-              totalAmount: 0,
-              error,
+        let allInvoices: any[] = []
+        let totalAmount = 0
+        let totalFiles = fileArray.length
+        let processedFiles = 0
+        let hasErrors = false
+        let errorMessages: string[] = []
+
+        // Process files sequentially to avoid overwhelming the API
+        for (const file of fileArray) {
+          try {
+            console.log(`Processing file ${processedFiles + 1}/${totalFiles}: ${file.name}`)
+            
+            const result = await processInvoices(file, {
+              onComplete: result => {
+                if (result.success && result.invoices) {
+                  allInvoices = [...allInvoices, ...result.invoices]
+                  totalAmount += result.totalAmount || 0
+                }
+                processedFiles++
+              },
+              onError: error => {
+                console.error(`Error processing ${file.name}:`, error)
+                hasErrors = true
+                errorMessages.push(`${file.name}: ${error}`)
+                processedFiles++
+              },
             })
-            setShowResults(true)
-          },
-        })
+          } catch (error) {
+            console.error(`Failed to process ${file.name}:`, error)
+            hasErrors = true
+            errorMessages.push(`${file.name}: ${error instanceof Error ? error.message : 'Unknown error'}`)
+            processedFiles++
+          }
+        }
+
+        // Create combined result
+        const combinedResult: ProcessedInvoiceResult = {
+          success: !hasErrors || allInvoices.length > 0,
+          totalInvoices: allInvoices.length,
+          totalAmount,
+          invoices: allInvoices,
+          error: hasErrors ? errorMessages.join('; ') : undefined,
+          stats: {
+            filesProcessed: processedFiles,
+            totalFiles: totalFiles,
+            successfulFiles: processedFiles - errorMessages.length,
+          }
+        }
+
+        setProcessingResult(combinedResult)
+        setShowResults(true)
+        
+        if (onUploadComplete) {
+          onUploadComplete(combinedResult)
+        }
+
       } catch (error) {
-        console.error('Upload error:', error)
+        console.error('Multi-file upload error:', error)
+        setProcessingResult({
+          success: false,
+          totalInvoices: 0,
+          totalAmount: 0,
+          error: error instanceof Error ? error.message : 'Unknown error occurred',
+        })
+        setShowResults(true)
       }
     },
     [processInvoices, onUploadComplete]
@@ -157,6 +202,7 @@ export const EnhancedInvoiceUpload: React.FC<EnhancedInvoiceUploadProps> = ({
             ref={fileInputRef}
             type="file"
             accept="application/pdf"
+            multiple
             onChange={handleFileInputChange}
             className="hidden"
           />
@@ -165,12 +211,12 @@ export const EnhancedInvoiceUpload: React.FC<EnhancedInvoiceUploadProps> = ({
 
           <div className="space-y-2">
             <p className="text-lg font-medium text-gray-900">
-              {isDragging ? 'Drop your PDF here' : 'Upload Invoice PDF'}
+              {isDragging ? 'Drop your PDFs here' : 'Upload Invoice PDFs'}
             </p>
             <p className="text-sm text-gray-600">
-              Drag and drop a PDF file here, or click to select
+              Drag and drop PDF files here, or click to select multiple files
             </p>
-            <p className="text-xs text-gray-500">Maximum file size: 10MB • Supported format: PDF</p>
+            <p className="text-xs text-gray-500">Maximum file size: 10MB per file • Supported format: PDF • Multiple files supported</p>
           </div>
         </div>
       )}
@@ -317,6 +363,28 @@ export const EnhancedInvoiceUpload: React.FC<EnhancedInvoiceUploadProps> = ({
                 {(uploadedFile.size / 1024 / 1024).toFixed(2)} MB • {uploadedFile.type}
               </p>
             </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Multiple Files Info */}
+      {processingResult?.stats && processingResult.stats.totalFiles > 1 && (
+        <div className="bg-gray-50 rounded-lg p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <DocumentTextIcon className="h-5 w-5 text-gray-600" />
+              <div>
+                <p className="text-sm font-medium text-gray-900">
+                  {processingResult.stats.totalFiles} files processed
+                </p>
+                <p className="text-xs text-gray-600">
+                  {processingResult.stats.successfulFiles} successful • {processingResult.stats.totalFiles - processingResult.stats.successfulFiles} failed
+                </p>
+              </div>
+            </div>
+            {processingResult.stats.totalFiles !== processingResult.stats.successfulFiles && (
+              <ExclamationCircleIcon className="h-5 w-5 text-amber-500" />
+            )}
           </div>
         </div>
       )}
