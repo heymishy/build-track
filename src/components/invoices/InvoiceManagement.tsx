@@ -195,7 +195,7 @@ export function InvoiceManagement({
         setInvoices(data.invoices)
         setTotalPages(data.pagination.totalPages)
         setSummary(data.summary)
-        
+
         // Preload mapping data for all invoices
         data.invoices.forEach((invoice: Invoice) => {
           fetchInvoiceEstimateMapping(invoice.id)
@@ -286,11 +286,11 @@ export function InvoiceManagement({
     try {
       const response = await fetch(`/api/invoices/${invoiceId}/estimate-mappings`)
       const data = await response.json()
-      
+
       if (data.success) {
         setInvoiceEstimateMapping(prev => ({
           ...prev,
-          [invoiceId]: data.mappings || []
+          [invoiceId]: data.mappings || [],
         }))
       }
     } catch (err) {
@@ -835,8 +835,12 @@ export function InvoiceManagement({
                           <span>Items: {invoice._count.lineItems}</span>
                           {invoiceEstimateMapping[invoice.id] && (
                             <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
-                              {invoiceEstimateMapping[invoice.id].filter((m: any) => m.estimateLineItem).length}/
-                              {invoice._count.lineItems} mapped
+                              {
+                                invoiceEstimateMapping[invoice.id].filter(
+                                  (m: any) => m.estimateLineItem
+                                ).length
+                              }
+                              /{invoice._count.lineItems} mapped
                             </span>
                           )}
                           {!projectId && <span>Project: {invoice.project.name}</span>}
@@ -1168,14 +1172,14 @@ export function InvoiceManagement({
                         <tbody className="bg-white divide-y divide-gray-200">
                           {selectedInvoice.lineItems.map((item, index) => {
                             const mappings = invoiceEstimateMapping[selectedInvoice.id] || []
-                            const mapping = mappings.find((m: any) => m.invoiceLineItemId === item.id)
-                            
+                            const mapping = mappings.find(
+                              (m: any) => m.invoiceLineItemId === item.id
+                            )
+
                             return (
                               <tr key={index}>
                                 <td className="px-6 py-4 text-sm text-gray-900">
-                                  <div className="max-w-xs">
-                                    {item.description}
-                                  </div>
+                                  <div className="max-w-xs">{item.description}</div>
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                   {Number(item.quantity).toFixed(2)}
@@ -1201,15 +1205,18 @@ export function InvoiceManagement({
                                         Trade: {mapping.estimateLineItem.trade.name}
                                       </div>
                                       <div className="text-xs text-gray-500">
-                                        Est: {formatCurrency(
+                                        Est:{' '}
+                                        {formatCurrency(
                                           Number(mapping.estimateLineItem.materialCostEst || 0) +
-                                          Number(mapping.estimateLineItem.laborCostEst || 0) +
-                                          Number(mapping.estimateLineItem.equipmentCostEst || 0)
+                                            Number(mapping.estimateLineItem.laborCostEst || 0) +
+                                            Number(mapping.estimateLineItem.equipmentCostEst || 0)
                                         )}
                                       </div>
                                     </div>
                                   ) : (
-                                    <span className="text-red-600 text-xs font-medium">Not mapped</span>
+                                    <span className="text-red-600 text-xs font-medium">
+                                      Not mapped
+                                    </span>
                                   )}
                                 </td>
                               </tr>

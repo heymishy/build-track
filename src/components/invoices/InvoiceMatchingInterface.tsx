@@ -749,7 +749,9 @@ export function InvoiceMatchingInterface({
       {/* Current Mappings Summary Table */}
       {data && data.matchingResults.length > 0 && (
         <div className="mx-6 mb-4">
-          <h4 className="text-sm font-medium text-gray-900 mb-3">Current Invoice → Estimate Mappings</h4>
+          <h4 className="text-sm font-medium text-gray-900 mb-3">
+            Current Invoice → Estimate Mappings
+          </h4>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200 text-xs">
               <thead className="bg-gray-50">
@@ -777,82 +779,97 @@ export function InvoiceMatchingInterface({
               <tbody className="bg-white divide-y divide-gray-200">
                 {data.matchingResults.map(result => {
                   const invoice = data.invoices.find(inv => inv.id === result.invoiceId)
-                  return invoice?.lineItems.map((lineItem: any) => {
-                    const match = result.matches.find(m => m.invoiceLineItemId === lineItem.id)
-                    const estimateItem = match?.estimateLineItemId
-                      ? data.estimateLineItems.find(e => e.id === match.estimateLineItemId)
-                      : null
-                    const selectedEstimateId = selectedMatches.get(lineItem.id)
-                    const finalEstimate = selectedEstimateId 
-                      ? data.estimateLineItems.find(e => e.id === selectedEstimateId)
-                      : estimateItem
+                  return (
+                    invoice?.lineItems.map((lineItem: any) => {
+                      const match = result.matches.find(m => m.invoiceLineItemId === lineItem.id)
+                      const estimateItem = match?.estimateLineItemId
+                        ? data.estimateLineItems.find(e => e.id === match.estimateLineItemId)
+                        : null
+                      const selectedEstimateId = selectedMatches.get(lineItem.id)
+                      const finalEstimate = selectedEstimateId
+                        ? data.estimateLineItems.find(e => e.id === selectedEstimateId)
+                        : estimateItem
 
-                    return (
-                      <tr key={lineItem.id} className={
-                        match?.matchType === 'existing' ? 'bg-blue-50' :
-                        match?.matchType === 'suggested' && match.confidence >= 0.7 ? 'bg-green-50' :
-                        match?.matchType === 'unmatched' ? 'bg-red-50' : ''
-                      }>
-                        <td className="px-4 py-2 text-gray-900">
-                          <div className="max-w-xs truncate" title={lineItem.description}>
-                            {lineItem.description}
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            {invoice?.invoiceNumber}
-                          </div>
-                        </td>
-                        <td className="px-4 py-2 text-gray-900">
-                          {formatCurrency(lineItem.totalPrice)}
-                        </td>
-                        <td className="px-4 py-2">
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                            {lineItem.category}
-                          </span>
-                        </td>
-                        <td className="px-4 py-2 text-gray-900">
-                          {finalEstimate ? (
-                            <div>
-                              <div className="max-w-xs truncate font-medium" title={finalEstimate.description}>
-                                {finalEstimate.description}
-                              </div>
-                              <div className="text-xs text-gray-500">
-                                Est: {formatCurrency(
-                                  finalEstimate.materialCostEst +
-                                  finalEstimate.laborCostEst +
-                                  finalEstimate.equipmentCostEst
-                                )}
-                              </div>
+                      return (
+                        <tr
+                          key={lineItem.id}
+                          className={
+                            match?.matchType === 'existing'
+                              ? 'bg-blue-50'
+                              : match?.matchType === 'suggested' && match.confidence >= 0.7
+                                ? 'bg-green-50'
+                                : match?.matchType === 'unmatched'
+                                  ? 'bg-red-50'
+                                  : ''
+                          }
+                        >
+                          <td className="px-4 py-2 text-gray-900">
+                            <div className="max-w-xs truncate" title={lineItem.description}>
+                              {lineItem.description}
                             </div>
-                          ) : (
-                            <span className="text-red-600 text-xs">Not mapped</span>
-                          )}
-                        </td>
-                        <td className="px-4 py-2 text-gray-700">
-                          {finalEstimate?.trade?.name || 'N/A'}
-                        </td>
-                        <td className="px-4 py-2">
-                          {match?.matchType === 'existing' ? (
-                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                              <CheckCircleIcon className="h-3 w-3 mr-1" />
-                              Matched
+                            <div className="text-xs text-gray-500">{invoice?.invoiceNumber}</div>
+                          </td>
+                          <td className="px-4 py-2 text-gray-900">
+                            {formatCurrency(lineItem.totalPrice)}
+                          </td>
+                          <td className="px-4 py-2">
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                              {lineItem.category}
                             </span>
-                          ) : match?.matchType === 'suggested' ? (
-                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                              match.confidence >= 0.7 ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                            }`}>
-                              <SparklesIcon className="h-3 w-3 mr-1" />
-                              AI: {Math.round(match.confidence * 100)}%
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                              <ExclamationTriangleIcon className="h-3 w-3 mr-1" />
-                              Unmatched
-                            </span>
-                          )}
-                        </td>
-                      </tr>
-                    )
-                  }) || []
+                          </td>
+                          <td className="px-4 py-2 text-gray-900">
+                            {finalEstimate ? (
+                              <div>
+                                <div
+                                  className="max-w-xs truncate font-medium"
+                                  title={finalEstimate.description}
+                                >
+                                  {finalEstimate.description}
+                                </div>
+                                <div className="text-xs text-gray-500">
+                                  Est:{' '}
+                                  {formatCurrency(
+                                    finalEstimate.materialCostEst +
+                                      finalEstimate.laborCostEst +
+                                      finalEstimate.equipmentCostEst
+                                  )}
+                                </div>
+                              </div>
+                            ) : (
+                              <span className="text-red-600 text-xs">Not mapped</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-2 text-gray-700">
+                            {finalEstimate?.trade?.name || 'N/A'}
+                          </td>
+                          <td className="px-4 py-2">
+                            {match?.matchType === 'existing' ? (
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                <CheckCircleIcon className="h-3 w-3 mr-1" />
+                                Matched
+                              </span>
+                            ) : match?.matchType === 'suggested' ? (
+                              <span
+                                className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                  match.confidence >= 0.7
+                                    ? 'bg-green-100 text-green-800'
+                                    : 'bg-yellow-100 text-yellow-800'
+                                }`}
+                              >
+                                <SparklesIcon className="h-3 w-3 mr-1" />
+                                AI: {Math.round(match.confidence * 100)}%
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                <ExclamationTriangleIcon className="h-3 w-3 mr-1" />
+                                Unmatched
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      )
+                    }) || []
+                  )
                 })}
               </tbody>
             </table>

@@ -69,17 +69,19 @@ async function GET(
     const mappings = invoiceLineItems.map(item => ({
       invoiceLineItemId: item.id,
       estimateLineItemId: item.estimateLineItemId,
-      estimateLineItem: item.estimateLineItem ? {
-        id: item.estimateLineItem.id,
-        description: item.estimateLineItem.description,
-        materialCostEst: item.estimateLineItem.materialCostEst,
-        laborCostEst: item.estimateLineItem.laborCostEst,
-        equipmentCostEst: item.estimateLineItem.equipmentCostEst,
-        trade: {
-          id: item.estimateLineItem.trade.id,
-          name: item.estimateLineItem.trade.name,
-        },
-      } : null,
+      estimateLineItem: item.estimateLineItem
+        ? {
+            id: item.estimateLineItem.id,
+            description: item.estimateLineItem.description,
+            materialCostEst: item.estimateLineItem.materialCostEst,
+            laborCostEst: item.estimateLineItem.laborCostEst,
+            equipmentCostEst: item.estimateLineItem.equipmentCostEst,
+            trade: {
+              id: item.estimateLineItem.trade.id,
+              name: item.estimateLineItem.trade.name,
+            },
+          }
+        : null,
     }))
 
     return NextResponse.json({

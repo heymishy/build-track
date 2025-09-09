@@ -329,7 +329,7 @@ export function BudgetTrackingWidget({ projectId, compact = false }: BudgetTrack
                         <div className="flex items-center">
                           <Badge className={getStatusColor(category.status)}>
                             <StatusIcon className="h-3 w-3 mr-1" />
-                            {category.status.replace('-', ' ')}
+                            {category.status ? category.status.replace('-', ' ') : 'Unknown'}
                           </Badge>
                         </div>
                       </td>

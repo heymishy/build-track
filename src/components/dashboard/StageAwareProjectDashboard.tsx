@@ -346,7 +346,7 @@ export function StageAwareProjectDashboard() {
                               size="sm"
                               icon={getStatusIcon(project.status)}
                             >
-                              {project.status.replace('_', ' ')}
+                              {project.status ? project.status.replace('_', ' ') : 'Unknown'}
                             </Badge>
                           </div>
                         </div>
@@ -432,7 +432,7 @@ export function StageAwareProjectDashboard() {
                           variant={getStatusVariant(selectedProject.status)}
                           icon={getStatusIcon(selectedProject.status)}
                         >
-                          {selectedProject.status.replace('_', ' ')}
+                          {selectedProject.status ? selectedProject.status.replace('_', ' ') : 'Unknown'}
                         </Badge>
                       </div>
                     </div>
