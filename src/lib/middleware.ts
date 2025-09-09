@@ -206,13 +206,10 @@ export function getUserFromRequest(request: NextRequest): AuthUser | null {
 
     if (!JWT_SECRET) {
       console.error('JWT_SECRET environment variable is not set')
-      // Only provide fallback in development
-      if (process.env.NODE_ENV !== 'development') {
-        return null
-      }
+      return null
     }
 
-    const secret = JWT_SECRET || 'fallback-secret-for-development-only'
+    const secret = JWT_SECRET
 
     const decoded = jwt.verify(token, secret) as {
       userId: string

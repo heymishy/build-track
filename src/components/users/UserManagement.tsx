@@ -68,8 +68,13 @@ export function UserManagement() {
         const usersData = await usersResponse.json()
         setUsers(usersData.users || [])
       } else {
-        const errorData = await usersResponse.json().catch(() => ({}))
-        const errorMessage = errorData.error || `Failed to load users (${usersResponse.status})`
+        // Sanitized error messages - don't expose internal details
+        const errorMessage =
+          usersResponse.status === 403
+            ? 'Access denied. Insufficient permissions to view users.'
+            : usersResponse.status === 401
+              ? 'Authentication required. Please log in again.'
+              : 'Unable to load users. Please try again.'
         throw new Error(errorMessage)
       }
 
