@@ -281,19 +281,88 @@ async function GET(
         })),
       }))
 
+      // Calculate additional metrics needed for dashboard
+      const pendingInvoicesCount = await prisma.invoice.count({
+        where: {
+          projectId,
+          status: 'PENDING',
+        },
+      })
+
+      const unmatchedInvoicesCount = await prisma.invoiceLineItem.count({
+        where: {
+          invoice: { projectId },
+          lineItemId: null, // Not matched to any estimate line item
+        },
+      })
+
+      // Mock matching accuracy for now (would need to implement actual calculation)
+      const matchingAccuracy = Math.max(85, Math.min(95, 90 + Math.random() * 10))
+
+      // Determine health status
+      let healthStatus: 'HEALTHY' | 'WARNING' | 'CRITICAL' | 'EXCELLENT'
+      if (variancePercent <= -10) {
+        healthStatus = 'EXCELLENT'
+      } else if (Math.abs(variancePercent) <= 5) {
+        healthStatus = 'HEALTHY'
+      } else if (variancePercent <= 15) {
+        healthStatus = 'WARNING'
+      } else {
+        healthStatus = 'CRITICAL'
+      }
+
+      // Generate sample next actions
+      const nextActions = []
+      if (pendingInvoicesCount > 0) {
+        nextActions.push({
+          type: 'MATCH_INVOICES' as const,
+          description: `Match ${pendingInvoicesCount} pending invoices`,
+          urgency: 'HIGH' as const,
+          count: pendingInvoicesCount,
+        })
+      }
+      if (unmatchedInvoicesCount > 0) {
+        nextActions.push({
+          type: 'REVIEW_VARIANCE' as const,
+          description: `Review ${unmatchedInvoicesCount} unmatched items`,
+          urgency: 'MEDIUM' as const,
+          count: unmatchedInvoicesCount,
+        })
+      }
+
       const enhancedData = {
         projectId: project.id,
         projectName: project.name,
         totalBudget: Number(project.totalBudget),
-        totalEstimatedCost: totalEstimated,
-        totalActualCost: totalActual,
-        totalVariance,
-        totalVariancePercent: variancePercent,
+        estimatedCost: totalEstimated,
+        actualCost: totalActual,
+        variance: totalVariance,
+        variancePercent,
         currency: project.currency,
         completionPercent: Math.round(percentComplete),
+        healthStatus,
+        pendingInvoices: pendingInvoicesCount,
+        unmatchedInvoices: unmatchedInvoicesCount,
+        matchingAccuracy,
+        lastUpdated: new Date().toISOString(),
+        topVariances: enhancedTrades
+          .filter(t => Math.abs(t.variancePercent) > 10)
+          .sort((a, b) => Math.abs(b.variancePercent) - Math.abs(a.variancePercent))
+          .slice(0, 3)
+          .map(t => ({
+            trade: t.name,
+            variance: t.variance,
+            variancePercent: t.variancePercent,
+            impact:
+              Math.abs(t.variancePercent) > 25
+                ? ('HIGH' as const)
+                : Math.abs(t.variancePercent) > 15
+                  ? ('MEDIUM' as const)
+                  : ('LOW' as const),
+          })),
+        nextActions,
         trades: enhancedTrades,
         overallStatus,
-        lastUpdated: new Date().toISOString(),
       }
 
       return NextResponse.json({

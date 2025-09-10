@@ -82,7 +82,7 @@ export function EstimateVsInvoiceCenterpiece({
       setError(null)
 
       const response = await fetch(
-        `/api/projects/${selectedProjectId}/cost-tracking?enhanced=true&health=true`,
+        `/api/projects/${selectedProjectId}/cost-tracking?enhanced=true`,
         {
           credentials: 'include',
         }
@@ -264,7 +264,7 @@ export function EstimateVsInvoiceCenterpiece({
                   <span className="text-gray-500">•</span>
                   <span className="text-gray-600">{statusConfig.description}</span>
                 </div>
-                
+
                 {/* Key Metrics */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
                   <div>
@@ -287,13 +287,22 @@ export function EstimateVsInvoiceCenterpiece({
                   </div>
                   <div>
                     <div className="text-sm text-gray-500">Variance</div>
-                    <div className={`text-lg font-semibold flex items-center space-x-1 ${
-                      healthData.variance > 0 ? 'text-red-600' : healthData.variance < 0 ? 'text-green-600' : 'text-gray-600'
-                    }`}>
+                    <div
+                      className={`text-lg font-semibold flex items-center space-x-1 ${
+                        healthData.variance > 0
+                          ? 'text-red-600'
+                          : healthData.variance < 0
+                            ? 'text-green-600'
+                            : 'text-gray-600'
+                      }`}
+                    >
                       {getVarianceIcon(healthData.variance)}
-                      <span>{formatCurrency(Math.abs(healthData.variance), healthData.currency)}</span>
+                      <span>
+                        {formatCurrency(Math.abs(healthData.variance), healthData.currency)}
+                      </span>
                       <span className="text-sm">
-                        ({healthData.variancePercent >= 0 ? '+' : ''}{healthData.variancePercent.toFixed(1)}%)
+                        ({healthData.variancePercent >= 0 ? '+' : ''}
+                        {(healthData.variancePercent || 0).toFixed(1)}%)
                       </span>
                     </div>
                   </div>
@@ -307,15 +316,16 @@ export function EstimateVsInvoiceCenterpiece({
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Next Actions</h3>
             <div className="space-y-3">
               {healthData.nextActions.slice(0, 3).map((action, index) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
+                <div
+                  key={index}
+                  className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200"
+                >
                   <div className="min-w-0 flex-1">
                     <div className={`text-sm font-medium ${getUrgencyColor(action.urgency)}`}>
                       {action.description}
                     </div>
                     {action.count && (
-                      <div className="text-xs text-gray-500 mt-1">
-                        {action.count} items
-                      </div>
+                      <div className="text-xs text-gray-500 mt-1">{action.count} items</div>
                     )}
                   </div>
                   <ArrowRightIcon className="h-4 w-4 text-gray-400 ml-2" />
@@ -328,7 +338,9 @@ export function EstimateVsInvoiceCenterpiece({
                 variant="primary"
                 fullWidth
                 icon={<SparklesIcon className="h-4 w-4" />}
-                onClick={() => window.location.href = `/invoices?project=${selectedProjectId}&tab=matching`}
+                onClick={() =>
+                  (window.location.href = `/invoices?project=${selectedProjectId}&tab=matching`)
+                }
               >
                 Smart Invoice Matching
               </Button>
@@ -336,7 +348,9 @@ export function EstimateVsInvoiceCenterpiece({
                 variant="secondary"
                 fullWidth
                 icon={<ChartBarIcon className="h-4 w-4" />}
-                onClick={() => window.location.href = `/projects/${selectedProjectId}/management?tab=tracking`}
+                onClick={() =>
+                  (window.location.href = `/projects/${selectedProjectId}/management?tab=tracking`)
+                }
               >
                 Detailed Analysis
               </Button>
@@ -372,7 +386,7 @@ export function EstimateVsInvoiceCenterpiece({
             <div className="ml-4">
               <div className="text-sm text-gray-500">Matching Accuracy</div>
               <div className="text-2xl font-bold text-gray-900">
-                {healthData.matchingAccuracy.toFixed(1)}%
+                {(healthData.matchingAccuracy || 0).toFixed(1)}%
               </div>
               <div className="text-sm text-green-600">AI-powered</div>
             </div>
@@ -387,7 +401,7 @@ export function EstimateVsInvoiceCenterpiece({
             <div className="ml-4">
               <div className="text-sm text-gray-500">Completion</div>
               <div className="text-2xl font-bold text-gray-900">
-                {healthData.completionPercent.toFixed(0)}%
+                {(healthData.completionPercent || 0).toFixed(0)}%
               </div>
               <div className="text-sm text-purple-600">Project progress</div>
             </div>
