@@ -339,7 +339,7 @@ async function calculateSpendByCategory(projectId: string) {
   const invoices = await prisma.invoice.findMany({
     where: {
       projectId,
-      status: { not: 'CANCELLED' },
+      status: { not: 'REJECTED' },
     },
     include: {
       lineItems: true,
