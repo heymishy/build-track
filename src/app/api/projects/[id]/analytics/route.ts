@@ -47,7 +47,7 @@ async function calculateFinancialTrends(projectId: string, timeRange: TimeRangeQ
       },
     },
     include: {
-      invoiceItems: {
+      lineItems: {
         include: {
           lineItem: {
             include: {
@@ -73,7 +73,7 @@ async function calculateFinancialTrends(projectId: string, timeRange: TimeRangeQ
     const actualAmount = Number(invoice.totalAmount)
 
     // Calculate estimated amount from line items
-    const estimatedAmount = invoice.invoiceItems.reduce((sum, item) => {
+    const estimatedAmount = invoice.lineItems.reduce((sum, item) => {
       const lineItem = item.lineItem
       if (!lineItem) return sum
 

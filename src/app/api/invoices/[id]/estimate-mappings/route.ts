@@ -57,7 +57,7 @@ async function GET(
         invoiceId,
       },
       include: {
-        estimateLineItem: {
+        lineItem: {
           include: {
             trade: true,
           },
@@ -68,17 +68,17 @@ async function GET(
     // Format the mappings for the frontend
     const mappings = invoiceLineItems.map(item => ({
       invoiceLineItemId: item.id,
-      estimateLineItemId: item.estimateLineItemId,
-      estimateLineItem: item.estimateLineItem
+      estimateLineItemId: item.lineItemId,
+      estimateLineItem: item.lineItem
         ? {
-            id: item.estimateLineItem.id,
-            description: item.estimateLineItem.description,
-            materialCostEst: item.estimateLineItem.materialCostEst,
-            laborCostEst: item.estimateLineItem.laborCostEst,
-            equipmentCostEst: item.estimateLineItem.equipmentCostEst,
+            id: item.lineItem.id,
+            description: item.lineItem.description,
+            materialCostEst: item.lineItem.materialCostEst,
+            laborCostEst: item.lineItem.laborCostEst,
+            equipmentCostEst: item.lineItem.equipmentCostEst,
             trade: {
-              id: item.estimateLineItem.trade.id,
-              name: item.estimateLineItem.trade.name,
+              id: item.lineItem.trade.id,
+              name: item.lineItem.trade.name,
             },
           }
         : null,
