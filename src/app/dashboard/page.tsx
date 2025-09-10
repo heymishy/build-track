@@ -157,6 +157,7 @@ function DashboardContent() {
             {/* Hero Feature: Estimate vs Invoice Centerpiece */}
             <div className="mb-8">
               <EstimateVsInvoiceCenterpiece
+                initialProjectId={filteredProjects.length > 0 ? filteredProjects[0].id : undefined}
                 onProjectChange={projectId => {
                   console.log('Cost tracking project changed:', projectId)
                 }}
