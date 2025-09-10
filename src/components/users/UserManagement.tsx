@@ -17,6 +17,7 @@ import {
   EnvelopeIcon,
   CalendarIcon,
 } from '@heroicons/react/24/outline'
+import { AddUserModal } from './AddUserModal'
 
 interface User {
   id: string

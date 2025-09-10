@@ -87,8 +87,8 @@ export async function validateRequestBody<T>(
     return { success: true, data: validatedData }
   } catch (error) {
     if (error instanceof z.ZodError) {
-      const errorMessage = error.errors
-        .map(err => `${err.path.join('.')}: ${err.message}`)
+      const errorMessage = error.issues
+        .map((err: any) => `${err.path.join('.')}: ${err.message}`)
         .join(', ')
       return { success: false, error: `Validation error: ${errorMessage}` }
     }
@@ -108,8 +108,8 @@ export function validateParams<T>(
     return { success: true, data: validatedData }
   } catch (error) {
     if (error instanceof z.ZodError) {
-      const errorMessage = error.errors
-        .map(err => `${err.path.join('.')}: ${err.message}`)
+      const errorMessage = error.issues
+        .map((err: any) => `${err.path.join('.')}: ${err.message}`)
         .join(', ')
       return { success: false, error: `Parameter validation error: ${errorMessage}` }
     }
@@ -145,8 +145,8 @@ export function validateQuery<T>(
     return { success: true, data: validatedData }
   } catch (error) {
     if (error instanceof z.ZodError) {
-      const errorMessage = error.errors
-        .map(err => `${err.path.join('.')}: ${err.message}`)
+      const errorMessage = error.issues
+        .map((err: any) => `${err.path.join('.')}: ${err.message}`)
         .join(', ')
       return { success: false, error: `Query validation error: ${errorMessage}` }
     }
