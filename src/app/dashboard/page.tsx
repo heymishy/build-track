@@ -12,6 +12,7 @@ import { PhaseBasedContent } from '@/components/dashboard/PhaseBasedContent'
 import { EnhancedInvoiceUpload } from '@/components/invoices/EnhancedInvoiceUpload'
 import { CostTrackingWidget } from '@/components/tracking/CostTrackingWidget'
 import { EnhancedCostTrackingDashboard } from '@/components/tracking/EnhancedCostTrackingDashboard'
+import { EstimateVsInvoiceCenterpiece } from '@/components/dashboard/EstimateVsInvoiceCenterpiece'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { AppLayout } from '@/components/layout/AppLayout'
@@ -153,13 +154,9 @@ function DashboardContent() {
               }}
             />
 
-            {/* Enhanced Cost Tracking Section */}
-            <div className="mb-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                Estimate vs Invoice Tracking
-              </h2>
-              <EnhancedCostTrackingDashboard
-                showProjectSelector={true}
+            {/* Hero Feature: Estimate vs Invoice Centerpiece */}
+            <div className="mb-8">
+              <EstimateVsInvoiceCenterpiece
                 onProjectChange={projectId => {
                   console.log('Cost tracking project changed:', projectId)
                 }}

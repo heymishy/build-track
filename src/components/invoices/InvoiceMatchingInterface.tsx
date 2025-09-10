@@ -530,15 +530,40 @@ export function InvoiceMatchingInterface({
       <div className="px-6 py-4 border-b border-gray-200">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-lg font-medium text-gray-900 flex items-center">
-              <SparklesIcon className="h-5 w-5 mr-2 text-blue-500" />
-              Smart Invoice Matching
-            </h3>
-            <div className="mt-1 space-y-1">
-              <p className="text-sm text-gray-500">
-                {data.summary.totalInvoices} invoices • {formatCurrency(data.summary.totalAmount)}{' '}
-                total • {data.summary.matchingRate}% auto-matchable
-              </p>
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg">
+                <SparklesIcon className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h3 className="text-xl font-semibold text-gray-900">
+                  AI-Powered Invoice Matching
+                </h3>
+                <p className="text-sm text-gray-600 font-medium">
+                  Intelligent estimate-to-invoice comparison and cost tracking
+                </p>
+              </div>
+            </div>
+            <div className="mt-3 space-y-1">
+              <div className="flex items-center space-x-6">
+                <div className="flex items-center space-x-2">
+                  <DocumentTextIcon className="h-4 w-4 text-gray-400" />
+                  <span className="text-sm font-medium text-gray-700">
+                    {data.summary.totalInvoices} invoices
+                  </span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <CurrencyDollarIcon className="h-4 w-4 text-gray-400" />
+                  <span className="text-sm font-medium text-gray-700">
+                    {formatCurrency(data.summary.totalAmount)} total
+                  </span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className={`h-2 w-2 rounded-full ${data.summary.matchingRate >= 80 ? 'bg-green-500' : data.summary.matchingRate >= 60 ? 'bg-yellow-500' : 'bg-red-500'}`}></div>
+                  <span className="text-sm font-medium text-gray-700">
+                    {data.summary.matchingRate}% auto-matched
+                  </span>
+                </div>
+              </div>
               {data.enhancedMetadata && (
                 <div className="flex items-center space-x-4 text-xs">
                   {data.enhancedMetadata.cacheHit ? (
