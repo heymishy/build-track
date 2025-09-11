@@ -98,10 +98,10 @@ export function InvoiceMatchingInterface({
     if (!data || !groupByTrade) return null
 
     const grouped = new Map<string, any[]>()
-    
+
     data.matchingResults.forEach(result => {
       const invoice = data.invoices.find(inv => inv.id === result.invoiceId)
-      
+
       invoice?.lineItems.forEach((lineItem: any) => {
         const match = result.matches.find(m => m.invoiceLineItemId === lineItem.id)
         const estimateItem = match?.estimateLineItemId
@@ -113,11 +113,11 @@ export function InvoiceMatchingInterface({
           : estimateItem
 
         const tradeName = finalEstimate?.tradeName || finalEstimate?.trade?.name || 'Unmapped'
-        
+
         if (!grouped.has(tradeName)) {
           grouped.set(tradeName, [])
         }
-        
+
         grouped.get(tradeName)!.push({
           lineItem,
           match,
@@ -152,9 +152,7 @@ export function InvoiceMatchingInterface({
           </div>
           <div className="text-xs text-gray-500">{invoice?.invoiceNumber}</div>
         </td>
-        <td className="px-4 py-2 text-gray-900">
-          {formatCurrency(lineItem.totalPrice)}
-        </td>
+        <td className="px-4 py-2 text-gray-900">{formatCurrency(lineItem.totalPrice)}</td>
         <td className="px-4 py-2">
           <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
             {lineItem.category}
@@ -163,10 +161,7 @@ export function InvoiceMatchingInterface({
         <td className="px-4 py-2 text-gray-900">
           {finalEstimate ? (
             <div>
-              <div
-                className="max-w-xs truncate font-medium"
-                title={finalEstimate.description}
-              >
+              <div className="max-w-xs truncate font-medium" title={finalEstimate.description}>
                 {finalEstimate.description}
               </div>
               <div className="text-xs text-gray-500">
@@ -757,28 +752,33 @@ export function InvoiceMatchingInterface({
                     <MagnifyingGlassIcon className="h-5 w-5 text-blue-600 mt-0.5" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <h4 className="text-sm font-semibold text-blue-900 mb-3">How to Match Invoices</h4>
+                    <h4 className="text-sm font-semibold text-blue-900 mb-3">
+                      How to Match Invoices
+                    </h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs text-blue-800">
                       <div className="space-y-2">
                         <div className="flex items-start space-x-2">
                           <span className="text-blue-600 font-bold text-sm">🎯</span>
                           <div>
                             <strong>Select Matches:</strong>
-                            <br />Use dropdown menus to match each invoice item to estimate line items
+                            <br />
+                            Use dropdown menus to match each invoice item to estimate line items
                           </div>
                         </div>
                         <div className="flex items-start space-x-2">
                           <span className="text-green-600 font-bold text-sm">🤖</span>
                           <div>
                             <strong>Review AI Suggestions:</strong>
-                            <br />AI pre-selects high-confidence matches (green/yellow highlights)
+                            <br />
+                            AI pre-selects high-confidence matches (green/yellow highlights)
                           </div>
                         </div>
                         <div className="flex items-start space-x-2">
                           <span className="text-purple-600 font-bold text-sm">📊</span>
                           <div>
                             <strong>Group by Trade:</strong>
-                            <br />Toggle to organize items by category
+                            <br />
+                            Toggle to organize items by category
                           </div>
                         </div>
                       </div>
@@ -787,14 +787,16 @@ export function InvoiceMatchingInterface({
                           <span className="text-orange-600 font-bold text-sm">💾</span>
                           <div>
                             <strong>Apply Changes:</strong>
-                            <br />Click "Apply Matches" button to save all your selections
+                            <br />
+                            Click "Apply Matches" button to save all your selections
                           </div>
                         </div>
                         <div className="flex items-start space-x-2">
                           <span className="text-green-600 font-bold text-sm">✅</span>
                           <div>
                             <strong>Approve Invoices:</strong>
-                            <br />Once all items are matched, approve invoices for payment
+                            <br />
+                            Once all items are matched, approve invoices for payment
                           </div>
                         </div>
                       </div>
@@ -811,7 +813,7 @@ export function InvoiceMatchingInterface({
               </div>
             </div>
           )}
-          
+
           {!showGuide && (
             <div className="mb-4">
               <button
@@ -835,7 +837,7 @@ export function InvoiceMatchingInterface({
                 <span className="ml-2 text-sm text-gray-700">Group by Trade</span>
               </label>
             </div>
-            
+
             <select
               value={autoSelectMode}
               onChange={e => setAutoSelectMode(e.target.value as any)}
@@ -1011,54 +1013,55 @@ export function InvoiceMatchingInterface({
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {groupByTrade ? (
-                  // Grouped view
-                  Array.from(getGroupedLineItems() || []).map(([tradeName, items]) => (
-                    <React.Fragment key={tradeName}>
-                      {/* Trade Header Row */}
-                      <tr className="bg-gray-100 border-t-2 border-gray-300">
-                        <td colSpan={6} className="px-4 py-3 text-sm font-semibold text-gray-900">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-2">
-                              <span>{tradeName}</span>
-                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-200 text-gray-700">
-                                {items.length} item{items.length !== 1 ? 's' : ''}
-                              </span>
+                {groupByTrade
+                  ? // Grouped view
+                    Array.from(getGroupedLineItems() || []).map(([tradeName, items]) => (
+                      <React.Fragment key={tradeName}>
+                        {/* Trade Header Row */}
+                        <tr className="bg-gray-100 border-t-2 border-gray-300">
+                          <td colSpan={6} className="px-4 py-3 text-sm font-semibold text-gray-900">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center space-x-2">
+                                <span>{tradeName}</span>
+                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-200 text-gray-700">
+                                  {items.length} item{items.length !== 1 ? 's' : ''}
+                                </span>
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                Total:{' '}
+                                {formatCurrency(
+                                  items.reduce((sum, item) => sum + item.lineItem.totalPrice, 0)
+                                )}
+                              </div>
                             </div>
-                            <div className="text-xs text-gray-500">
-                              Total: {formatCurrency(
-                                items.reduce((sum, item) => sum + item.lineItem.totalPrice, 0)
-                              )}
-                            </div>
-                          </div>
-                        </td>
-                      </tr>
-                      {/* Render items for this trade */}
-                      {items.map(({ lineItem, match, invoice, finalEstimate }) =>
-                        renderLineItemRow(lineItem, match, invoice, finalEstimate)
-                      )}
-                    </React.Fragment>
-                  ))
-                ) : (
-                  // Regular ungrouped view
-                  data.matchingResults.map(result => {
-                    const invoice = data.invoices.find(inv => inv.id === result.invoiceId)
-                    return (
-                      invoice?.lineItems.map((lineItem: any) => {
-                        const match = result.matches.find(m => m.invoiceLineItemId === lineItem.id)
-                        const estimateItem = match?.estimateLineItemId
-                          ? data.estimateLineItems.find(e => e.id === match.estimateLineItemId)
-                          : null
-                        const selectedEstimateId = selectedMatches.get(lineItem.id)
-                        const finalEstimate = selectedEstimateId
-                          ? data.estimateLineItems.find(e => e.id === selectedEstimateId)
-                          : estimateItem
+                          </td>
+                        </tr>
+                        {/* Render items for this trade */}
+                        {items.map(({ lineItem, match, invoice, finalEstimate }) =>
+                          renderLineItemRow(lineItem, match, invoice, finalEstimate)
+                        )}
+                      </React.Fragment>
+                    ))
+                  : // Regular ungrouped view
+                    data.matchingResults.map(result => {
+                      const invoice = data.invoices.find(inv => inv.id === result.invoiceId)
+                      return (
+                        invoice?.lineItems.map((lineItem: any) => {
+                          const match = result.matches.find(
+                            m => m.invoiceLineItemId === lineItem.id
+                          )
+                          const estimateItem = match?.estimateLineItemId
+                            ? data.estimateLineItems.find(e => e.id === match.estimateLineItemId)
+                            : null
+                          const selectedEstimateId = selectedMatches.get(lineItem.id)
+                          const finalEstimate = selectedEstimateId
+                            ? data.estimateLineItems.find(e => e.id === selectedEstimateId)
+                            : estimateItem
 
-                        return renderLineItemRow(lineItem, match, invoice, finalEstimate)
-                      }) || []
-                    )
-                  })
-                )}
+                          return renderLineItemRow(lineItem, match, invoice, finalEstimate)
+                        }) || []
+                      )
+                    })}
               </tbody>
             </table>
           </div>
@@ -1336,7 +1339,7 @@ export function InvoiceMatchingInterface({
                                 </span>
                               </div>
                             </div>
-                            
+
                             {/* Match Status Badge */}
                             {match.matchType === 'existing' && (
                               <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
@@ -1345,9 +1348,13 @@ export function InvoiceMatchingInterface({
                               </span>
                             )}
                             {match.matchType === 'suggested' && (
-                              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                                match.confidence >= 0.7 ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                              }`}>
+                              <span
+                                className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                  match.confidence >= 0.7
+                                    ? 'bg-green-100 text-green-800'
+                                    : 'bg-yellow-100 text-yellow-800'
+                                }`}
+                              >
                                 <SparklesIcon className="h-3 w-3 mr-1" />
                                 AI: {Math.round(match.confidence * 100)}%
                               </span>
@@ -1366,7 +1373,7 @@ export function InvoiceMatchingInterface({
                               <LinkIcon className="h-4 w-4 mr-2 text-blue-600" />
                               Match to Estimate Line Item
                             </h4>
-                            
+
                             <div className="space-y-3">
                               {/* Estimate Selection Dropdown */}
                               <div>
@@ -1374,7 +1381,11 @@ export function InvoiceMatchingInterface({
                                   Select Estimate Line Item to Match:
                                 </label>
                                 <select
-                                  value={selectedMatches.get(lineItem.id) || match.estimateLineItemId || ''}
+                                  value={
+                                    selectedMatches.get(lineItem.id) ||
+                                    match.estimateLineItemId ||
+                                    ''
+                                  }
                                   onChange={e => {
                                     const value = e.target.value
                                     handleMatchSelection(lineItem.id, value || null)
@@ -1384,24 +1395,35 @@ export function InvoiceMatchingInterface({
                                   <option value="">-- No Match / Skip This Item --</option>
                                   {/* Group by Trade */}
                                   {Object.entries(
-                                    data.estimateLineItems.reduce((groups, item) => {
-                                      const tradeName = item.trade.name
-                                      if (!groups[tradeName]) groups[tradeName] = []
-                                      groups[tradeName].push(item)
-                                      return groups
-                                    }, {} as Record<string, any[]>)
+                                    data.estimateLineItems.reduce(
+                                      (groups, item) => {
+                                        const tradeName = item.trade.name
+                                        if (!groups[tradeName]) groups[tradeName] = []
+                                        groups[tradeName].push(item)
+                                        return groups
+                                      },
+                                      {} as Record<string, any[]>
+                                    )
                                   ).map(([tradeName, items]) => (
-                                    <optgroup key={tradeName} label={`${tradeName} (${items.length} items)`}>
+                                    <optgroup
+                                      key={tradeName}
+                                      label={`${tradeName} (${items.length} items)`}
+                                    >
                                       {items.map(estItem => {
-                                        const isCurrentMatch = match.estimateLineItemId === estItem.id
-                                        const totalCost = estItem.materialCostEst + estItem.laborCostEst + estItem.equipmentCostEst
+                                        const isCurrentMatch =
+                                          match.estimateLineItemId === estItem.id
+                                        const totalCost =
+                                          estItem.materialCostEst +
+                                          estItem.laborCostEst +
+                                          estItem.equipmentCostEst
                                         return (
-                                          <option 
-                                            key={estItem.id} 
+                                          <option
+                                            key={estItem.id}
                                             value={estItem.id}
                                             className={isCurrentMatch ? 'font-medium' : ''}
                                           >
-                                            {isCurrentMatch ? '★ ' : ''}{estItem.description} - {formatCurrency(totalCost)}
+                                            {isCurrentMatch ? '★ ' : ''}
+                                            {estItem.description} - {formatCurrency(totalCost)}
                                           </option>
                                         )
                                       })}
@@ -1416,14 +1438,22 @@ export function InvoiceMatchingInterface({
                                   <div className="flex items-start justify-between">
                                     <div className="flex-1">
                                       {(() => {
-                                        const currentEstimateId = selectedMatches.get(lineItem.id) || match.estimateLineItemId
-                                        const currentEstimate = data.estimateLineItems.find(e => e.id === currentEstimateId)
+                                        const currentEstimateId =
+                                          selectedMatches.get(lineItem.id) ||
+                                          match.estimateLineItemId
+                                        const currentEstimate = data.estimateLineItems.find(
+                                          e => e.id === currentEstimateId
+                                        )
                                         if (!currentEstimate) return null
-                                        
-                                        const totalCost = currentEstimate.materialCostEst + currentEstimate.laborCostEst + currentEstimate.equipmentCostEst
+
+                                        const totalCost =
+                                          currentEstimate.materialCostEst +
+                                          currentEstimate.laborCostEst +
+                                          currentEstimate.equipmentCostEst
                                         const variance = lineItem.totalPrice - totalCost
-                                        const variancePercent = totalCost > 0 ? ((variance / totalCost) * 100) : 0
-                                        
+                                        const variancePercent =
+                                          totalCost > 0 ? (variance / totalCost) * 100 : 0
+
                                         return (
                                           <div>
                                             <p className="text-sm font-medium text-blue-900">
@@ -1431,17 +1461,33 @@ export function InvoiceMatchingInterface({
                                             </p>
                                             <div className="mt-1 grid grid-cols-1 md:grid-cols-3 gap-2 text-xs">
                                               <div>
-                                                <span className="text-blue-600 font-medium">Trade:</span> {currentEstimate.trade.name}
+                                                <span className="text-blue-600 font-medium">
+                                                  Trade:
+                                                </span>{' '}
+                                                {currentEstimate.trade.name}
                                               </div>
                                               <div>
-                                                <span className="text-blue-600 font-medium">Estimated:</span> {formatCurrency(totalCost)}
+                                                <span className="text-blue-600 font-medium">
+                                                  Estimated:
+                                                </span>{' '}
+                                                {formatCurrency(totalCost)}
                                               </div>
                                               <div>
-                                                <span className="text-blue-600 font-medium">Variance:</span>
-                                                <span className={`ml-1 font-medium ${
-                                                  variance > 0 ? 'text-red-600' : variance < 0 ? 'text-green-600' : 'text-gray-600'
-                                                }`}>
-                                                  {variance > 0 ? '+' : ''}{formatCurrency(variance)} ({variancePercent.toFixed(1)}%)
+                                                <span className="text-blue-600 font-medium">
+                                                  Variance:
+                                                </span>
+                                                <span
+                                                  className={`ml-1 font-medium ${
+                                                    variance > 0
+                                                      ? 'text-red-600'
+                                                      : variance < 0
+                                                        ? 'text-green-600'
+                                                        : 'text-gray-600'
+                                                  }`}
+                                                >
+                                                  {variance > 0 ? '+' : ''}
+                                                  {formatCurrency(variance)} (
+                                                  {variancePercent.toFixed(1)}%)
                                                 </span>
                                               </div>
                                             </div>
@@ -1462,7 +1508,8 @@ export function InvoiceMatchingInterface({
                                 <SparklesIcon className="h-4 w-4 text-green-600 flex-shrink-0 mt-0.5" />
                                 <div className="flex-1">
                                   <p className="text-sm font-semibold text-green-800">
-                                    🤖 AI Suggestion ({Math.round(match.confidence * 100)}% confidence)
+                                    🤖 AI Suggestion ({Math.round(match.confidence * 100)}%
+                                    confidence)
                                   </p>
                                   <p className="mt-1 text-xs text-green-700">
                                     <strong>Reasoning:</strong> {match.reason}
@@ -1473,7 +1520,7 @@ export function InvoiceMatchingInterface({
                           )}
 
                           {/* Unmatched Item Actions */}
-                          {match.matchType === 'unmatched' && !(selectedMatches.get(lineItem.id)) && (
+                          {match.matchType === 'unmatched' && !selectedMatches.get(lineItem.id) && (
                             <div className="mt-4 bg-red-50 border border-red-200 rounded-lg p-3">
                               <div className="flex items-start space-x-2">
                                 <ExclamationTriangleIcon className="h-5 w-5 text-red-600 flex-shrink-0" />
@@ -1490,7 +1537,9 @@ export function InvoiceMatchingInterface({
                                       className="text-left px-3 py-2 bg-green-100 hover:bg-green-200 border border-green-300 rounded text-xs font-medium text-green-800 transition-colors"
                                     >
                                       ➕ <strong>Create New Estimate</strong>
-                                      <div className="text-green-700 mt-1">Add as new line item</div>
+                                      <div className="text-green-700 mt-1">
+                                        Add as new line item
+                                      </div>
                                     </button>
                                     <button
                                       onClick={() => handleCreateNewTrade(lineItem)}
@@ -1504,7 +1553,6 @@ export function InvoiceMatchingInterface({
                               </div>
                             </div>
                           )}
-
                         </div>
                       )
                     })}

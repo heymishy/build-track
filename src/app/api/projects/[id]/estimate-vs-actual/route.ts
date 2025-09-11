@@ -1,18 +1,14 @@
 /**
  * API Route: /api/projects/[id]/estimate-vs-actual
  * Provides detailed estimate vs actual invoice comparison data
- * Fixed database relationship references
+ * Fixed database relationship references - Updated Sept 11 2025
  */
 
 import { NextRequest } from 'next/server'
 import { withAuth, AuthUser } from '@/lib/middleware'
 import { prisma } from '@/lib/prisma'
 
-async function GET(
-  request: NextRequest,
-  user: AuthUser,
-  { params }: { params: { id: string } }
-) {
+async function GET(request: NextRequest, user: AuthUser, { params }: { params: { id: string } }) {
   try {
     const { id: projectId } = params
 
@@ -75,19 +71,26 @@ async function GET(
     }
 
     // Calculate trade-level comparisons
-    const tradeComparisons = project.trades.map((trade) => {
+    const tradeComparisons = project.trades.map(trade => {
       // Sum estimated amounts from line items
-      const estimatedAmount = trade.lineItems.reduce((sum, item) => 
-        sum + Number(item.materialCostEst) + Number(item.laborCostEst) + Number(item.equipmentCostEst), 0
+      const estimatedAmount = trade.lineItems.reduce(
+        (sum, item) =>
+          sum +
+          Number(item.materialCostEst) +
+          Number(item.laborCostEst) +
+          Number(item.equipmentCostEst),
+        0
       )
 
       // Sum actual amounts from matched invoice line items
       const actualAmount = project.invoices.reduce((sum, invoice) => {
-        const tradeInvoiceItems = invoice.lineItems.filter((item) => {
+        const tradeInvoiceItems = invoice.lineItems.filter(item => {
           // Check if this invoice line item is matched to a line item in this trade
           return item.lineItem && item.lineItem.trade.id === trade.id
         })
-        return sum + tradeInvoiceItems.reduce((itemSum, item) => itemSum + Number(item.totalPrice), 0)
+        return (
+          sum + tradeInvoiceItems.reduce((itemSum, item) => itemSum + Number(item.totalPrice), 0)
+        )
       }, 0)
 
       // Calculate variance
@@ -95,8 +98,8 @@ async function GET(
       const variancePercent = estimatedAmount > 0 ? (variance / estimatedAmount) * 100 : 0
 
       // Count invoices for this trade
-      const invoiceCount = project.invoices.filter((invoice) =>
-        invoice.lineItems.some((item) => {
+      const invoiceCount = project.invoices.filter(invoice =>
+        invoice.lineItems.some(item => {
           return item.lineItem && item.lineItem.trade.id === trade.id
         })
       ).length
@@ -132,7 +135,9 @@ async function GET(
       totalVariance,
       totalVariancePercent: Math.round(totalVariancePercent * 10) / 10,
       currency: project.currency || 'NZD',
-      tradeComparisons: tradeComparisons.sort((a, b) => Math.abs(b.variance) - Math.abs(a.variance)), // Sort by largest variance first
+      tradeComparisons: tradeComparisons.sort(
+        (a, b) => Math.abs(b.variance) - Math.abs(a.variance)
+      ), // Sort by largest variance first
       lastUpdated: new Date().toISOString(),
     }
 

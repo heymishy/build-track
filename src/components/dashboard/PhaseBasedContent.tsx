@@ -86,10 +86,7 @@ export function PhaseBasedContent({
 
             {/* Estimate vs Actual Widget */}
             {filteredProjects.length > 0 && (
-              <EstimateVsActualWidget 
-                projectId={filteredProjects[0].id} 
-                compact={true}
-              />
+              <EstimateVsActualWidget projectId={filteredProjects[0].id} compact={true} />
             )}
 
             {/* All Projects */}

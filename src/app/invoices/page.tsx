@@ -48,11 +48,11 @@ export default function InvoicesPage() {
   useEffect(() => {
     const projectParam = searchParams?.get('project')
     const tabParam = searchParams?.get('tab')
-    
+
     if (projectParam && projects.length > 0) {
       setSelectedProjectId(projectParam)
     }
-    
+
     if (tabParam && ['management', 'matching', 'comparison'].includes(tabParam)) {
       setActiveTab(tabParam as 'management' | 'matching' | 'comparison')
     }

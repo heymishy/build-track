@@ -106,11 +106,23 @@ export function EstimateVsActualWidget({
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'OVER':
-        return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Over Budget</span>
+        return (
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+            Over Budget
+          </span>
+        )
       case 'UNDER':
-        return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Under Budget</span>
+        return (
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+            Under Budget
+          </span>
+        )
       case 'ON_TARGET':
-        return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">On Target</span>
+        return (
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+            On Target
+          </span>
+        )
       default:
         return null
     }
@@ -152,12 +164,7 @@ export function EstimateVsActualWidget({
           <div className="text-center py-6">
             <ExclamationTriangleIcon className="h-8 w-8 text-gray-400 mx-auto mb-2" />
             <p className="text-sm text-gray-500">{error || 'No data available'}</p>
-            <Button 
-              variant="secondary" 
-              size="sm" 
-              className="mt-3"
-              onClick={fetchEstimateVsActual}
-            >
+            <Button variant="secondary" size="sm" className="mt-3" onClick={fetchEstimateVsActual}>
               Retry
             </Button>
           </div>
@@ -180,7 +187,7 @@ export function EstimateVsActualWidget({
             Updated {new Date(data.lastUpdated).toLocaleDateString()}
           </div>
         </div>
-        
+
         {/* Project Summary */}
         <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-blue-50 rounded-lg p-3">
@@ -189,23 +196,26 @@ export function EstimateVsActualWidget({
               {formatCurrency(data.totalEstimated, data.currency)}
             </div>
           </div>
-          
+
           <div className="bg-purple-50 rounded-lg p-3">
             <div className="text-sm text-gray-500">Total Actual</div>
             <div className="text-lg font-semibold text-gray-900">
               {formatCurrency(data.totalActual, data.currency)}
             </div>
           </div>
-          
-          <div className={`rounded-lg p-3 ${data.totalVariance > 0 ? 'bg-red-50' : data.totalVariance < 0 ? 'bg-green-50' : 'bg-gray-50'}`}>
+
+          <div
+            className={`rounded-lg p-3 ${data.totalVariance > 0 ? 'bg-red-50' : data.totalVariance < 0 ? 'bg-green-50' : 'bg-gray-50'}`}
+          >
             <div className="text-sm text-gray-500">Variance</div>
-            <div className={`text-lg font-semibold flex items-center space-x-1 ${getVarianceColor(data.totalVariance)}`}>
+            <div
+              className={`text-lg font-semibold flex items-center space-x-1 ${getVarianceColor(data.totalVariance)}`}
+            >
               {getVarianceIcon(data.totalVariance)}
-              <span>
-                {formatCurrency(Math.abs(data.totalVariance), data.currency)}
-              </span>
+              <span>{formatCurrency(Math.abs(data.totalVariance), data.currency)}</span>
               <span className="text-sm">
-                ({data.totalVariancePercent >= 0 ? '+' : ''}{data.totalVariancePercent.toFixed(1)}%)
+                ({data.totalVariancePercent >= 0 ? '+' : ''}
+                {data.totalVariancePercent.toFixed(1)}%)
               </span>
             </div>
           </div>
@@ -223,19 +233,17 @@ export function EstimateVsActualWidget({
             )}
           </div>
 
-          {visibleTrades.map((trade) => (
+          {visibleTrades.map(trade => (
             <div
               key={trade.tradeId}
               className="flex items-center justify-between py-3 px-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
             >
               <div className="flex-1 min-w-0">
                 <div className="flex items-center space-x-2">
-                  <p className="text-sm font-medium text-gray-900 truncate">
-                    {trade.tradeName}
-                  </p>
+                  <p className="text-sm font-medium text-gray-900 truncate">{trade.tradeName}</p>
                   {getStatusBadge(trade.status)}
                 </div>
-                
+
                 <div className="flex items-center space-x-4 mt-1">
                   <div className="text-xs text-gray-500">
                     Est: {formatCurrency(trade.estimatedAmount, data.currency)}
@@ -250,13 +258,14 @@ export function EstimateVsActualWidget({
               </div>
 
               <div className="flex items-center space-x-2">
-                <div className={`text-sm font-medium flex items-center space-x-1 ${getVarianceColor(trade.variance)}`}>
+                <div
+                  className={`text-sm font-medium flex items-center space-x-1 ${getVarianceColor(trade.variance)}`}
+                >
                   {getVarianceIcon(trade.variance)}
-                  <span>
-                    {formatCurrency(Math.abs(trade.variance), data.currency)}
-                  </span>
+                  <span>{formatCurrency(Math.abs(trade.variance), data.currency)}</span>
                   <span className="text-xs">
-                    ({trade.variancePercent >= 0 ? '+' : ''}{trade.variancePercent.toFixed(1)}%)
+                    ({trade.variancePercent >= 0 ? '+' : ''}
+                    {trade.variancePercent.toFixed(1)}%)
                   </span>
                 </div>
               </div>
@@ -270,7 +279,7 @@ export function EstimateVsActualWidget({
                 size="sm"
                 fullWidth
                 icon={<EyeIcon className="h-4 w-4" />}
-                onClick={() => window.location.href = `/estimates?project=${data.projectId}`}
+                onClick={() => (window.location.href = `/estimates?project=${data.projectId}`)}
               >
                 View Full Breakdown
               </Button>
