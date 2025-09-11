@@ -265,6 +265,8 @@ async function GET(request: NextRequest, user: AuthUser) {
           equipmentCostEst: Number(item.equipmentCostEst),
           markupPercent: Number(item.markupPercent),
           overheadPercent: Number(item.overheadPercent),
+          tradeName: item.trade.name,
+          tradeId: item.trade.id,
         })),
         matchingResults,
         summary: {

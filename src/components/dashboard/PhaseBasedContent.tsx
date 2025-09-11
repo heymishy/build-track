@@ -12,6 +12,7 @@ import { MilestoneTracker } from '@/components/milestones/MilestoneTracker'
 import { DocumentManager } from '@/components/documents/DocumentManager'
 import { ProjectAnalytics } from '@/components/analytics/ProjectAnalytics'
 import { DashboardOverview } from '@/components/dashboard/DashboardOverview'
+import { EstimateVsActualWidget } from '@/components/dashboard/EstimateVsActualWidget'
 import {
   DocumentCheckIcon,
   ClockIcon,
@@ -82,6 +83,14 @@ export function PhaseBasedContent({
                 <DashboardOverview />
               </Card.Body>
             </Card>
+
+            {/* Estimate vs Actual Widget */}
+            {filteredProjects.length > 0 && (
+              <EstimateVsActualWidget 
+                projectId={filteredProjects[0].id} 
+                compact={true}
+              />
+            )}
 
             {/* All Projects */}
             <Card>
@@ -218,6 +227,9 @@ export function PhaseBasedContent({
 
             {/* Budget Tracking Summary */}
             <BudgetTrackingWidget projectId={filteredProjects[0]?.id} compact={true} />
+
+            {/* Estimate vs Actual Tracking */}
+            <EstimateVsActualWidget projectId={filteredProjects[0]?.id} compact={true} />
 
             {/* Milestone Progress */}
             <MilestoneTracker projectId={filteredProjects[0]?.id} compact={true} />

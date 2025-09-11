@@ -5,7 +5,7 @@
 
 'use client'
 
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   CheckCircleIcon,
   XMarkIcon,
@@ -90,6 +90,127 @@ export function InvoiceMatchingInterface({
   )
   const [approving, setApproving] = useState(false)
   const [justAppliedCount, setJustAppliedCount] = useState<number>(0)
+  const [groupByTrade, setGroupByTrade] = useState(false)
+
+  // Helper function to group line items by trade
+  const getGroupedLineItems = () => {
+    if (!data || !groupByTrade) return null
+
+    const grouped = new Map<string, any[]>()
+    
+    data.matchingResults.forEach(result => {
+      const invoice = data.invoices.find(inv => inv.id === result.invoiceId)
+      
+      invoice?.lineItems.forEach((lineItem: any) => {
+        const match = result.matches.find(m => m.invoiceLineItemId === lineItem.id)
+        const estimateItem = match?.estimateLineItemId
+          ? data.estimateLineItems.find(e => e.id === match.estimateLineItemId)
+          : null
+        const selectedEstimateId = selectedMatches.get(lineItem.id)
+        const finalEstimate = selectedEstimateId
+          ? data.estimateLineItems.find(e => e.id === selectedEstimateId)
+          : estimateItem
+
+        const tradeName = finalEstimate?.tradeName || finalEstimate?.trade?.name || 'Unmapped'
+        
+        if (!grouped.has(tradeName)) {
+          grouped.set(tradeName, [])
+        }
+        
+        grouped.get(tradeName)!.push({
+          lineItem,
+          match,
+          invoice,
+          estimateItem,
+          finalEstimate,
+        })
+      })
+    })
+
+    return grouped
+  }
+
+  // Helper function to render a single line item row
+  const renderLineItemRow = (lineItem: any, match: any, invoice: any, finalEstimate: any) => {
+    return (
+      <tr
+        key={lineItem.id}
+        className={
+          match?.matchType === 'existing'
+            ? 'bg-blue-50'
+            : match?.matchType === 'suggested' && match.confidence >= 0.7
+              ? 'bg-green-50'
+              : match?.matchType === 'unmatched'
+                ? 'bg-red-50'
+                : ''
+        }
+      >
+        <td className="px-4 py-2 text-gray-900">
+          <div className="max-w-xs truncate" title={lineItem.description}>
+            {lineItem.description}
+          </div>
+          <div className="text-xs text-gray-500">{invoice?.invoiceNumber}</div>
+        </td>
+        <td className="px-4 py-2 text-gray-900">
+          {formatCurrency(lineItem.totalPrice)}
+        </td>
+        <td className="px-4 py-2">
+          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+            {lineItem.category}
+          </span>
+        </td>
+        <td className="px-4 py-2 text-gray-900">
+          {finalEstimate ? (
+            <div>
+              <div
+                className="max-w-xs truncate font-medium"
+                title={finalEstimate.description}
+              >
+                {finalEstimate.description}
+              </div>
+              <div className="text-xs text-gray-500">
+                Est:{' '}
+                {formatCurrency(
+                  finalEstimate.materialCostEst +
+                    finalEstimate.laborCostEst +
+                    finalEstimate.equipmentCostEst
+                )}
+              </div>
+            </div>
+          ) : (
+            <span className="text-red-600 text-xs">Not mapped</span>
+          )}
+        </td>
+        <td className="px-4 py-2 text-gray-700">
+          {finalEstimate?.tradeName || finalEstimate?.trade?.name || 'N/A'}
+        </td>
+        <td className="px-4 py-2">
+          {match?.matchType === 'existing' ? (
+            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+              <CheckCircleIcon className="h-3 w-3 mr-1" />
+              Matched
+            </span>
+          ) : match?.matchType === 'suggested' ? (
+            <span
+              className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                match.confidence >= 0.7
+                  ? 'bg-green-100 text-green-800'
+                  : 'bg-yellow-100 text-yellow-800'
+              }`}
+            >
+              <SparklesIcon className="h-3 w-3 mr-1" />
+              AI: {Math.round(match.confidence * 100)}%
+            </span>
+          ) : (
+            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+              <ExclamationTriangleIcon className="h-3 w-3 mr-1" />
+              Unmatched
+            </span>
+          )}
+        </td>
+      </tr>
+    )
+  }
 
   useEffect(() => {
     fetchMatchingData()
@@ -627,6 +748,18 @@ export function InvoiceMatchingInterface({
           </div>
 
           <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-2">
+              <label className="flex items-center">
+                <input
+                  type="checkbox"
+                  checked={groupByTrade}
+                  onChange={e => setGroupByTrade(e.target.checked)}
+                  className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+                />
+                <span className="ml-2 text-sm text-gray-700">Group by Trade</span>
+              </label>
+            </div>
+            
             <select
               value={autoSelectMode}
               onChange={e => setAutoSelectMode(e.target.value as any)}
@@ -802,100 +935,54 @@ export function InvoiceMatchingInterface({
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {data.matchingResults.map(result => {
-                  const invoice = data.invoices.find(inv => inv.id === result.invoiceId)
-                  return (
-                    invoice?.lineItems.map((lineItem: any) => {
-                      const match = result.matches.find(m => m.invoiceLineItemId === lineItem.id)
-                      const estimateItem = match?.estimateLineItemId
-                        ? data.estimateLineItems.find(e => e.id === match.estimateLineItemId)
-                        : null
-                      const selectedEstimateId = selectedMatches.get(lineItem.id)
-                      const finalEstimate = selectedEstimateId
-                        ? data.estimateLineItems.find(e => e.id === selectedEstimateId)
-                        : estimateItem
-
-                      return (
-                        <tr
-                          key={lineItem.id}
-                          className={
-                            match?.matchType === 'existing'
-                              ? 'bg-blue-50'
-                              : match?.matchType === 'suggested' && match.confidence >= 0.7
-                                ? 'bg-green-50'
-                                : match?.matchType === 'unmatched'
-                                  ? 'bg-red-50'
-                                  : ''
-                          }
-                        >
-                          <td className="px-4 py-2 text-gray-900">
-                            <div className="max-w-xs truncate" title={lineItem.description}>
-                              {lineItem.description}
+                {groupByTrade ? (
+                  // Grouped view
+                  Array.from(getGroupedLineItems() || []).map(([tradeName, items]) => (
+                    <React.Fragment key={tradeName}>
+                      {/* Trade Header Row */}
+                      <tr className="bg-gray-100 border-t-2 border-gray-300">
+                        <td colSpan={6} className="px-4 py-3 text-sm font-semibold text-gray-900">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-2">
+                              <span>{tradeName}</span>
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-200 text-gray-700">
+                                {items.length} item{items.length !== 1 ? 's' : ''}
+                              </span>
                             </div>
-                            <div className="text-xs text-gray-500">{invoice?.invoiceNumber}</div>
-                          </td>
-                          <td className="px-4 py-2 text-gray-900">
-                            {formatCurrency(lineItem.totalPrice)}
-                          </td>
-                          <td className="px-4 py-2">
-                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                              {lineItem.category}
-                            </span>
-                          </td>
-                          <td className="px-4 py-2 text-gray-900">
-                            {finalEstimate ? (
-                              <div>
-                                <div
-                                  className="max-w-xs truncate font-medium"
-                                  title={finalEstimate.description}
-                                >
-                                  {finalEstimate.description}
-                                </div>
-                                <div className="text-xs text-gray-500">
-                                  Est:{' '}
-                                  {formatCurrency(
-                                    finalEstimate.materialCostEst +
-                                      finalEstimate.laborCostEst +
-                                      finalEstimate.equipmentCostEst
-                                  )}
-                                </div>
-                              </div>
-                            ) : (
-                              <span className="text-red-600 text-xs">Not mapped</span>
-                            )}
-                          </td>
-                          <td className="px-4 py-2 text-gray-700">
-                            {finalEstimate?.trade?.name || 'N/A'}
-                          </td>
-                          <td className="px-4 py-2">
-                            {match?.matchType === 'existing' ? (
-                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                <CheckCircleIcon className="h-3 w-3 mr-1" />
-                                Matched
-                              </span>
-                            ) : match?.matchType === 'suggested' ? (
-                              <span
-                                className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                                  match.confidence >= 0.7
-                                    ? 'bg-green-100 text-green-800'
-                                    : 'bg-yellow-100 text-yellow-800'
-                                }`}
-                              >
-                                <SparklesIcon className="h-3 w-3 mr-1" />
-                                AI: {Math.round(match.confidence * 100)}%
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                <ExclamationTriangleIcon className="h-3 w-3 mr-1" />
-                                Unmatched
-                              </span>
-                            )}
-                          </td>
-                        </tr>
-                      )
-                    }) || []
-                  )
-                })}
+                            <div className="text-xs text-gray-500">
+                              Total: {formatCurrency(
+                                items.reduce((sum, item) => sum + item.lineItem.totalPrice, 0)
+                              )}
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                      {/* Render items for this trade */}
+                      {items.map(({ lineItem, match, invoice, finalEstimate }) =>
+                        renderLineItemRow(lineItem, match, invoice, finalEstimate)
+                      )}
+                    </React.Fragment>
+                  ))
+                ) : (
+                  // Regular ungrouped view
+                  data.matchingResults.map(result => {
+                    const invoice = data.invoices.find(inv => inv.id === result.invoiceId)
+                    return (
+                      invoice?.lineItems.map((lineItem: any) => {
+                        const match = result.matches.find(m => m.invoiceLineItemId === lineItem.id)
+                        const estimateItem = match?.estimateLineItemId
+                          ? data.estimateLineItems.find(e => e.id === match.estimateLineItemId)
+                          : null
+                        const selectedEstimateId = selectedMatches.get(lineItem.id)
+                        const finalEstimate = selectedEstimateId
+                          ? data.estimateLineItems.find(e => e.id === selectedEstimateId)
+                          : estimateItem
+
+                        return renderLineItemRow(lineItem, match, invoice, finalEstimate)
+                      }) || []
+                    )
+                  })
+                )}
               </tbody>
             </table>
           </div>

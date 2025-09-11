@@ -11,11 +11,13 @@ import { AppLayout } from '@/components/layout/AppLayout'
 import { PageHeader } from '@/components/navigation/PageHeader'
 import { InvoiceManagement } from '@/components/invoices/InvoiceManagement'
 import { InvoiceMatchingInterface } from '@/components/invoices/InvoiceMatchingInterface'
+import { EstimateVsActualWidget } from '@/components/dashboard/EstimateVsActualWidget'
 import {
   DocumentTextIcon,
   SparklesIcon,
   CursorArrowRaysIcon,
   EyeIcon,
+  ChartBarIcon,
 } from '@heroicons/react/24/outline'
 
 interface Project {
@@ -32,7 +34,7 @@ export default function InvoicesPage() {
   const { user } = useAuth()
   const [projects, setProjects] = useState<Project[]>([])
   const [selectedProjectId, setSelectedProjectId] = useState<string>('')
-  const [activeTab, setActiveTab] = useState<'management' | 'matching'>('management')
+  const [activeTab, setActiveTab] = useState<'management' | 'matching' | 'comparison'>('management')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -253,6 +255,18 @@ export default function InvoicesPage() {
                           </span>
                         )}
                       </button>
+
+                      <button
+                        onClick={() => setActiveTab('comparison')}
+                        className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
+                          activeTab === 'comparison'
+                            ? 'border-blue-500 text-blue-600'
+                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                        }`}
+                      >
+                        <ChartBarIcon className="h-4 w-4 inline mr-2" />
+                        Estimate vs Actual
+                      </button>
                     </nav>
                   </div>
 
@@ -271,6 +285,16 @@ export default function InvoicesPage() {
                         onMatchingComplete={handleMatchingComplete}
                         className="border-0 shadow-none rounded-none"
                       />
+                    )}
+
+                    {activeTab === 'comparison' && (
+                      <div className="p-6">
+                        <EstimateVsActualWidget
+                          projectId={selectedProjectId}
+                          compact={false}
+                          className="border-0 shadow-none"
+                        />
+                      </div>
                     )}
                   </div>
                 </div>
