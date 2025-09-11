@@ -57,10 +57,13 @@ async function GET(request: NextRequest, user: AuthUser) {
       }
     }
 
-    // Get all invoices for this project
+    // Get all invoices for this project - include PENDING and APPROVED for review
     const invoices = await prisma.invoice.findMany({
       where: {
         projectId,
+        status: {
+          in: ['PENDING', 'APPROVED'], // Allow users to review and modify existing matches
+        },
       },
       include: {
         lineItems: true,
@@ -105,7 +108,7 @@ async function GET(request: NextRequest, user: AuthUser) {
       invoice.lineItems.filter(item => !item.lineItemId)
     )
 
-    // Only run LLM matching if there are unmatched items
+    // Run LLM matching only for unmatched items, but show all invoices in interface
     let batchResult
     if (unmatchedItems.length > 0) {
       console.log(`Found ${unmatchedItems.length} unmatched items, running LLM matching...`)
@@ -117,7 +120,7 @@ async function GET(request: NextRequest, user: AuthUser) {
           invoiceNumber: invoice.invoiceNumber,
           supplierName: invoice.supplierName,
           lineItems: invoice.lineItems
-            .filter(item => !item.lineItemId) // Only unmatched items
+            .filter(item => !item.lineItemId) // Only unmatched items for LLM
             .map(item => ({
               id: item.id,
               description: item.description,
@@ -166,6 +169,12 @@ async function GET(request: NextRequest, user: AuthUser) {
         error: null,
       }
     }
+
+    // Debug: Log invoice counts
+    console.log(`Processing ${invoices.length} invoices for project ${projectId}:`)
+    invoices.forEach(inv => {
+      console.log(`- Invoice ${inv.invoiceNumber}: ${inv.lineItems.length} line items, status: ${inv.status}`)
+    })
 
     // Convert results to the expected format, prioritizing existing matches from DB
     const matchingResults: MatchingResult[] = []
