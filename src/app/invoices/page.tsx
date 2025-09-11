@@ -7,6 +7,7 @@
 
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/hooks/useAuth'
+import { useSearchParams } from 'next/navigation'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { PageHeader } from '@/components/navigation/PageHeader'
 import { InvoiceManagement } from '@/components/invoices/InvoiceManagement'
@@ -32,6 +33,7 @@ interface Project {
 
 export default function InvoicesPage() {
   const { user } = useAuth()
+  const searchParams = useSearchParams()
   const [projects, setProjects] = useState<Project[]>([])
   const [selectedProjectId, setSelectedProjectId] = useState<string>('')
   const [activeTab, setActiveTab] = useState<'management' | 'matching' | 'comparison'>('management')
@@ -41,6 +43,20 @@ export default function InvoicesPage() {
   useEffect(() => {
     fetchProjects()
   }, [])
+
+  // Handle URL parameters
+  useEffect(() => {
+    const projectParam = searchParams?.get('project')
+    const tabParam = searchParams?.get('tab')
+    
+    if (projectParam && projects.length > 0) {
+      setSelectedProjectId(projectParam)
+    }
+    
+    if (tabParam && ['management', 'matching', 'comparison'].includes(tabParam)) {
+      setActiveTab(tabParam as 'management' | 'matching' | 'comparison')
+    }
+  }, [searchParams, projects])
 
   const fetchProjects = async () => {
     try {

@@ -39,7 +39,7 @@ async function GET(
           include: {
             lineItems: {
               include: {
-                matchedLineItem: {
+                lineItem: {
                   include: {
                     trade: true,
                   },
@@ -84,7 +84,7 @@ async function GET(
       const actualAmount = project.invoices.reduce((sum, invoice) => {
         const tradeInvoiceItems = invoice.lineItems.filter((item) => {
           // Check if this invoice line item is matched to a line item in this trade
-          return item.lineItemId && trade.lineItems.some(li => li.id === item.lineItemId)
+          return item.lineItem && item.lineItem.trade.id === trade.id
         })
         return sum + tradeInvoiceItems.reduce((itemSum, item) => itemSum + Number(item.totalPrice), 0)
       }, 0)
@@ -96,7 +96,7 @@ async function GET(
       // Count invoices for this trade
       const invoiceCount = project.invoices.filter((invoice) =>
         invoice.lineItems.some((item) => {
-          return item.lineItemId && trade.lineItems.some(li => li.id === item.lineItemId)
+          return item.lineItem && item.lineItem.trade.id === trade.id
         })
       ).length
 

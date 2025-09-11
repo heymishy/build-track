@@ -349,7 +349,7 @@ export function EstimateVsInvoiceCenterpiece({
                 fullWidth
                 icon={<ChartBarIcon className="h-4 w-4" />}
                 onClick={() =>
-                  (window.location.href = `/projects/${selectedProjectId}/management?tab=tracking`)
+                  (window.location.href = `/invoices?project=${selectedProjectId}&tab=comparison`)
                 }
               >
                 Detailed Analysis
