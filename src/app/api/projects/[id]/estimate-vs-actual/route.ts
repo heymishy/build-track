@@ -76,14 +76,17 @@ async function GET(
     // Calculate trade-level comparisons
     const tradeComparisons = project.trades.map((trade) => {
       // Sum estimated amounts from line items
-      const estimatedAmount = trade.lineItems.reduce((sum, item) => sum + item.amount, 0)
+      const estimatedAmount = trade.lineItems.reduce((sum, item) => 
+        sum + Number(item.materialCostEst) + Number(item.laborCostEst) + Number(item.equipmentCostEst), 0
+      )
 
       // Sum actual amounts from matched invoice line items
       const actualAmount = project.invoices.reduce((sum, invoice) => {
-        const tradeInvoiceItems = invoice.lineItems.filter(
-          (item) => item.matchedLineItem?.trade.id === trade.id
-        )
-        return sum + tradeInvoiceItems.reduce((itemSum, item) => itemSum + item.amount, 0)
+        const tradeInvoiceItems = invoice.lineItems.filter((item) => {
+          // Check if this invoice line item is matched to a line item in this trade
+          return item.lineItemId && trade.lineItems.some(li => li.id === item.lineItemId)
+        })
+        return sum + tradeInvoiceItems.reduce((itemSum, item) => itemSum + Number(item.totalPrice), 0)
       }, 0)
 
       // Calculate variance
@@ -92,7 +95,9 @@ async function GET(
 
       // Count invoices for this trade
       const invoiceCount = project.invoices.filter((invoice) =>
-        invoice.lineItems.some((item) => item.matchedLineItem?.trade.id === trade.id)
+        invoice.lineItems.some((item) => {
+          return item.lineItemId && trade.lineItems.some(li => li.id === item.lineItemId)
+        })
       ).length
 
       // Determine status
