@@ -37,7 +37,7 @@ export default function ProjectManagementPage({}: ProjectManagementPageProps) {
         throw new Error(data.error || 'Failed to fetch project')
       }
 
-      setProject(data.data)
+      setProject(data.project)
     } catch (err) {
       console.error('Error fetching project:', err)
       setError(err instanceof Error ? err.message : 'Unknown error')

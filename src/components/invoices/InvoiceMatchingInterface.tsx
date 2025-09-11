@@ -535,9 +535,7 @@ export function InvoiceMatchingInterface({
                 <SparklesIcon className="h-6 w-6 text-white" />
               </div>
               <div>
-                <h3 className="text-xl font-semibold text-gray-900">
-                  AI-Powered Invoice Matching
-                </h3>
+                <h3 className="text-xl font-semibold text-gray-900">AI-Powered Invoice Matching</h3>
                 <p className="text-sm text-gray-600 font-medium">
                   Intelligent estimate-to-invoice comparison and cost tracking
                 </p>
@@ -558,7 +556,9 @@ export function InvoiceMatchingInterface({
                   </span>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <div className={`h-2 w-2 rounded-full ${data.summary.matchingRate >= 80 ? 'bg-green-500' : data.summary.matchingRate >= 60 ? 'bg-yellow-500' : 'bg-red-500'}`}></div>
+                  <div
+                    className={`h-2 w-2 rounded-full ${data.summary.matchingRate >= 80 ? 'bg-green-500' : data.summary.matchingRate >= 60 ? 'bg-yellow-500' : 'bg-red-500'}`}
+                  ></div>
                   <span className="text-sm font-medium text-gray-700">
                     {data.summary.matchingRate}% auto-matched
                   </span>
