@@ -57,12 +57,12 @@ async function GET(request: NextRequest, user: AuthUser) {
       }
     }
 
-    // Get all invoices for this project - include PENDING and APPROVED for review
+    // Get all invoices for this project - include all statuses for review
     const invoices = await prisma.invoice.findMany({
       where: {
         projectId,
         status: {
-          in: ['PENDING', 'APPROVED'], // Allow users to review and modify existing matches
+          in: ['PENDING', 'APPROVED', 'PAID'], // Allow users to review and modify all invoice matches
         },
       },
       include: {
