@@ -761,17 +761,17 @@ export function InvoiceMatchingInterface({
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs text-blue-800">
                       <div className="space-y-2">
                         <div className="flex items-start space-x-2">
-                          <span className="text-green-600 font-bold text-sm">✅</span>
+                          <span className="text-blue-600 font-bold text-sm">🎯</span>
                           <div>
-                            <strong>Accept AI Matches:</strong>
-                            <br />Click checkboxes for high-confidence suggestions (green highlight)
+                            <strong>Select Matches:</strong>
+                            <br />Use dropdown menus to match each invoice item to estimate line items
                           </div>
                         </div>
                         <div className="flex items-start space-x-2">
-                          <span className="text-blue-600 font-bold text-sm">🔄</span>
+                          <span className="text-green-600 font-bold text-sm">🤖</span>
                           <div>
-                            <strong>Override Matches:</strong>
-                            <br />Use dropdown menus to select different estimate items
+                            <strong>Review AI Suggestions:</strong>
+                            <br />AI pre-selects high-confidence matches (green/yellow highlights)
                           </div>
                         </div>
                         <div className="flex items-start space-x-2">
@@ -787,14 +787,14 @@ export function InvoiceMatchingInterface({
                           <span className="text-orange-600 font-bold text-sm">💾</span>
                           <div>
                             <strong>Apply Changes:</strong>
-                            <br />Click "Apply Matches" button to save selections
+                            <br />Click "Apply Matches" button to save all your selections
                           </div>
                         </div>
                         <div className="flex items-start space-x-2">
                           <span className="text-green-600 font-bold text-sm">✅</span>
                           <div>
                             <strong>Approve Invoices:</strong>
-                            <br />Once matched, approve invoices for payment
+                            <br />Once all items are matched, approve invoices for payment
                           </div>
                         </div>
                       </div>
@@ -1311,18 +1311,18 @@ export function InvoiceMatchingInterface({
                       return (
                         <div
                           key={lineItem.id}
-                          className={`rounded-lg p-4 ${
+                          className={`rounded-lg p-4 border-2 ${
                             match.matchType === 'suggested' && match.confidence >= 0.7
-                              ? 'border-2 border-green-300 bg-green-50'
+                              ? 'border-green-400 bg-green-50'
                               : match.matchType === 'suggested' && match.confidence >= 0.5
-                                ? 'border-2 border-yellow-300 bg-yellow-50'
+                                ? 'border-yellow-400 bg-yellow-50'
                                 : match.matchType === 'existing'
-                                  ? 'border border-blue-200 bg-blue-50'
-                                  : 'border border-gray-200 bg-gray-50'
+                                  ? 'border-blue-400 bg-blue-50'
+                                  : 'border-gray-300 bg-white'
                           }`}
                         >
-                          {/* Invoice Line Item */}
-                          <div className="flex items-start justify-between">
+                          {/* Invoice Line Item Header */}
+                          <div className="flex items-start justify-between mb-4">
                             <div className="flex-1">
                               <p className="text-sm font-medium text-gray-900">
                                 {lineItem.description}
@@ -1331,232 +1331,180 @@ export function InvoiceMatchingInterface({
                                 <span>Qty: {lineItem.quantity}</span>
                                 <span>Unit: {formatCurrency(lineItem.unitPrice)}</span>
                                 <span>Total: {formatCurrency(lineItem.totalPrice)}</span>
-                                <span className="uppercase">{lineItem.category}</span>
+                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                  {lineItem.category}
+                                </span>
                               </div>
+                            </div>
+                            
+                            {/* Match Status Badge */}
+                            {match.matchType === 'existing' && (
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                <CheckCircleIcon className="h-3 w-3 mr-1" />
+                                Already Matched
+                              </span>
+                            )}
+                            {match.matchType === 'suggested' && (
+                              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                match.confidence >= 0.7 ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                              }`}>
+                                <SparklesIcon className="h-3 w-3 mr-1" />
+                                AI: {Math.round(match.confidence * 100)}%
+                              </span>
+                            )}
+                            {match.matchType === 'unmatched' && (
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                <ExclamationTriangleIcon className="h-3 w-3 mr-1" />
+                                Needs Matching
+                              </span>
+                            )}
+                          </div>
+
+                          {/* PRIMARY MATCHING INTERFACE */}
+                          <div className="bg-white rounded-lg border-2 border-blue-200 p-4">
+                            <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center">
+                              <LinkIcon className="h-4 w-4 mr-2 text-blue-600" />
+                              Match to Estimate Line Item
+                            </h4>
+                            
+                            <div className="space-y-3">
+                              {/* Estimate Selection Dropdown */}
+                              <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">
+                                  Select Estimate Line Item to Match:
+                                </label>
+                                <select
+                                  value={selectedMatches.get(lineItem.id) || match.estimateLineItemId || ''}
+                                  onChange={e => {
+                                    const value = e.target.value
+                                    handleMatchSelection(lineItem.id, value || null)
+                                  }}
+                                  className="block w-full text-sm border-gray-300 rounded-md focus:border-blue-500 focus:ring-blue-500 bg-white"
+                                >
+                                  <option value="">-- No Match / Skip This Item --</option>
+                                  {/* Group by Trade */}
+                                  {Object.entries(
+                                    data.estimateLineItems.reduce((groups, item) => {
+                                      const tradeName = item.trade.name
+                                      if (!groups[tradeName]) groups[tradeName] = []
+                                      groups[tradeName].push(item)
+                                      return groups
+                                    }, {} as Record<string, any[]>)
+                                  ).map(([tradeName, items]) => (
+                                    <optgroup key={tradeName} label={`${tradeName} (${items.length} items)`}>
+                                      {items.map(estItem => {
+                                        const isCurrentMatch = match.estimateLineItemId === estItem.id
+                                        const totalCost = estItem.materialCostEst + estItem.laborCostEst + estItem.equipmentCostEst
+                                        return (
+                                          <option 
+                                            key={estItem.id} 
+                                            value={estItem.id}
+                                            className={isCurrentMatch ? 'font-medium' : ''}
+                                          >
+                                            {isCurrentMatch ? '★ ' : ''}{estItem.description} - {formatCurrency(totalCost)}
+                                          </option>
+                                        )
+                                      })}
+                                    </optgroup>
+                                  ))}
+                                </select>
+                              </div>
+
+                              {/* Current Selection Display */}
+                              {(selectedMatches.get(lineItem.id) || match.estimateLineItemId) && (
+                                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                                  <div className="flex items-start justify-between">
+                                    <div className="flex-1">
+                                      {(() => {
+                                        const currentEstimateId = selectedMatches.get(lineItem.id) || match.estimateLineItemId
+                                        const currentEstimate = data.estimateLineItems.find(e => e.id === currentEstimateId)
+                                        if (!currentEstimate) return null
+                                        
+                                        const totalCost = currentEstimate.materialCostEst + currentEstimate.laborCostEst + currentEstimate.equipmentCostEst
+                                        const variance = lineItem.totalPrice - totalCost
+                                        const variancePercent = totalCost > 0 ? ((variance / totalCost) * 100) : 0
+                                        
+                                        return (
+                                          <div>
+                                            <p className="text-sm font-medium text-blue-900">
+                                              ✓ Matched to: {currentEstimate.description}
+                                            </p>
+                                            <div className="mt-1 grid grid-cols-1 md:grid-cols-3 gap-2 text-xs">
+                                              <div>
+                                                <span className="text-blue-600 font-medium">Trade:</span> {currentEstimate.trade.name}
+                                              </div>
+                                              <div>
+                                                <span className="text-blue-600 font-medium">Estimated:</span> {formatCurrency(totalCost)}
+                                              </div>
+                                              <div>
+                                                <span className="text-blue-600 font-medium">Variance:</span>
+                                                <span className={`ml-1 font-medium ${
+                                                  variance > 0 ? 'text-red-600' : variance < 0 ? 'text-green-600' : 'text-gray-600'
+                                                }`}>
+                                                  {variance > 0 ? '+' : ''}{formatCurrency(variance)} ({variancePercent.toFixed(1)}%)
+                                                </span>
+                                              </div>
+                                            </div>
+                                          </div>
+                                        )
+                                      })()}
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           </div>
 
-                          {/* Matching Section */}
-                          <div className="mt-3 pt-3 border-t border-gray-300">
-                            {match.estimateLineItemId && estimateItem ? (
-                              <div className="space-y-3">
-                                {/* Enhanced AI Suggestion Header */}
-                                {match.matchType === 'suggested' && (
-                                  <div className="bg-white/80 rounded-lg p-3 border-l-4 border-green-500">
-                                    <div className="flex items-start justify-between">
-                                      <div className="flex items-center space-x-2">
-                                        <SparklesIcon className="h-4 w-4 text-green-600" />
-                                        <span className="text-sm font-semibold text-green-800">
-                                          🤖 AI Suggestion
-                                        </span>
-                                        <div
-                                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border-2 ${getConfidenceColor(match)}`}
-                                        >
-                                          {Math.round(match.confidence * 100)}% Confidence
-                                        </div>
-                                      </div>
-                                    </div>
-                                    <p className="mt-1 text-sm text-green-700 font-medium">
-                                      💭 <strong>AI Reasoning:</strong> {match.reason}
-                                    </p>
-                                  </div>
-                                )}
-
-                                {/* Standard Confidence Badge for non-AI matches */}
-                                {match.matchType !== 'suggested' && (
-                                  <div className="flex items-center justify-between">
-                                    <div
-                                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getConfidenceColor(match)}`}
-                                    >
-                                      {getMatchIcon(match)}
-                                      {getConfidenceLabel(match)}
-                                      {match.matchType !== 'existing' &&
-                                        match.matchType !== 'unmatched' &&
-                                        ` (${Math.round(match.confidence * 100)}%)`}
-                                    </div>
-                                    <span className="text-xs text-gray-500">{match.reason}</span>
-                                  </div>
-                                )}
-
-                                {/* Suggested Estimate Match */}
-                                <div
-                                  className={`border rounded p-3 ${
-                                    match.matchType === 'suggested'
-                                      ? 'bg-white border-green-300 shadow-md'
-                                      : 'bg-white border-gray-200'
-                                  }`}
-                                >
-                                  <div className="flex items-center justify-between">
-                                    <div className="flex-1">
-                                      <p className="text-sm font-medium text-gray-900">
-                                        {estimateItem.description}
-                                      </p>
-                                      <div className="mt-1 flex items-center space-x-4 text-xs text-gray-500">
-                                        <span>Trade: {estimateItem.trade.name}</span>
-                                        <span>
-                                          Qty: {estimateItem.quantity} {estimateItem.unit}
-                                        </span>
-                                        <span>
-                                          Est:{' '}
-                                          {formatCurrency(
-                                            estimateItem.materialCostEst +
-                                              estimateItem.laborCostEst +
-                                              estimateItem.equipmentCostEst
-                                          )}
-                                        </span>
-                                      </div>
-                                    </div>
-
-                                    <div className="flex items-center space-x-2">
-                                      <input
-                                        type="checkbox"
-                                        checked={selectedEstimateId === estimateItem.id}
-                                        onChange={e => {
-                                          if (e.target.checked) {
-                                            handleMatchSelection(lineItem.id, estimateItem.id)
-                                          } else {
-                                            handleMatchSelection(lineItem.id, null)
-                                          }
-                                        }}
-                                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                                      />
-                                      <label
-                                        className={`text-sm font-medium ${
-                                          match.matchType === 'suggested'
-                                            ? 'text-green-700'
-                                            : 'text-gray-700'
-                                        }`}
-                                      >
-                                        {match.matchType === 'suggested'
-                                          ? '✅ Accept AI Match'
-                                          : 'Accept Match'}
-                                      </label>
-                                    </div>
-                                  </div>
-                                </div>
-
-                                {/* Manual Override Option */}
-                                <div className="mt-3 bg-gray-50 border border-gray-200 rounded p-3">
-                                  <h5 className="text-sm font-medium text-gray-700 mb-2">
-                                    Override with Different Match
-                                  </h5>
-                                  <select
-                                    value={
-                                      selectedMatches.get(lineItem.id) !== estimateItem.id
-                                        ? selectedMatches.get(lineItem.id) || ''
-                                        : ''
-                                    }
-                                    onChange={e => {
-                                      const value = e.target.value
-                                      if (value) {
-                                        handleMatchSelection(lineItem.id, value)
-                                      }
-                                    }}
-                                    className="block w-full text-sm border-gray-300 rounded-md focus:border-blue-500 focus:ring-blue-500"
-                                  >
-                                    <option value="">Choose different estimate...</option>
-                                    {data.estimateLineItems
-                                      .filter(estItem => estItem.id !== estimateItem.id)
-                                      .map(estItem => (
-                                        <option key={estItem.id} value={estItem.id}>
-                                          {estItem.trade.name}: {estItem.description} -{' '}
-                                          {formatCurrency(
-                                            estItem.materialCostEst +
-                                              estItem.laborCostEst +
-                                              estItem.equipmentCostEst
-                                          )}
-                                        </option>
-                                      ))}
-                                  </select>
-                                  {selectedMatches.get(lineItem.id) &&
-                                    selectedMatches.get(lineItem.id) !== estimateItem.id && (
-                                      <div className="mt-2 text-xs text-green-600">
-                                        ✓ Override applied - now matching to different estimate
-                                      </div>
-                                    )}
+                          {/* AI Suggestion Section - Secondary */}
+                          {match.matchType === 'suggested' && (
+                            <div className="mt-4 bg-green-50 border border-green-200 rounded-lg p-3">
+                              <div className="flex items-start space-x-2">
+                                <SparklesIcon className="h-4 w-4 text-green-600 flex-shrink-0 mt-0.5" />
+                                <div className="flex-1">
+                                  <p className="text-sm font-semibold text-green-800">
+                                    🤖 AI Suggestion ({Math.round(match.confidence * 100)}% confidence)
+                                  </p>
+                                  <p className="mt-1 text-xs text-green-700">
+                                    <strong>Reasoning:</strong> {match.reason}
+                                  </p>
                                 </div>
                               </div>
-                            ) : (
-                              <div className="space-y-3">
-                                {/* Enhanced Unmatched Item Alert */}
-                                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                                  <div className="flex items-start space-x-2">
-                                    <ExclamationTriangleIcon className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
-                                    <div>
-                                      <h5 className="text-sm font-semibold text-red-800">
-                                        ⚠️ No Match Found - Action Needed
-                                      </h5>
-                                      <p className="text-xs text-red-700 mt-1">
-                                        <strong>AI Analysis:</strong> {match.reason}
-                                      </p>
-                                      <div className="mt-2 p-2 bg-white rounded border border-red-200">
-                                        <p className="text-xs font-medium text-red-800">
-                                          💡 <strong>Possible Actions:</strong>
-                                        </p>
-                                        <div className="mt-2 space-y-2">
-                                          <button
-                                            onClick={() => handleCreateNewLineItem(lineItem)}
-                                            className="w-full text-left px-3 py-2 bg-green-100 hover:bg-green-200 border border-green-300 rounded text-xs font-medium text-green-800 transition-colors"
-                                          >
-                                            ➕ <strong>Create New Estimate Item</strong>
-                                            <div className="text-green-700 mt-1">
-                                              Add "{lineItem.description}" as a new line item to
-                                              project estimates
-                                            </div>
-                                          </button>
+                            </div>
+                          )}
 
-                                          <button
-                                            onClick={() => handleCreateNewTrade(lineItem)}
-                                            className="w-full text-left px-3 py-2 bg-blue-100 hover:bg-blue-200 border border-blue-300 rounded text-xs font-medium text-blue-800 transition-colors"
-                                          >
-                                            🏗️ <strong>Create New Trade Category</strong>
-                                            <div className="text-blue-700 mt-1">
-                                              Create new trade category and add this item to it
-                                            </div>
-                                          </button>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </div>
-                                </div>
-
-                                {/* Manual Matching */}
-                                <div className="bg-gray-50 border border-gray-200 rounded p-3">
-                                  <h5 className="text-sm font-medium text-gray-700 mb-2">
-                                    Manual Matching
+                          {/* Unmatched Item Actions */}
+                          {match.matchType === 'unmatched' && !(selectedMatches.get(lineItem.id)) && (
+                            <div className="mt-4 bg-red-50 border border-red-200 rounded-lg p-3">
+                              <div className="flex items-start space-x-2">
+                                <ExclamationTriangleIcon className="h-5 w-5 text-red-600 flex-shrink-0" />
+                                <div className="flex-1">
+                                  <h5 className="text-sm font-semibold text-red-800">
+                                    ⚠️ No AI Match Found
                                   </h5>
-                                  <div className="space-y-2">
-                                    <select
-                                      value={selectedMatches.get(lineItem.id) || ''}
-                                      onChange={e => {
-                                        const value = e.target.value
-                                        handleMatchSelection(lineItem.id, value || null)
-                                      }}
-                                      className="block w-full text-sm border-gray-300 rounded-md focus:border-blue-500 focus:ring-blue-500"
+                                  <p className="text-xs text-red-700 mt-1">
+                                    <strong>AI Analysis:</strong> {match.reason}
+                                  </p>
+                                  <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2">
+                                    <button
+                                      onClick={() => handleCreateNewLineItem(lineItem)}
+                                      className="text-left px-3 py-2 bg-green-100 hover:bg-green-200 border border-green-300 rounded text-xs font-medium text-green-800 transition-colors"
                                     >
-                                      <option value="">Select an estimate to match...</option>
-                                      {data.estimateLineItems.map(estItem => (
-                                        <option key={estItem.id} value={estItem.id}>
-                                          {estItem.trade.name}: {estItem.description} -{' '}
-                                          {formatCurrency(
-                                            estItem.materialCostEst +
-                                              estItem.laborCostEst +
-                                              estItem.equipmentCostEst
-                                          )}
-                                        </option>
-                                      ))}
-                                    </select>
-
-                                    {selectedMatches.get(lineItem.id) && (
-                                      <div className="text-xs text-gray-600">
-                                        ✓ Manually matched to estimate
-                                      </div>
-                                    )}
+                                      ➕ <strong>Create New Estimate</strong>
+                                      <div className="text-green-700 mt-1">Add as new line item</div>
+                                    </button>
+                                    <button
+                                      onClick={() => handleCreateNewTrade(lineItem)}
+                                      className="text-left px-3 py-2 bg-blue-100 hover:bg-blue-200 border border-blue-300 rounded text-xs font-medium text-blue-800 transition-colors"
+                                    >
+                                      🏗️ <strong>Create New Trade</strong>
+                                      <div className="text-blue-700 mt-1">Create new category</div>
+                                    </button>
                                   </div>
                                 </div>
                               </div>
-                            )}
-                          </div>
+                            </div>
+                          )}
+
                         </div>
                       )
                     })}
