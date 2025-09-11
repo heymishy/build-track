@@ -1,6 +1,7 @@
 /**
  * API Route: /api/projects/[id]/estimate-vs-actual
  * Provides detailed estimate vs actual invoice comparison data
+ * Fixed database relationship references
  */
 
 import { NextRequest } from 'next/server'
