@@ -751,25 +751,59 @@ export function InvoiceMatchingInterface({
           {/* How to Use Guide */}
           {showGuide && (
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-              <div className="flex items-start justify-between">
-                <div className="flex items-start space-x-3">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex items-start space-x-3 min-w-0 flex-1">
                   <div className="flex-shrink-0">
                     <MagnifyingGlassIcon className="h-5 w-5 text-blue-600 mt-0.5" />
                   </div>
-                  <div>
-                    <h4 className="text-sm font-semibold text-blue-900 mb-2">How to Match Invoices</h4>
-                    <div className="text-xs text-blue-800 space-y-1">
-                      <p><strong>✅ Accept AI Matches:</strong> Click checkboxes for high-confidence AI suggestions (green highlight)</p>
-                      <p><strong>🔄 Override Matches:</strong> Use dropdown menus to manually select different estimate line items</p>
-                      <p><strong>📊 Group by Trade:</strong> Toggle "Group by Trade" to organize items by category</p>
-                      <p><strong>💾 Apply Changes:</strong> Click "Apply Matches" button to save your selections</p>
-                      <p><strong>✅ Approve Invoices:</strong> Once all line items are matched, approve invoices for payment</p>
+                  <div className="min-w-0 flex-1">
+                    <h4 className="text-sm font-semibold text-blue-900 mb-3">How to Match Invoices</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs text-blue-800">
+                      <div className="space-y-2">
+                        <div className="flex items-start space-x-2">
+                          <span className="text-green-600 font-bold text-sm">✅</span>
+                          <div>
+                            <strong>Accept AI Matches:</strong>
+                            <br />Click checkboxes for high-confidence suggestions (green highlight)
+                          </div>
+                        </div>
+                        <div className="flex items-start space-x-2">
+                          <span className="text-blue-600 font-bold text-sm">🔄</span>
+                          <div>
+                            <strong>Override Matches:</strong>
+                            <br />Use dropdown menus to select different estimate items
+                          </div>
+                        </div>
+                        <div className="flex items-start space-x-2">
+                          <span className="text-purple-600 font-bold text-sm">📊</span>
+                          <div>
+                            <strong>Group by Trade:</strong>
+                            <br />Toggle to organize items by category
+                          </div>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex items-start space-x-2">
+                          <span className="text-orange-600 font-bold text-sm">💾</span>
+                          <div>
+                            <strong>Apply Changes:</strong>
+                            <br />Click "Apply Matches" button to save selections
+                          </div>
+                        </div>
+                        <div className="flex items-start space-x-2">
+                          <span className="text-green-600 font-bold text-sm">✅</span>
+                          <div>
+                            <strong>Approve Invoices:</strong>
+                            <br />Once matched, approve invoices for payment
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
                 <button
                   onClick={() => setShowGuide(false)}
-                  className="text-blue-400 hover:text-blue-600 p-1"
+                  className="text-blue-400 hover:text-blue-600 p-1 flex-shrink-0"
                   title="Hide guide"
                 >
                   <XMarkIcon className="h-4 w-4" />
