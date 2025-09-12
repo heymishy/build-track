@@ -330,11 +330,44 @@ Respond with ONLY the JSON output, no additional text.`
     try {
       // Extract JSON from response if it's wrapped in text
       let jsonData
-      const jsonMatch = llmResponse.match(/\{[\s\S]*\}/)
+
+      // Try multiple extraction methods for JSON
+      let jsonString = llmResponse.trim()
+
+      // Method 1: Look for JSON object
+      let jsonMatch = llmResponse.match(/\{[\s\S]*\}/)
       if (jsonMatch) {
-        jsonData = JSON.parse(jsonMatch[0])
+        jsonString = jsonMatch[0]
       } else {
-        jsonData = JSON.parse(llmResponse)
+        // Method 2: Look for JSON array
+        jsonMatch = llmResponse.match(/\[[\s\S]*\]/)
+        if (jsonMatch) {
+          jsonString = `{"matches": ${jsonMatch[0]}}`
+        }
+      }
+
+      // Clean up common JSON formatting issues
+      jsonString = jsonString
+        .replace(/,(\s*[}\]])/g, '$1') // Remove trailing commas
+        .replace(/([{,]\s*)(\w+):/g, '$1"$2":') // Quote unquoted keys
+        .replace(/:\s*([^",\[\]{}]+)(\s*[,}\]])/g, ': "$1"$2') // Quote unquoted string values
+
+      try {
+        jsonData = JSON.parse(jsonString)
+      } catch (parseError) {
+        console.warn('Failed to parse cleaned JSON, trying fallback:', parseError)
+        // Fallback: try to extract array content directly
+        const arrayMatch = llmResponse.match(/\[([\s\S]*)\]/)
+        if (arrayMatch) {
+          try {
+            jsonData = { matches: JSON.parse(`[${arrayMatch[1]}]`) }
+          } catch (arrayError) {
+            console.error('All JSON parsing methods failed:', arrayError)
+            throw new Error(`JSON parsing failed: ${parseError}`)
+          }
+        } else {
+          throw parseError
+        }
       }
 
       if (!jsonData.matches || !Array.isArray(jsonData.matches)) {
