@@ -170,11 +170,20 @@ async function GET(request: NextRequest, user: AuthUser) {
       }
     }
 
-    // Debug: Log invoice counts
+    // Debug: Log invoice counts and check for uploads
     console.log(`Processing ${invoices.length} invoices for project ${projectId}:`)
     invoices.forEach(inv => {
-      console.log(`- Invoice ${inv.invoiceNumber}: ${inv.lineItems.length} line items, status: ${inv.status}`)
+      console.log(`- Invoice ${inv.invoiceNumber}: ${inv.lineItems.length} line items, status: ${inv.status}, PDF: ${inv.pdfUrl ? 'yes' : 'no'}`)
     })
+
+    // Check if there are unprocessed uploads that need to be converted
+    const pendingUploads = await prisma.invoiceUpload.count({
+      where: {
+        projectId,
+        status: 'PENDING'
+      }
+    })
+    console.log(`Found ${pendingUploads} pending invoice uploads that may need processing`)
 
     // Convert results to the expected format, prioritizing existing matches from DB
     const matchingResults: MatchingResult[] = []
