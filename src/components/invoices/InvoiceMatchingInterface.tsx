@@ -215,6 +215,17 @@ export function InvoiceMatchingInterface({
   useEffect(() => {
     if (data) {
       autoSelectMatches()
+      // Auto-expand invoices that have existing matches so users can see them
+      const invoicesWithMatches = new Set<string>()
+      data.matchingResults.forEach(result => {
+        const hasExistingMatches = result.matches.some(match => match.matchType === 'existing')
+        if (hasExistingMatches) {
+          invoicesWithMatches.add(result.invoiceId)
+        }
+      })
+      if (invoicesWithMatches.size > 0) {
+        setExpandedInvoices(invoicesWithMatches)
+      }
     }
   }, [data, autoSelectMode])
 
@@ -1237,13 +1248,14 @@ export function InvoiceMatchingInterface({
                 )}
 
                 <div
-                  className="flex items-center space-x-3 cursor-pointer flex-1"
+                  className="flex items-center space-x-3 cursor-pointer flex-1 hover:bg-gray-50 rounded-md p-2 -m-2 transition-colors"
                   onClick={() => toggleInvoiceExpansion(invoice.id)}
+                  title={isExpanded ? "Click to collapse matching details" : "Click to expand and view/edit matches"}
                 >
                   {isExpanded ? (
-                    <ChevronDownIcon className="h-5 w-5 text-gray-400" />
+                    <ChevronDownIcon className="h-5 w-5 text-blue-500" />
                   ) : (
-                    <ChevronRightIcon className="h-5 w-5 text-gray-400" />
+                    <ChevronRightIcon className="h-5 w-5 text-blue-500" />
                   )}
 
                   <div className="flex-1">
@@ -1261,7 +1273,7 @@ export function InvoiceMatchingInterface({
                       <span>Line Items: {invoice.lineItems.length}</span>
                       {existingMatches > 0 && (
                         <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
-                          {existingMatches} matched
+                          {existingMatches} matched • {isExpanded ? 'hide details' : 'click to view/edit'}
                         </span>
                       )}
                       {highConfidenceMatches > 0 && (
