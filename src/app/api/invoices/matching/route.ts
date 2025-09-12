@@ -26,6 +26,7 @@ async function GET(request: NextRequest, user: AuthUser) {
   try {
     const { searchParams } = new URL(request.url)
     const projectId = searchParams.get('projectId')
+    const runMatching = searchParams.get('runMatching') === 'true' // Only run LLM when explicitly requested
 
     if (!projectId) {
       return NextResponse.json(
@@ -108,10 +109,12 @@ async function GET(request: NextRequest, user: AuthUser) {
       invoice.lineItems.filter(item => !item.lineItemId)
     )
 
-    // Run LLM matching only for unmatched items, but show all invoices in interface
+    // Run LLM matching only when explicitly requested and there are unmatched items
     let batchResult
-    if (unmatchedItems.length > 0) {
-      console.log(`Found ${unmatchedItems.length} unmatched items, running LLM matching...`)
+    if (runMatching && unmatchedItems.length > 0) {
+      console.log(
+        `User requested matching: Found ${unmatchedItems.length} unmatched items, running LLM matching...`
+      )
 
       // Prepare data for LLM matching service - only unmatched items
       const invoicesForMatching = invoices

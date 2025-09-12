@@ -232,10 +232,11 @@ export function InvoiceMatchingInterface({
     }
   }, [data, autoSelectMode])
 
-  const fetchMatchingData = async () => {
+  const fetchMatchingData = async (runMatching = false) => {
     try {
       setLoading(true)
-      const response = await fetch(`/api/invoices/matching?projectId=${projectId}`)
+      const url = `/api/invoices/matching?projectId=${projectId}${runMatching ? '&runMatching=true' : ''}`
+      const response = await fetch(url)
       const result = await response.json()
 
       if (result.success) {
@@ -626,7 +627,7 @@ export function InvoiceMatchingInterface({
           <button
             onClick={() => {
               setError(null)
-              fetchMatchingData()
+              fetchMatchingData(false) // Just retry loading, don't run matching
             }}
             className="mt-4 inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
           >
@@ -654,6 +655,13 @@ export function InvoiceMatchingInterface({
 
   const filteredInvoices = getMatchingInvoices()
   const selectedCount = selectedMatches.size
+
+  // Calculate unmatched items for user guidance
+  const unmatchedCount = data
+    ? data.matchingResults.reduce((total, result) => {
+        return total + result.matches.filter(match => !match.estimateLineItemId).length
+      }, 0)
+    : 0
 
   return (
     <div className={`bg-white rounded-lg shadow ${className}`}>
@@ -756,6 +764,42 @@ export function InvoiceMatchingInterface({
               )}
             </div>
           </div>
+
+          {/* Unmatched Items Notice */}
+          {unmatchedCount > 0 && (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
+              <div className="flex items-start space-x-3">
+                <div className="flex-shrink-0">
+                  <ExclamationTriangleIcon className="h-5 w-5 text-amber-600 mt-0.5" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h4 className="text-sm font-semibold text-amber-900 mb-2">
+                    {unmatchedCount} Unmatched Line Items Found
+                  </h4>
+                  <p className="text-xs text-amber-800 mb-3">
+                    These items need to be matched to estimate line items before invoices can be
+                    approved. Use "Re-run AI Matching" to get smart suggestions, or match them
+                    manually using the dropdowns below.
+                  </p>
+                  <button
+                    onClick={() => {
+                      setSelectedMatches(new Map())
+                      fetchMatchingData(true)
+                    }}
+                    disabled={loading}
+                    className="inline-flex items-center px-3 py-1.5 border border-amber-300 text-xs font-medium rounded-md text-amber-800 bg-amber-100 hover:bg-amber-200 disabled:opacity-50"
+                  >
+                    {loading ? (
+                      <ArrowPathIcon className="h-3 w-3 mr-1.5 animate-spin" />
+                    ) : (
+                      <SparklesIcon className="h-3 w-3 mr-1.5" />
+                    )}
+                    {loading ? 'Getting AI Suggestions...' : 'Get AI Suggestions'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* How to Use Guide */}
           {showGuide && (
@@ -881,7 +925,7 @@ export function InvoiceMatchingInterface({
             <button
               onClick={() => {
                 setSelectedMatches(new Map())
-                fetchMatchingData()
+                fetchMatchingData(true) // Now explicitly request matching
               }}
               disabled={loading}
               className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
@@ -891,7 +935,7 @@ export function InvoiceMatchingInterface({
               ) : (
                 <ArrowPathIcon className="h-4 w-4 mr-2" />
               )}
-              {loading ? 'Running AI Analysis...' : 'Re-run AI Matching'}
+              {loading ? 'Running Smart Invoice Matching...' : 'Re-run AI Matching'}
             </button>
 
             {/* Apply Matches Button or Status */}
@@ -1416,10 +1460,12 @@ export function InvoiceMatchingInterface({
                               }}
                               projectId={projectId}
                               estimateLineItems={data.estimateLineItems}
-                              onMatchSelected={(estimateLineItemId) => 
+                              onMatchSelected={estimateLineItemId =>
                                 handleMatchSelection(lineItem.id, estimateLineItemId)
                               }
-                              currentMatch={selectedMatches.get(lineItem.id) || match.estimateLineItemId}
+                              currentMatch={
+                                selectedMatches.get(lineItem.id) || match.estimateLineItemId
+                              }
                             />
                           ) : (
                             <div className="bg-white rounded-lg border-2 border-blue-200 p-4">
