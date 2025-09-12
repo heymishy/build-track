@@ -1188,9 +1188,25 @@ export function InvoiceMatchingInterface({
         </div>
       )}
 
-      {/* Invoice List */}
-      <div className="divide-y divide-gray-200">
-        {filteredInvoices.map(invoice => {
+      {/* Grouped Invoice Sections */}
+      {(() => {
+        // Group invoices by status for better UX
+        const unmatchedInvoices = filteredInvoices.filter(invoice => {
+          const matchResults = data.matchingResults.find(r => r.invoiceId === invoice.id)
+          return matchResults?.matches.some(m => m.matchType === 'unmatched') || false
+        })
+
+        const matchedPendingInvoices = filteredInvoices.filter(invoice => {
+          const matchResults = data.matchingResults.find(r => r.invoiceId === invoice.id)
+          const hasUnmatched = matchResults?.matches.some(m => m.matchType === 'unmatched') || false
+          return !hasUnmatched && invoice.status === 'PENDING'
+        })
+
+        const processedInvoices = filteredInvoices.filter(invoice => 
+          invoice.status === 'APPROVED' || invoice.status === 'PAID'
+        )
+
+        const renderInvoiceCard = (invoice: any, sectionType: 'unmatched' | 'matched' | 'processed') => {
           const matchResults = data.matchingResults.find(r => r.invoiceId === invoice.id)
           const isExpanded = expandedInvoices.has(invoice.id)
           const existingMatches =
@@ -1202,9 +1218,9 @@ export function InvoiceMatchingInterface({
             matchResults?.matches.filter(m => m.matchType === 'unmatched').length || 0
 
           return (
-            <div key={invoice.id} className="px-6 py-4">
+            <div key={invoice.id} className="border-b border-gray-100 last:border-b-0">
               {/* Invoice Header */}
-              <div className="flex items-center justify-between">
+              <div className="px-4 py-3 flex items-center justify-between hover:bg-gray-50 transition-colors">
                 {/* Approval Checkbox for fully matched invoices */}
                 {canInvoiceBeApproved(invoice, matchResults) && (
                   <div className="mr-3">
@@ -1222,7 +1238,7 @@ export function InvoiceMatchingInterface({
                 )}
 
                 <div
-                  className="flex items-center space-x-3 cursor-pointer flex-1 hover:bg-gray-50 rounded-md p-2 -m-2 transition-colors"
+                  className="flex items-center space-x-3 cursor-pointer flex-1"
                   onClick={() => toggleInvoiceExpansion(invoice.id)}
                   title={
                     isExpanded
@@ -1231,54 +1247,54 @@ export function InvoiceMatchingInterface({
                   }
                 >
                   {isExpanded ? (
-                    <ChevronDownIcon className="h-5 w-5 text-blue-500" />
+                    <ChevronDownIcon className="h-4 w-4 text-blue-500 flex-shrink-0" />
                   ) : (
-                    <ChevronRightIcon className="h-5 w-5 text-blue-500" />
+                    <ChevronRightIcon className="h-4 w-4 text-blue-500 flex-shrink-0" />
                   )}
 
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-3">
-                      <DocumentTextIcon className="h-5 w-5 text-gray-400" />
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">{invoice.invoiceNumber}</p>
-                        <p className="text-sm text-gray-500">{invoice.supplierName}</p>
+                  <DocumentTextIcon className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                  
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 truncate">{invoice.invoiceNumber}</p>
+                        <p className="text-xs text-gray-500 truncate">{invoice.supplierName}</p>
+                      </div>
+                      <div className="text-right ml-4">
+                        <p className="text-sm font-medium text-gray-900">{formatCurrency(invoice.totalAmount)}</p>
+                        <p className="text-xs text-gray-500">{formatDate(invoice.invoiceDate)}</p>
                       </div>
                     </div>
 
-                    <div className="mt-2 flex items-center space-x-4 text-xs text-gray-500">
-                      <span>Date: {formatDate(invoice.invoiceDate)}</span>
-                      <span>Amount: {formatCurrency(invoice.totalAmount)}</span>
-                      <span>Line Items: {invoice.lineItems.length}</span>
+                    <div className="mt-1 flex items-center space-x-2 text-xs">
                       {existingMatches > 0 && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
-                          {existingMatches} matched •{' '}
-                          {isExpanded ? 'hide details' : 'click to view/edit'}
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                          {existingMatches} matched
                         </span>
                       )}
                       {highConfidenceMatches > 0 && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
-                          {highConfidenceMatches} suggested
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                          {highConfidenceMatches} AI suggested
                         </span>
                       )}
                       {unmatchedItems > 0 && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
                           {unmatchedItems} unmatched
                         </span>
                       )}
-                      {/* Invoice Status Badge */}
                       {invoice.status === 'APPROVED' && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
                           ✓ Approved
                         </span>
                       )}
                       {invoice.status === 'PAID' && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
                           ✓ Paid
                         </span>
                       )}
                       {canInvoiceBeApproved(invoice, matchResults) && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800">
-                          Ready to Approve
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800">
+                          Ready to approve
                         </span>
                       )}
                     </div>
@@ -1288,7 +1304,7 @@ export function InvoiceMatchingInterface({
 
               {/* Invoice Line Items (when expanded) */}
               {isExpanded && matchResults && (
-                <div className="mt-4 ml-8">
+                <div className="px-4 py-4 bg-gray-50 border-t border-gray-200">
                   <div className="space-y-3">
                     {invoice.lineItems.map((lineItem: any) => {
                       const match = matchResults.matches.find(
@@ -1305,55 +1321,50 @@ export function InvoiceMatchingInterface({
                       return (
                         <div
                           key={lineItem.id}
-                          className={`rounded-lg p-4 border-2 ${
+                          className={`rounded-lg p-3 border ${
                             match.matchType === 'suggested' && match.confidence >= 0.7
-                              ? 'border-green-400 bg-green-50'
+                              ? 'border-green-300 bg-green-50'
                               : match.matchType === 'suggested' && match.confidence >= 0.5
-                                ? 'border-yellow-400 bg-yellow-50'
+                                ? 'border-yellow-300 bg-yellow-50'
                                 : match.matchType === 'existing'
-                                  ? 'border-blue-400 bg-blue-50'
-                                  : 'border-gray-300 bg-white'
+                                  ? 'border-blue-300 bg-blue-50'
+                                  : 'border-red-200 bg-red-50'
                           }`}
                         >
                           {/* Invoice Line Item Header */}
-                          <div className="flex items-start justify-between mb-4">
-                            <div className="flex-1">
-                              <p className="text-sm font-medium text-gray-900">
-                                {lineItem.description}
-                              </p>
-                              <div className="mt-1 flex items-center space-x-4 text-xs text-gray-500">
+                          <div className="flex items-start justify-between mb-3">
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-gray-900">{lineItem.description}</p>
+                              <div className="mt-1 flex items-center space-x-3 text-xs text-gray-500">
                                 <span>Qty: {lineItem.quantity}</span>
-                                <span>Unit: {formatCurrency(lineItem.unitPrice)}</span>
-                                <span>Total: {formatCurrency(lineItem.totalPrice)}</span>
-                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                                  {lineItem.category}
-                                </span>
+                                <span>{formatCurrency(lineItem.totalPrice)}</span>
+                                <span className="px-1.5 py-0.5 rounded bg-gray-100 text-gray-700">{lineItem.category}</span>
                               </div>
                             </div>
 
                             {/* Match Status Badge */}
                             {match.matchType === 'existing' && (
-                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 ml-2">
                                 <CheckCircleIcon className="h-3 w-3 mr-1" />
-                                Already Matched
+                                Matched
                               </span>
                             )}
                             {match.matchType === 'suggested' && (
                               <span
-                                className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ml-2 ${
                                   match.confidence >= 0.7
                                     ? 'bg-green-100 text-green-800'
                                     : 'bg-yellow-100 text-yellow-800'
                                 }`}
                               >
                                 <SparklesIcon className="h-3 w-3 mr-1" />
-                                AI: {Math.round(match.confidence * 100)}%
+                                {Math.round(match.confidence * 100)}%
                               </span>
                             )}
                             {match.matchType === 'unmatched' && (
-                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 ml-2">
                                 <ExclamationTriangleIcon className="h-3 w-3 mr-1" />
-                                Needs Matching
+                                Unmatched
                               </span>
                             )}
                           </div>
@@ -1380,190 +1391,114 @@ export function InvoiceMatchingInterface({
                               }
                             />
                           ) : (
-                            <div className="bg-white rounded-lg border-2 border-blue-200 p-4">
-                              <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center">
-                                <LinkIcon className="h-4 w-4 mr-2 text-blue-600" />
-                                Match to Estimate Line Item
-                              </h4>
-
-                              <div className="space-y-3">
-                                {/* Estimate Selection Dropdown */}
-                                <div>
-                                  <label className="block text-xs font-medium text-gray-700 mb-1">
-                                    Select Estimate Line Item to Match:
-                                  </label>
-                                  <select
-                                    value={
-                                      selectedMatches.get(lineItem.id) ||
-                                      match.estimateLineItemId ||
-                                      ''
-                                    }
-                                    onChange={e => {
-                                      const value = e.target.value
-                                      handleMatchSelection(lineItem.id, value || null)
-                                    }}
-                                    className="block w-full text-sm border-gray-300 rounded-md focus:border-blue-500 focus:ring-blue-500 bg-white"
-                                  >
-                                    <option value="">-- No Match / Skip This Item --</option>
-                                    {/* Group by Trade */}
-                                    {Object.entries(
-                                      data.estimateLineItems.reduce(
-                                        (groups, item) => {
-                                          const tradeName = item.trade.name
-                                          if (!groups[tradeName]) groups[tradeName] = []
-                                          groups[tradeName].push(item)
-                                          return groups
-                                        },
-                                        {} as Record<string, any[]>
-                                      )
-                                    ).map(([tradeName, items]) => (
-                                      <optgroup
-                                        key={tradeName}
-                                        label={`${tradeName} (${items.length} items)`}
-                                      >
-                                        {items.map(estItem => {
-                                          const isCurrentMatch =
-                                            match.estimateLineItemId === estItem.id
-                                          const totalCost =
-                                            estItem.materialCostEst +
-                                            estItem.laborCostEst +
-                                            estItem.equipmentCostEst
-                                          return (
-                                            <option
-                                              key={estItem.id}
-                                              value={estItem.id}
-                                              className={isCurrentMatch ? 'font-medium' : ''}
-                                            >
-                                              {isCurrentMatch ? '★ ' : ''}
-                                              {estItem.description} - {formatCurrency(totalCost)}
-                                            </option>
-                                          )
-                                        })}
-                                      </optgroup>
-                                    ))}
-                                  </select>
-                                </div>
+                            <div className="bg-white rounded border p-3">
+                              <div className="space-y-2">
+                                <label className="block text-xs font-medium text-gray-700">
+                                  Match to estimate line item:
+                                </label>
+                                <select
+                                  value={
+                                    selectedMatches.get(lineItem.id) ||
+                                    match.estimateLineItemId ||
+                                    ''
+                                  }
+                                  onChange={e => {
+                                    const value = e.target.value
+                                    handleMatchSelection(lineItem.id, value || null)
+                                  }}
+                                  className="block w-full text-sm border-gray-300 rounded focus:border-blue-500 focus:ring-blue-500"
+                                >
+                                  <option value="">-- No Match --</option>
+                                  {Object.entries(
+                                    data.estimateLineItems.reduce(
+                                      (groups, item) => {
+                                        const tradeName = item.trade.name
+                                        if (!groups[tradeName]) groups[tradeName] = []
+                                        groups[tradeName].push(item)
+                                        return groups
+                                      },
+                                      {} as Record<string, any[]>
+                                    )
+                                  ).map(([tradeName, items]) => (
+                                    <optgroup key={tradeName} label={tradeName}>
+                                      {items.map(estItem => {
+                                        const totalCost =
+                                          estItem.materialCostEst +
+                                          estItem.laborCostEst +
+                                          estItem.equipmentCostEst
+                                        return (
+                                          <option key={estItem.id} value={estItem.id}>
+                                            {estItem.description} - {formatCurrency(totalCost)}
+                                          </option>
+                                        )
+                                      })}
+                                    </optgroup>
+                                  ))}
+                                </select>
 
                                 {/* Current Selection Display */}
                                 {(selectedMatches.get(lineItem.id) || match.estimateLineItemId) && (
-                                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                                    <div className="flex items-start justify-between">
-                                      <div className="flex-1">
-                                        {(() => {
-                                          const currentEstimateId =
-                                            selectedMatches.get(lineItem.id) ||
-                                            match.estimateLineItemId
-                                          const currentEstimate = data.estimateLineItems.find(
-                                            e => e.id === currentEstimateId
-                                          )
-                                          if (!currentEstimate) return null
+                                  <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-xs">
+                                    {(() => {
+                                      const currentEstimateId =
+                                        selectedMatches.get(lineItem.id) || match.estimateLineItemId
+                                      const currentEstimate = data.estimateLineItems.find(
+                                        e => e.id === currentEstimateId
+                                      )
+                                      if (!currentEstimate) return null
 
-                                          const totalCost =
-                                            currentEstimate.materialCostEst +
-                                            currentEstimate.laborCostEst +
-                                            currentEstimate.equipmentCostEst
-                                          const variance = lineItem.totalPrice - totalCost
-                                          const variancePercent =
-                                            totalCost > 0 ? (variance / totalCost) * 100 : 0
+                                      const totalCost =
+                                        currentEstimate.materialCostEst +
+                                        currentEstimate.laborCostEst +
+                                        currentEstimate.equipmentCostEst
+                                      const variance = lineItem.totalPrice - totalCost
 
-                                          return (
-                                            <div>
-                                              <p className="text-sm font-medium text-blue-900">
-                                                ✓ Matched to: {currentEstimate.description}
-                                              </p>
-                                              <div className="mt-1 grid grid-cols-1 md:grid-cols-3 gap-2 text-xs">
-                                                <div>
-                                                  <span className="text-blue-600 font-medium">
-                                                    Trade:
-                                                  </span>{' '}
-                                                  {currentEstimate.trade.name}
-                                                </div>
-                                                <div>
-                                                  <span className="text-blue-600 font-medium">
-                                                    Estimated:
-                                                  </span>{' '}
-                                                  {formatCurrency(totalCost)}
-                                                </div>
-                                                <div>
-                                                  <span className="text-blue-600 font-medium">
-                                                    Variance:
-                                                  </span>
-                                                  <span
-                                                    className={`ml-1 font-medium ${
-                                                      variance > 0
-                                                        ? 'text-red-600'
-                                                        : variance < 0
-                                                          ? 'text-green-600'
-                                                          : 'text-gray-600'
-                                                    }`}
-                                                  >
-                                                    {variance > 0 ? '+' : ''}
-                                                    {formatCurrency(variance)} (
-                                                    {variancePercent.toFixed(1)}%)
-                                                  </span>
-                                                </div>
-                                              </div>
-                                            </div>
-                                          )
-                                        })()}
-                                      </div>
-                                    </div>
+                                      return (
+                                        <div>
+                                          <p className="font-medium text-blue-900">
+                                            → {currentEstimate.description}
+                                          </p>
+                                          <div className="mt-1 grid grid-cols-3 gap-2 text-xs">
+                                            <span>Trade: {currentEstimate.trade.name}</span>
+                                            <span>Est: {formatCurrency(totalCost)}</span>
+                                            <span className={variance > 0 ? 'text-red-600' : variance < 0 ? 'text-green-600' : 'text-gray-600'}>
+                                              Var: {variance > 0 ? '+' : ''}{formatCurrency(variance)}
+                                            </span>
+                                          </div>
+                                        </div>
+                                      )
+                                    })()}
                                   </div>
                                 )}
                               </div>
                             </div>
                           )}
 
-                          {/* AI Suggestion Section - Secondary */}
+                          {/* AI Suggestion Info */}
                           {match.matchType === 'suggested' && (
-                            <div className="mt-4 bg-green-50 border border-green-200 rounded-lg p-3">
-                              <div className="flex items-start space-x-2">
-                                <SparklesIcon className="h-4 w-4 text-green-600 flex-shrink-0 mt-0.5" />
-                                <div className="flex-1">
-                                  <p className="text-sm font-semibold text-green-800">
-                                    🤖 AI Suggestion ({Math.round(match.confidence * 100)}%
-                                    confidence)
-                                  </p>
-                                  <p className="mt-1 text-xs text-green-700">
-                                    <strong>Reasoning:</strong> {match.reason}
-                                  </p>
-                                </div>
-                              </div>
+                            <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-xs">
+                              <p className="text-green-800">
+                                <SparklesIcon className="h-3 w-3 inline mr-1" />
+                                <strong>AI:</strong> {match.reason}
+                              </p>
                             </div>
                           )}
 
-                          {/* Unmatched Item Actions */}
+                          {/* Unmatched Actions */}
                           {match.matchType === 'unmatched' && !selectedMatches.get(lineItem.id) && (
-                            <div className="mt-4 bg-red-50 border border-red-200 rounded-lg p-3">
-                              <div className="flex items-start space-x-2">
-                                <ExclamationTriangleIcon className="h-5 w-5 text-red-600 flex-shrink-0" />
-                                <div className="flex-1">
-                                  <h5 className="text-sm font-semibold text-red-800">
-                                    ⚠️ No AI Match Found
-                                  </h5>
-                                  <p className="text-xs text-red-700 mt-1">
-                                    <strong>AI Analysis:</strong> {match.reason}
-                                  </p>
-                                  <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2">
-                                    <button
-                                      onClick={() => handleCreateNewLineItem(lineItem)}
-                                      className="text-left px-3 py-2 bg-green-100 hover:bg-green-200 border border-green-300 rounded text-xs font-medium text-green-800 transition-colors"
-                                    >
-                                      ➕ <strong>Create New Estimate</strong>
-                                      <div className="text-green-700 mt-1">
-                                        Add as new line item
-                                      </div>
-                                    </button>
-                                    <button
-                                      onClick={() => handleCreateNewTrade(lineItem)}
-                                      className="text-left px-3 py-2 bg-blue-100 hover:bg-blue-200 border border-blue-300 rounded text-xs font-medium text-blue-800 transition-colors"
-                                    >
-                                      🏗️ <strong>Create New Trade</strong>
-                                      <div className="text-blue-700 mt-1">Create new category</div>
-                                    </button>
-                                  </div>
-                                </div>
-                              </div>
+                            <div className="mt-2 grid grid-cols-2 gap-2">
+                              <button
+                                onClick={() => handleCreateNewLineItem(lineItem)}
+                                className="px-2 py-1 bg-green-100 hover:bg-green-200 border border-green-300 rounded text-xs text-green-800"
+                              >
+                                ➕ Create Estimate
+                              </button>
+                              <button
+                                onClick={() => handleCreateNewTrade(lineItem)}
+                                className="px-2 py-1 bg-blue-100 hover:bg-blue-200 border border-blue-300 rounded text-xs text-blue-800"
+                              >
+                                🏗️ Create Trade
+                              </button>
                             </div>
                           )}
                         </div>
@@ -1574,8 +1509,101 @@ export function InvoiceMatchingInterface({
               )}
             </div>
           )
-        })}
-      </div>
+        }
+
+        // Return grouped sections with clear visual separation
+        return (
+          <div className="space-y-6">
+            {/* UNMATCHED INVOICES SECTION */}
+            {unmatchedInvoices.length > 0 && (
+              <div className="bg-red-50 border border-red-200 rounded-lg">
+                <div className="px-4 py-3 border-b border-red-200 bg-red-100">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <ExclamationTriangleIcon className="h-5 w-5 text-red-600" />
+                      <h3 className="text-sm font-semibold text-red-900">
+                        Unmatched Invoices ({unmatchedInvoices.length})
+                      </h3>
+                    </div>
+                    {unmatchedInvoices.length > 0 && (
+                      <button
+                        onClick={() => {
+                          // Auto-expand all unmatched invoices for easier processing
+                          const newExpanded = new Set(expandedInvoices)
+                          unmatchedInvoices.forEach(inv => newExpanded.add(inv.id))
+                          setExpandedInvoices(newExpanded)
+                        }}
+                        className="text-xs text-red-700 hover:text-red-800 underline"
+                      >
+                        Expand all for matching
+                      </button>
+                    )}
+                  </div>
+                  <p className="text-xs text-red-700 mt-1">
+                    These invoices have line items that need to be matched before approval. Use AI matching or manual selection.
+                  </p>
+                </div>
+                <div className="divide-y divide-red-200">
+                  {unmatchedInvoices.map(invoice => renderInvoiceCard(invoice, 'unmatched'))}
+                </div>
+              </div>
+            )}
+
+            {/* MATCHED PENDING INVOICES SECTION */}
+            {matchedPendingInvoices.length > 0 && (
+              <div className="bg-green-50 border border-green-200 rounded-lg">
+                <div className="px-4 py-3 border-b border-green-200 bg-green-100">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <CheckCircleIcon className="h-5 w-5 text-green-600" />
+                      <h3 className="text-sm font-semibold text-green-900">
+                        Ready for Approval ({matchedPendingInvoices.length})
+                      </h3>
+                    </div>
+                    {matchedPendingInvoices.length > 0 && (
+                      <button
+                        onClick={() => {
+                          // Select all for approval
+                          setSelectedInvoicesForApproval(new Set(matchedPendingInvoices.map(inv => inv.id)))
+                        }}
+                        className="text-xs text-green-700 hover:text-green-800 underline"
+                      >
+                        Select all for approval
+                      </button>
+                    )}
+                  </div>
+                  <p className="text-xs text-green-700 mt-1">
+                    All line items are matched. These invoices are ready to approve for payment.
+                  </p>
+                </div>
+                <div className="divide-y divide-green-200">
+                  {matchedPendingInvoices.map(invoice => renderInvoiceCard(invoice, 'matched'))}
+                </div>
+              </div>
+            )}
+
+            {/* PROCESSED INVOICES SECTION */}
+            {processedInvoices.length > 0 && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="px-4 py-3 border-b border-blue-200 bg-blue-100">
+                  <div className="flex items-center space-x-2">
+                    <DocumentTextIcon className="h-5 w-5 text-blue-600" />
+                    <h3 className="text-sm font-semibold text-blue-900">
+                      Processed Invoices ({processedInvoices.length})
+                    </h3>
+                  </div>
+                  <p className="text-xs text-blue-700 mt-1">
+                    These invoices have been approved or paid. Expand to view matching details.
+                  </p>
+                </div>
+                <div className="divide-y divide-blue-200">
+                  {processedInvoices.map(invoice => renderInvoiceCard(invoice, 'processed'))}
+                </div>
+              </div>
+            )}
+          </div>
+        )
+      })()}
 
       {/* Empty State */}
       {filteredInvoices.length === 0 && (
