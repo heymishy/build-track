@@ -50,13 +50,15 @@ export const DELETE = withAuth(
 
       console.log(`Found ${invoicesToDelete.length} empty invoices to delete:`)
       invoicesToDelete.forEach(inv => {
-        console.log(`- Invoice ${inv.invoiceNumber}: ${inv._count.lineItems} line items, PDF: ${inv.pdfUrl ? 'yes' : 'no'}`)
+        console.log(
+          `- Invoice ${inv.invoiceNumber}: ${inv._count.lineItems} line items, PDF: ${inv.pdfUrl ? 'yes' : 'no'}`
+        )
       })
 
       // Delete empty invoices
       if (invoicesToDelete.length > 0) {
         const invoiceIds = invoicesToDelete.map(inv => inv.id)
-        
+
         const deletedCount = await prisma.invoice.deleteMany({
           where: {
             id: {

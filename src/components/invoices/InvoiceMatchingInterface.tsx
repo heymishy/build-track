@@ -1250,7 +1250,11 @@ export function InvoiceMatchingInterface({
                 <div
                   className="flex items-center space-x-3 cursor-pointer flex-1 hover:bg-gray-50 rounded-md p-2 -m-2 transition-colors"
                   onClick={() => toggleInvoiceExpansion(invoice.id)}
-                  title={isExpanded ? "Click to collapse matching details" : "Click to expand and view/edit matches"}
+                  title={
+                    isExpanded
+                      ? 'Click to collapse matching details'
+                      : 'Click to expand and view/edit matches'
+                  }
                 >
                   {isExpanded ? (
                     <ChevronDownIcon className="h-5 w-5 text-blue-500" />
@@ -1273,7 +1277,8 @@ export function InvoiceMatchingInterface({
                       <span>Line Items: {invoice.lineItems.length}</span>
                       {existingMatches > 0 && (
                         <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
-                          {existingMatches} matched • {isExpanded ? 'hide details' : 'click to view/edit'}
+                          {existingMatches} matched •{' '}
+                          {isExpanded ? 'hide details' : 'click to view/edit'}
                         </span>
                       )}
                       {highConfidenceMatches > 0 && (

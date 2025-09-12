@@ -325,28 +325,30 @@ function InvoicesContent() {
 
 export default function InvoicesPage() {
   return (
-    <Suspense fallback={
-      <AppLayout>
-        <PageHeader
-          title="Invoice Management"
-          description="Manage and match invoices against project estimates"
-          icon={DocumentTextIcon}
-          breadcrumbs={[{ label: 'Invoice Management' }]}
-        />
-        <div className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="animate-pulse space-y-4">
-              <div className="h-4 bg-gray-200 rounded w-1/4"></div>
-              <div className="space-y-3">
-                {[...Array(3)].map((_, i) => (
-                  <div key={i} className="h-16 bg-gray-200 rounded"></div>
-                ))}
+    <Suspense
+      fallback={
+        <AppLayout>
+          <PageHeader
+            title="Invoice Management"
+            description="Manage and match invoices against project estimates"
+            icon={DocumentTextIcon}
+            breadcrumbs={[{ label: 'Invoice Management' }]}
+          />
+          <div className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
+            <div className="bg-white rounded-lg shadow p-6">
+              <div className="animate-pulse space-y-4">
+                <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+                <div className="space-y-3">
+                  {[...Array(3)].map((_, i) => (
+                    <div key={i} className="h-16 bg-gray-200 rounded"></div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </AppLayout>
-    }>
+        </AppLayout>
+      }
+    >
       <InvoicesContent />
     </Suspense>
   )

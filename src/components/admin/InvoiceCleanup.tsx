@@ -24,7 +24,11 @@ export function InvoiceCleanup({ projectId, projectName }: InvoiceCleanupProps) 
   } | null>(null)
 
   const handleCleanup = async () => {
-    if (!confirm(`Are you sure you want to delete all empty invoices (0 line items) from ${projectName}?`)) {
+    if (
+      !confirm(
+        `Are you sure you want to delete all empty invoices (0 line items) from ${projectName}?`
+      )
+    ) {
       return
     }
 
@@ -64,18 +68,23 @@ export function InvoiceCleanup({ projectId, projectName }: InvoiceCleanupProps) 
         <div className="flex-1">
           <h3 className="text-sm font-medium text-yellow-800">Clean Up Empty Invoices</h3>
           <p className="mt-1 text-sm text-yellow-700">
-            Remove invoices that have 0 line items (failed PDF parsing). This will allow you to re-upload with proper PDF processing.
+            Remove invoices that have 0 line items (failed PDF parsing). This will allow you to
+            re-upload with proper PDF processing.
           </p>
-          
+
           {result && (
-            <div className={`mt-3 p-3 rounded-lg ${
-              result.success 
-                ? 'bg-green-50 border border-green-200' 
-                : 'bg-red-50 border border-red-200'
-            }`}>
-              <p className={`text-sm font-medium ${
-                result.success ? 'text-green-800' : 'text-red-800'
-              }`}>
+            <div
+              className={`mt-3 p-3 rounded-lg ${
+                result.success
+                  ? 'bg-green-50 border border-green-200'
+                  : 'bg-red-50 border border-red-200'
+              }`}
+            >
+              <p
+                className={`text-sm font-medium ${
+                  result.success ? 'text-green-800' : 'text-red-800'
+                }`}
+              >
                 {result.message}
               </p>
               {result.success && result.invoiceNumbers && result.invoiceNumbers.length > 0 && (

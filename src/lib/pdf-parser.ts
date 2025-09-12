@@ -426,7 +426,8 @@ export async function parseMultipleInvoices(
   pdfBuffer: Buffer,
   userId?: string,
   saveToDatabase: boolean = false,
-  projectId?: string
+  projectId?: string,
+  pdfFileUrl?: string | null
 ): Promise<MultiInvoiceResult> {
   try {
     console.log('🚀 Starting LLM-first PDF processing...')
@@ -444,7 +445,7 @@ export async function parseMultipleInvoices(
     if (saveToDatabase && userId && result.invoices.length > 0) {
       console.log('💾 Saving invoices to database...')
       for (const invoice of result.invoices) {
-        await saveInvoiceToDatabase(invoice, userId, projectId)
+        await saveInvoiceToDatabase(invoice, userId, projectId, pdfFileUrl)
       }
     }
 
@@ -453,7 +454,13 @@ export async function parseMultipleInvoices(
     console.error('❌ LLM-first processing failed, falling back to legacy method:', error)
 
     // FALLBACK: Use legacy text extraction method if LLM processing fails
-    return await parseMultipleInvoicesLegacy(pdfBuffer, userId, saveToDatabase, projectId)
+    return await parseMultipleInvoicesLegacy(
+      pdfBuffer,
+      userId,
+      saveToDatabase,
+      projectId,
+      pdfFileUrl
+    )
   }
 }
 
@@ -464,7 +471,8 @@ async function parseMultipleInvoicesLegacy(
   pdfBuffer: Buffer,
   userId?: string,
   saveToDatabase: boolean = false,
-  projectId?: string
+  projectId?: string,
+  pdfFileUrl?: string | null
 ): Promise<MultiInvoiceResult> {
   console.log('📄 Using legacy text extraction method...')
 
@@ -504,7 +512,7 @@ async function parseMultipleInvoicesLegacy(
 
           // Save to database immediately if requested
           if (saveToDatabase && userId) {
-            await saveInvoiceToDatabase(enhancedInvoice, userId, projectId)
+            await saveInvoiceToDatabase(enhancedInvoice, userId, projectId, pdfFileUrl)
           }
         } else {
           // Fallback to traditional parsing
@@ -537,7 +545,7 @@ async function parseMultipleInvoicesLegacy(
 
           // Save to database immediately if requested
           if (saveToDatabase && userId) {
-            await saveInvoiceToDatabase(enhancedInvoice, userId, projectId)
+            await saveInvoiceToDatabase(enhancedInvoice, userId, projectId, pdfFileUrl)
           }
         }
       }
@@ -1013,7 +1021,8 @@ function extractLineItems(text: string): InvoiceLineItem[] {
 async function saveInvoiceToDatabase(
   parsedInvoice: ParsedInvoice,
   userId: string,
-  projectId?: string
+  projectId?: string,
+  pdfFileUrl?: string | null
 ): Promise<void> {
   try {
     // Get user's project if not provided
@@ -1069,14 +1078,27 @@ async function saveInvoiceToDatabase(
       userId,
       projectId: targetProjectId,
       notes: parsedInvoice.description || 'Parsed from PDF',
+      pdfUrl: pdfFileUrl || null, // Store the original PDF file URL
     }
 
     const savedInvoice = await prisma.invoice.create({
-      data: invoiceData,
+      data: {
+        ...invoiceData,
+        // Create line items from parsed data
+        lineItems: {
+          create: (parsedInvoice.lineItems || []).map(item => ({
+            description: item.description || 'Parsed line item',
+            quantity: item.quantity || 1,
+            unitPrice: item.unitPrice || 0,
+            totalPrice: item.total || 0,
+            category: 'MATERIAL' as const, // Default category
+          })),
+        },
+      },
     })
 
     console.log(
-      `💾 SAVED: ${savedInvoice.id} - ${invoiceData.supplierName} - $${invoiceData.totalAmount}`
+      `💾 SAVED: ${savedInvoice.id} - ${invoiceData.supplierName} - $${invoiceData.totalAmount} (${parsedInvoice.lineItems?.length || 0} line items) - PDF: ${pdfFileUrl ? 'yes' : 'no'}`
     )
   } catch (saveError) {
     console.error(`💾 FAILED to save invoice:`, saveError)

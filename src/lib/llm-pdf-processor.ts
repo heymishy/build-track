@@ -587,8 +587,11 @@ Extract the invoice data now:`
  */
 export async function processInvoicePdfWithLLM(
   pdfBuffer: Buffer,
-  options: LLMPdfProcessorOptions = {}
+  options: LLMPdfProcessorOptions = {},
+  pdfFileUrl?: string | null
 ): Promise<MultiInvoiceResult> {
   const processor = new LLMPdfProcessor(options)
+  // Note: processPdfWithLLM doesn't save to database directly
+  // The pdfFileUrl will be passed through the main parseMultipleInvoices function
   return await processor.processPdfWithLLM(pdfBuffer)
 }

@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { withAuth, AuthUser } from '@/lib/middleware'
 import { parseMultipleInvoices } from '@/lib/pdf-parser'
 import { prisma } from '@/lib/prisma'
+import { uploadFile, generateSecureFilename } from '@/lib/file-storage'
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
 const ALLOWED_FILE_TYPE = 'application/pdf'
@@ -60,6 +61,24 @@ async function POST(request: NextRequest, user: AuthUser) {
     const arrayBuffer = await file.arrayBuffer()
     const buffer = Buffer.from(arrayBuffer)
 
+    // Store the original PDF file first
+    console.log('📁 Storing original PDF file...')
+    let pdfFileUrl: string | null = null
+
+    try {
+      const secureFileName = generateSecureFilename(file.name, 'parsed-invoice')
+      const uploadResult = await uploadFile(file, secureFileName, {
+        access: 'private',
+        contentType: file.type,
+      })
+      pdfFileUrl = uploadResult.url
+      console.log('✅ PDF stored successfully:', pdfFileUrl)
+    } catch (uploadError) {
+      console.error('⚠️ Failed to store PDF file:', uploadError)
+      // Continue with parsing even if file storage fails
+      // This ensures backward compatibility
+    }
+
     if (process.env.NODE_ENV === 'development' && process.env.DEBUG_PDF === 'true') {
       const bufferMemory = process.memoryUsage()
       console.log('[PDF DEBUG] After buffer conversion:', {
@@ -90,8 +109,8 @@ async function POST(request: NextRequest, user: AuthUser) {
 
       console.error(`💾 Found project for user: ${userProject?.name} (ID: ${userProject?.id})`)
 
-      // Call parseMultipleInvoices with database saving enabled
-      result = await parseMultipleInvoices(buffer, user.id, true, userProject?.id)
+      // Call parseMultipleInvoices with database saving enabled and PDF file URL
+      result = await parseMultipleInvoices(buffer, user.id, true, userProject?.id, pdfFileUrl)
       console.error('PDF parsing completed:', result.summary)
 
       // Log quality metrics for monitoring
