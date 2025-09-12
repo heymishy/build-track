@@ -11,7 +11,7 @@ import { InvoiceLearningService } from '@/lib/invoice-learning-service'
 async function POST(request: NextRequest, user: AuthUser) {
   try {
     const body = await request.json()
-    const { 
+    const {
       action,
       invoiceLineItemId,
       supplierName,
@@ -87,17 +87,11 @@ async function POST(request: NextRequest, user: AuthUser) {
         })
 
       default:
-        return NextResponse.json(
-          { success: false, error: 'Invalid action' },
-          { status: 400 }
-        )
+        return NextResponse.json({ success: false, error: 'Invalid action' }, { status: 400 })
     }
   } catch (error) {
     console.error('Invoice learning API error:', error)
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 })
   }
 }
 
@@ -130,10 +124,7 @@ async function GET(request: NextRequest, user: AuthUser) {
     })
   } catch (error) {
     console.error('Invoice learning suggestions API error:', error)
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 })
   }
 }
 

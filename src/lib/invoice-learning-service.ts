@@ -13,7 +13,11 @@ export interface MatchingPattern {
   amountRangeMax?: number
   tradeId: string
   estimateLineItemId?: string
-  patternType: 'SUPPLIER_TO_TRADE' | 'LINEITEM_TO_TRADE' | 'LINEITEM_TO_ESTIMATE' | 'AMOUNT_TO_TRADE'
+  patternType:
+    | 'SUPPLIER_TO_TRADE'
+    | 'LINEITEM_TO_TRADE'
+    | 'LINEITEM_TO_ESTIMATE'
+    | 'AMOUNT_TO_TRADE'
   confidence: number
   usageCount: number
   successCount: number
@@ -75,7 +79,9 @@ export class InvoiceLearningService {
         this.createOrUpdateAmountPattern(amount, tradeId),
       ])
 
-      console.log(`✅ Learned from mapping: ${supplierName} → ${lineItemDescription} → Trade ${tradeId}`)
+      console.log(
+        `✅ Learned from mapping: ${supplierName} → ${lineItemDescription} → Trade ${tradeId}`
+      )
     } catch (error) {
       console.error('Failed to learn from mapping:', error)
       throw error
@@ -128,11 +134,7 @@ export class InvoiceLearningService {
           trade: true,
           estimateLineItem: true,
         },
-        orderBy: [
-          { confidence: 'desc' },
-          { usageCount: 'desc' },
-          { successCount: 'desc' },
-        ],
+        orderBy: [{ confidence: 'desc' }, { usageCount: 'desc' }, { successCount: 'desc' }],
         take: 5, // Top 5 suggestions
       })
 
@@ -156,9 +158,10 @@ export class InvoiceLearningService {
         suggestions.push(...fuzzyMatches)
       }
 
-      console.log(`💡 Generated ${suggestions.length} suggestions for: ${supplierName} - ${lineItemDescription}`)
+      console.log(
+        `💡 Generated ${suggestions.length} suggestions for: ${supplierName} - ${lineItemDescription}`
+      )
       return suggestions
-
     } catch (error) {
       console.error('Failed to get suggestions:', error)
       return []
@@ -200,7 +203,7 @@ export class InvoiceLearningService {
   ): Promise<void> {
     await prisma.matchingHistory.update({
       where: { id: matchingHistoryId },
-      data: { 
+      data: {
         userCorrected: true,
         // Store the correction for learning
       },
@@ -242,12 +245,7 @@ export class InvoiceLearningService {
     accuracyRate: number
     topSuppliers: Array<{ supplier: string; tradeId: string; tradeName: string; count: number }>
   }> {
-    const [
-      totalPatterns,
-      patternsByType,
-      matchingHistory,
-      topSuppliers
-    ] = await Promise.all([
+    const [totalPatterns, patternsByType, matchingHistory, topSuppliers] = await Promise.all([
       prisma.matchingPattern.count({
         where: { userId: this.userId },
       }),
@@ -267,7 +265,7 @@ export class InvoiceLearningService {
       }),
       prisma.matchingHistory.groupBy({
         by: ['supplierName', 'tradeId'],
-        where: { 
+        where: {
           userId: this.userId,
           userConfirmed: true,
         },
@@ -295,12 +293,11 @@ export class InvoiceLearningService {
 
     return {
       totalPatterns,
-      patternsByType: Object.fromEntries(
-        patternsByType.map(p => [p.patternType, p._count])
-      ),
-      accuracyRate: matchingHistory._count.userConfirmed > 0 
-        ? (matchingHistory._sum.userConfirmed || 0) / matchingHistory._count.userConfirmed 
-        : 0,
+      patternsByType: Object.fromEntries(patternsByType.map(p => [p.patternType, p._count])),
+      accuracyRate:
+        matchingHistory._count.userConfirmed > 0
+          ? (matchingHistory._sum.userConfirmed || 0) / matchingHistory._count.userConfirmed
+          : 0,
       topSuppliers: topSuppliersWithNames,
     }
   }
@@ -315,9 +312,12 @@ export class InvoiceLearningService {
     return lineItem?.invoiceId || ''
   }
 
-  private async createOrUpdateSupplierPattern(supplierName: string, tradeId: string): Promise<void> {
+  private async createOrUpdateSupplierPattern(
+    supplierName: string,
+    tradeId: string
+  ): Promise<void> {
     const keywords = this.extractKeywords(supplierName)
-    
+
     const existing = await prisma.matchingPattern.findFirst({
       where: {
         userId: this.userId,
@@ -360,7 +360,7 @@ export class InvoiceLearningService {
     estimateLineItemId?: string
   ): Promise<void> {
     const keywords = this.extractKeywords(description)
-    
+
     const existing = await prisma.matchingPattern.findFirst({
       where: {
         userId: this.userId,
@@ -505,7 +505,10 @@ export class InvoiceLearningService {
       if (this.similarity(lineItemDescription, history.lineItemDescription) > 0.5) {
         confidence += 0.4
       }
-      if (Math.abs(amount - Number(history.amount)) / Math.max(amount, Number(history.amount)) < 0.3) {
+      if (
+        Math.abs(amount - Number(history.amount)) / Math.max(amount, Number(history.amount)) <
+        0.3
+      ) {
         confidence += 0.2
       }
 

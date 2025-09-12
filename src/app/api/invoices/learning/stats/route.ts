@@ -22,10 +22,7 @@ async function GET(request: NextRequest, user: AuthUser) {
     })
   } catch (error) {
     console.error('Learning stats API error:', error)
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 })
   }
 }
 

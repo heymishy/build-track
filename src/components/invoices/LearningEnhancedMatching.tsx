@@ -216,17 +216,13 @@ export function LearningEnhancedMatching({
                 <div className="flex items-center gap-3 flex-1">
                   {getMethodIcon(suggestion.matchingMethod)}
                   <div className="flex-1 min-w-0">
-                    <div className="font-medium text-gray-900 truncate">
-                      {suggestion.tradeName}
-                    </div>
+                    <div className="font-medium text-gray-900 truncate">{suggestion.tradeName}</div>
                     {suggestion.estimateDescription && (
                       <div className="text-sm text-gray-500 truncate">
                         {suggestion.estimateDescription}
                       </div>
                     )}
-                    <div className="text-xs text-gray-400 mt-1">
-                      {suggestion.reason}
-                    </div>
+                    <div className="text-xs text-gray-400 mt-1">{suggestion.reason}</div>
                   </div>
                 </div>
 
@@ -314,20 +310,23 @@ export function LearningEnhancedMatching({
         </label>
         <select
           value={currentMatch || ''}
-          onChange={(e) => handleManualSelection(e.target.value || null)}
+          onChange={e => handleManualSelection(e.target.value || null)}
           className="block w-full text-sm border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
         >
           <option value="">-- Select an estimate line item --</option>
           {Object.entries(
-            estimateLineItems.reduce((groups, item) => {
-              const tradeName = item.trade.name
-              if (!groups[tradeName]) groups[tradeName] = []
-              groups[tradeName].push(item)
-              return groups
-            }, {} as Record<string, any[]>)
+            estimateLineItems.reduce(
+              (groups, item) => {
+                const tradeName = item.trade.name
+                if (!groups[tradeName]) groups[tradeName] = []
+                groups[tradeName].push(item)
+                return groups
+              },
+              {} as Record<string, any[]>
+            )
           ).map(([tradeName, items]) => (
             <optgroup key={tradeName} label={`${tradeName} (${items.length} items)`}>
-              {items.map((estItem) => (
+              {items.map(estItem => (
                 <option key={estItem.id} value={estItem.id}>
                   {estItem.description}
                 </option>
