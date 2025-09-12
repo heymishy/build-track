@@ -134,7 +134,6 @@ export function InvoiceMatchingInterface({
     return grouped
   }
 
-
   useEffect(() => {
     fetchMatchingData()
   }, [projectId])
@@ -579,19 +578,24 @@ export function InvoiceMatchingInterface({
 
   const filteredInvoices = getMatchingInvoices()
   const selectedCount = selectedMatches.size
-  
+
   // Calculate only NEW/CHANGED matches (not existing ones from database)
-  const newMatchesCount = Array.from(selectedMatches.entries()).filter(([invoiceLineItemId, estimateLineItemId]) => {
-    // Find the original match for this invoice line item
-    const originalMatch = data?.matchingResults
-      .flatMap(result => result.matches)
-      .find(match => match.invoiceLineItemId === invoiceLineItemId)
-    
-    // This is a new/changed match if:
-    // 1. The original match was unmatched or suggested, OR
-    // 2. The selected estimate differs from the original
-    return originalMatch?.matchType !== 'existing' || originalMatch?.estimateLineItemId !== estimateLineItemId
-  }).length
+  const newMatchesCount = Array.from(selectedMatches.entries()).filter(
+    ([invoiceLineItemId, estimateLineItemId]) => {
+      // Find the original match for this invoice line item
+      const originalMatch = data?.matchingResults
+        .flatMap(result => result.matches)
+        .find(match => match.invoiceLineItemId === invoiceLineItemId)
+
+      // This is a new/changed match if:
+      // 1. The original match was unmatched or suggested, OR
+      // 2. The selected estimate differs from the original
+      return (
+        originalMatch?.matchType !== 'existing' ||
+        originalMatch?.estimateLineItemId !== estimateLineItemId
+      )
+    }
+  ).length
 
   // Calculate unmatched items for user guidance
   const unmatchedCount = data
@@ -1005,25 +1009,43 @@ export function InvoiceMatchingInterface({
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
             <div className="text-center">
               <div className="text-2xl font-bold text-blue-600">
-                {data.matchingResults.flatMap(r => r.matches).filter(m => m.matchType === 'existing').length}
+                {
+                  data.matchingResults
+                    .flatMap(r => r.matches)
+                    .filter(m => m.matchType === 'existing').length
+                }
               </div>
               <div className="text-xs text-gray-600">Already Matched</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-green-600">
-                {data.matchingResults.flatMap(r => r.matches).filter(m => m.matchType === 'suggested' && m.confidence >= 0.7).length}
+                {
+                  data.matchingResults
+                    .flatMap(r => r.matches)
+                    .filter(m => m.matchType === 'suggested' && m.confidence >= 0.7).length
+                }
               </div>
               <div className="text-xs text-gray-600">AI High Confidence</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-yellow-600">
-                {data.matchingResults.flatMap(r => r.matches).filter(m => m.matchType === 'suggested' && m.confidence >= 0.5 && m.confidence < 0.7).length}
+                {
+                  data.matchingResults
+                    .flatMap(r => r.matches)
+                    .filter(
+                      m => m.matchType === 'suggested' && m.confidence >= 0.5 && m.confidence < 0.7
+                    ).length
+                }
               </div>
               <div className="text-xs text-gray-600">AI Medium Confidence</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-red-600">
-                {data.matchingResults.flatMap(r => r.matches).filter(m => m.matchType === 'unmatched').length}
+                {
+                  data.matchingResults
+                    .flatMap(r => r.matches)
+                    .filter(m => m.matchType === 'unmatched').length
+                }
               </div>
               <div className="text-xs text-gray-600">Need Manual Review</div>
             </div>
