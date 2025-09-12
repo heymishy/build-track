@@ -32,6 +32,8 @@ model User {
   stageTransitions StageTransition[]
   supplierAccess   SupplierAccess[]
   notifications    Notification[]
+  matchingPatterns MatchingPattern[]
+  matchingHistory  MatchingHistory[]
   
   // Performance Indexes
   @@index([email])
@@ -66,6 +68,7 @@ model Project {
   stageTransitions  StageTransition[]
   supplierUploads   InvoiceUpload[]
   notifications     Notification[]
+  matchingPatterns  MatchingPattern[]
   
   // Performance Indexes
   @@index([status])
@@ -107,8 +110,10 @@ model Trade {
   updatedAt   DateTime @updatedAt
 
   // Relationships
-  project     Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  lineItems   LineItem[]
+  project          Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  lineItems        LineItem[]
+  matchingPatterns MatchingPattern[]
+  matchingHistory  MatchingHistory[]
   
   @@unique([projectId, name])
   @@index([projectId])
@@ -139,8 +144,10 @@ model LineItem {
   updatedAt         DateTime @updatedAt
 
   // Relationships
-  trade             Trade @relation(fields: [tradeId], references: [id], onDelete: Cascade)
-  invoiceItems      InvoiceLineItem[]
+  trade                     Trade @relation(fields: [tradeId], references: [id], onDelete: Cascade)
+  invoiceItems              InvoiceLineItem[]
+  matchingPatternsEstimate  MatchingPattern[] @relation("EstimateLineItemPatterns")
+  matchingHistoryEstimate   MatchingHistory[] @relation("EstimateLineItemHistory")
   
   @@index([tradeId])
   @@index([itemCode])
@@ -207,6 +214,7 @@ model Invoice {
   user            User? @relation(fields: [userId], references: [id])
   lineItems       InvoiceLineItem[]
   upload          InvoiceUpload?
+  matchingHistory MatchingHistory[]
   
   @@unique([projectId, invoiceNumber])
   @@index([projectId])
@@ -239,6 +247,7 @@ model InvoiceLineItem {
   // Relationships
   invoice         Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
   lineItem        LineItem? @relation(fields: [lineItemId], references: [id])
+  matchingHistory MatchingHistory[]
   
   @@index([invoiceId])
   @@index([lineItemId])
@@ -581,4 +590,114 @@ enum UploadStatus {
   PENDING      // Uploaded but not processed
   PROCESSED    // Converted to full invoice
   REJECTED     // Invalid or rejected upload
+}
+
+// Invoice Matching Learning System
+model MatchingPattern {
+  id                    String   @id @default(cuid())
+  userId                String   // User who created/confirmed this pattern
+  projectId             String?  // Optional project scope
+  
+  // Pattern matching criteria
+  supplierPattern       String?  // Supplier name pattern (regex-compatible)
+  lineItemPattern       String?  // Line item description pattern
+  amountRangeMin        Decimal? // Minimum amount range
+  amountRangeMax        Decimal? // Maximum amount range
+  
+  // Mapping target
+  tradeId               String   // Target trade this pattern maps to
+  estimateLineItemId    String?  // Specific estimate line item (optional)
+  
+  // Pattern metadata
+  patternType           MatchingPatternType
+  confidence            Decimal  @default(0.5) // 0.0 to 1.0
+  usageCount            Int      @default(0)
+  successCount          Int      @default(0)
+  lastUsedAt            DateTime?
+  
+  // Timestamps
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  
+  // Relationships
+  user                  User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project               Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  trade                 Trade @relation(fields: [tradeId], references: [id], onDelete: Cascade)
+  estimateLineItem      LineItem? @relation("EstimateLineItemPatterns", fields: [estimateLineItemId], references: [id], onDelete: SetNull)
+  matchingHistory       MatchingHistory[]
+  
+  @@index([userId])
+  @@index([projectId])
+  @@index([tradeId])
+  @@index([patternType])
+  @@index([confidence])
+  @@index([usageCount])
+  @@index([supplierPattern])
+  @@index([userId, projectId])
+  @@index([tradeId, confidence])
+  @@map("matching_patterns")
+}
+
+enum MatchingPatternType {
+  SUPPLIER_TO_TRADE     // Maps supplier names to trades
+  LINEITEM_TO_TRADE     // Maps line item descriptions to trades  
+  LINEITEM_TO_ESTIMATE  // Maps specific line items to estimate line items
+  AMOUNT_TO_TRADE       // Maps amount ranges to trades
+}
+
+// Invoice Matching History for Learning
+model MatchingHistory {
+  id                    String   @id @default(cuid())
+  userId                String   // User who made the match
+  
+  // Invoice data
+  invoiceId             String
+  invoiceLineItemId     String
+  supplierName          String
+  lineItemDescription   String
+  amount                Decimal
+  
+  // Matching result
+  tradeId               String   // Trade that was matched to
+  estimateLineItemId    String?  // Specific estimate line item matched to
+  confidence            Decimal  // Confidence of the match (0.0 to 1.0)
+  matchingMethod        MatchingMethod // How this match was made
+  
+  // Pattern used (if any)
+  matchingPatternId     String?  // Pattern that was used for this match
+  
+  // Feedback
+  userConfirmed         Boolean  @default(false) // User confirmed this match is correct
+  userCorrected         Boolean  @default(false) // User corrected this match
+  
+  // Timestamps
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  
+  // Relationships
+  user                  User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  invoice               Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  invoiceLineItem       InvoiceLineItem @relation(fields: [invoiceLineItemId], references: [id], onDelete: Cascade)
+  trade                 Trade @relation(fields: [tradeId], references: [id], onDelete: Cascade)
+  estimateLineItem      LineItem? @relation("EstimateLineItemHistory", fields: [estimateLineItemId], references: [id], onDelete: SetNull)
+  matchingPattern       MatchingPattern? @relation(fields: [matchingPatternId], references: [id], onDelete: SetNull)
+  
+  @@index([userId])
+  @@index([invoiceId])
+  @@index([tradeId])
+  @@index([matchingMethod])
+  @@index([userConfirmed])
+  @@index([userCorrected])
+  @@index([supplierName])
+  @@index([createdAt])
+  @@index([userId, createdAt])
+  @@map("matching_history")
+}
+
+enum MatchingMethod {
+  MANUAL        // User manually selected
+  PATTERN       // Matched using learned pattern
+  LLM           // Matched using LLM/AI
+  FUZZY         // Matched using fuzzy string matching
+  AMOUNT        // Matched based on amount similarity
 }

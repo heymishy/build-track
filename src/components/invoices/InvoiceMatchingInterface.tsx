@@ -19,7 +19,9 @@ import {
   ChevronRightIcon,
   SparklesIcon,
   AdjustmentsHorizontalIcon,
+  AcademicCapIcon,
 } from '@heroicons/react/24/outline'
+import { LearningEnhancedMatching } from './LearningEnhancedMatching'
 
 interface InvoiceLineItemMatch {
   invoiceLineItemId: string
@@ -92,6 +94,7 @@ export function InvoiceMatchingInterface({
   const [justAppliedCount, setJustAppliedCount] = useState<number>(0)
   const [groupByTrade, setGroupByTrade] = useState(false)
   const [showGuide, setShowGuide] = useState(true)
+  const [enableLearning, setEnableLearning] = useState(true)
 
   // Helper function to group line items by trade
   const getGroupedLineItems = () => {
@@ -841,6 +844,21 @@ export function InvoiceMatchingInterface({
               <label className="flex items-center">
                 <input
                   type="checkbox"
+                  checked={enableLearning}
+                  onChange={e => setEnableLearning(e.target.checked)}
+                  className="rounded border-gray-300 text-purple-600 shadow-sm focus:border-purple-300 focus:ring focus:ring-purple-200 focus:ring-opacity-50"
+                />
+                <span className="ml-2 text-sm text-gray-700 font-medium">
+                  <AcademicCapIcon className="h-4 w-4 inline mr-1 text-purple-600" />
+                  Smart Learning
+                </span>
+              </label>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <label className="flex items-center">
+                <input
+                  type="checkbox"
                   checked={groupByTrade}
                   onChange={e => setGroupByTrade(e.target.checked)}
                   className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
@@ -1385,138 +1403,158 @@ export function InvoiceMatchingInterface({
                           </div>
 
                           {/* PRIMARY MATCHING INTERFACE */}
-                          <div className="bg-white rounded-lg border-2 border-blue-200 p-4">
-                            <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center">
-                              <LinkIcon className="h-4 w-4 mr-2 text-blue-600" />
-                              Match to Estimate Line Item
-                            </h4>
+                          {enableLearning ? (
+                            <LearningEnhancedMatching
+                              invoiceLineItem={{
+                                id: lineItem.id,
+                                description: lineItem.description,
+                                totalPrice: lineItem.totalPrice,
+                              }}
+                              invoice={{
+                                id: invoice.id,
+                                supplierName: invoice.supplierName,
+                              }}
+                              projectId={projectId}
+                              estimateLineItems={data.estimateLineItems}
+                              onMatchSelected={(estimateLineItemId) => 
+                                handleMatchSelection(lineItem.id, estimateLineItemId)
+                              }
+                              currentMatch={selectedMatches.get(lineItem.id) || match.estimateLineItemId}
+                            />
+                          ) : (
+                            <div className="bg-white rounded-lg border-2 border-blue-200 p-4">
+                              <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center">
+                                <LinkIcon className="h-4 w-4 mr-2 text-blue-600" />
+                                Match to Estimate Line Item
+                              </h4>
 
-                            <div className="space-y-3">
-                              {/* Estimate Selection Dropdown */}
-                              <div>
-                                <label className="block text-xs font-medium text-gray-700 mb-1">
-                                  Select Estimate Line Item to Match:
-                                </label>
-                                <select
-                                  value={
-                                    selectedMatches.get(lineItem.id) ||
-                                    match.estimateLineItemId ||
-                                    ''
-                                  }
-                                  onChange={e => {
-                                    const value = e.target.value
-                                    handleMatchSelection(lineItem.id, value || null)
-                                  }}
-                                  className="block w-full text-sm border-gray-300 rounded-md focus:border-blue-500 focus:ring-blue-500 bg-white"
-                                >
-                                  <option value="">-- No Match / Skip This Item --</option>
-                                  {/* Group by Trade */}
-                                  {Object.entries(
-                                    data.estimateLineItems.reduce(
-                                      (groups, item) => {
-                                        const tradeName = item.trade.name
-                                        if (!groups[tradeName]) groups[tradeName] = []
-                                        groups[tradeName].push(item)
-                                        return groups
-                                      },
-                                      {} as Record<string, any[]>
-                                    )
-                                  ).map(([tradeName, items]) => (
-                                    <optgroup
-                                      key={tradeName}
-                                      label={`${tradeName} (${items.length} items)`}
-                                    >
-                                      {items.map(estItem => {
-                                        const isCurrentMatch =
-                                          match.estimateLineItemId === estItem.id
-                                        const totalCost =
-                                          estItem.materialCostEst +
-                                          estItem.laborCostEst +
-                                          estItem.equipmentCostEst
-                                        return (
-                                          <option
-                                            key={estItem.id}
-                                            value={estItem.id}
-                                            className={isCurrentMatch ? 'font-medium' : ''}
-                                          >
-                                            {isCurrentMatch ? '★ ' : ''}
-                                            {estItem.description} - {formatCurrency(totalCost)}
-                                          </option>
-                                        )
-                                      })}
-                                    </optgroup>
-                                  ))}
-                                </select>
-                              </div>
+                              <div className="space-y-3">
+                                {/* Estimate Selection Dropdown */}
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                                    Select Estimate Line Item to Match:
+                                  </label>
+                                  <select
+                                    value={
+                                      selectedMatches.get(lineItem.id) ||
+                                      match.estimateLineItemId ||
+                                      ''
+                                    }
+                                    onChange={e => {
+                                      const value = e.target.value
+                                      handleMatchSelection(lineItem.id, value || null)
+                                    }}
+                                    className="block w-full text-sm border-gray-300 rounded-md focus:border-blue-500 focus:ring-blue-500 bg-white"
+                                  >
+                                    <option value="">-- No Match / Skip This Item --</option>
+                                    {/* Group by Trade */}
+                                    {Object.entries(
+                                      data.estimateLineItems.reduce(
+                                        (groups, item) => {
+                                          const tradeName = item.trade.name
+                                          if (!groups[tradeName]) groups[tradeName] = []
+                                          groups[tradeName].push(item)
+                                          return groups
+                                        },
+                                        {} as Record<string, any[]>
+                                      )
+                                    ).map(([tradeName, items]) => (
+                                      <optgroup
+                                        key={tradeName}
+                                        label={`${tradeName} (${items.length} items)`}
+                                      >
+                                        {items.map(estItem => {
+                                          const isCurrentMatch =
+                                            match.estimateLineItemId === estItem.id
+                                          const totalCost =
+                                            estItem.materialCostEst +
+                                            estItem.laborCostEst +
+                                            estItem.equipmentCostEst
+                                          return (
+                                            <option
+                                              key={estItem.id}
+                                              value={estItem.id}
+                                              className={isCurrentMatch ? 'font-medium' : ''}
+                                            >
+                                              {isCurrentMatch ? '★ ' : ''}
+                                              {estItem.description} - {formatCurrency(totalCost)}
+                                            </option>
+                                          )
+                                        })}
+                                      </optgroup>
+                                    ))}
+                                  </select>
+                                </div>
 
-                              {/* Current Selection Display */}
-                              {(selectedMatches.get(lineItem.id) || match.estimateLineItemId) && (
-                                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                                  <div className="flex items-start justify-between">
-                                    <div className="flex-1">
-                                      {(() => {
-                                        const currentEstimateId =
-                                          selectedMatches.get(lineItem.id) ||
-                                          match.estimateLineItemId
-                                        const currentEstimate = data.estimateLineItems.find(
-                                          e => e.id === currentEstimateId
-                                        )
-                                        if (!currentEstimate) return null
+                                {/* Current Selection Display */}
+                                {(selectedMatches.get(lineItem.id) || match.estimateLineItemId) && (
+                                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                                    <div className="flex items-start justify-between">
+                                      <div className="flex-1">
+                                        {(() => {
+                                          const currentEstimateId =
+                                            selectedMatches.get(lineItem.id) ||
+                                            match.estimateLineItemId
+                                          const currentEstimate = data.estimateLineItems.find(
+                                            e => e.id === currentEstimateId
+                                          )
+                                          if (!currentEstimate) return null
 
-                                        const totalCost =
-                                          currentEstimate.materialCostEst +
-                                          currentEstimate.laborCostEst +
-                                          currentEstimate.equipmentCostEst
-                                        const variance = lineItem.totalPrice - totalCost
-                                        const variancePercent =
-                                          totalCost > 0 ? (variance / totalCost) * 100 : 0
+                                          const totalCost =
+                                            currentEstimate.materialCostEst +
+                                            currentEstimate.laborCostEst +
+                                            currentEstimate.equipmentCostEst
+                                          const variance = lineItem.totalPrice - totalCost
+                                          const variancePercent =
+                                            totalCost > 0 ? (variance / totalCost) * 100 : 0
 
-                                        return (
-                                          <div>
-                                            <p className="text-sm font-medium text-blue-900">
-                                              ✓ Matched to: {currentEstimate.description}
-                                            </p>
-                                            <div className="mt-1 grid grid-cols-1 md:grid-cols-3 gap-2 text-xs">
-                                              <div>
-                                                <span className="text-blue-600 font-medium">
-                                                  Trade:
-                                                </span>{' '}
-                                                {currentEstimate.trade.name}
-                                              </div>
-                                              <div>
-                                                <span className="text-blue-600 font-medium">
-                                                  Estimated:
-                                                </span>{' '}
-                                                {formatCurrency(totalCost)}
-                                              </div>
-                                              <div>
-                                                <span className="text-blue-600 font-medium">
-                                                  Variance:
-                                                </span>
-                                                <span
-                                                  className={`ml-1 font-medium ${
-                                                    variance > 0
-                                                      ? 'text-red-600'
-                                                      : variance < 0
-                                                        ? 'text-green-600'
-                                                        : 'text-gray-600'
-                                                  }`}
-                                                >
-                                                  {variance > 0 ? '+' : ''}
-                                                  {formatCurrency(variance)} (
-                                                  {variancePercent.toFixed(1)}%)
-                                                </span>
+                                          return (
+                                            <div>
+                                              <p className="text-sm font-medium text-blue-900">
+                                                ✓ Matched to: {currentEstimate.description}
+                                              </p>
+                                              <div className="mt-1 grid grid-cols-1 md:grid-cols-3 gap-2 text-xs">
+                                                <div>
+                                                  <span className="text-blue-600 font-medium">
+                                                    Trade:
+                                                  </span>{' '}
+                                                  {currentEstimate.trade.name}
+                                                </div>
+                                                <div>
+                                                  <span className="text-blue-600 font-medium">
+                                                    Estimated:
+                                                  </span>{' '}
+                                                  {formatCurrency(totalCost)}
+                                                </div>
+                                                <div>
+                                                  <span className="text-blue-600 font-medium">
+                                                    Variance:
+                                                  </span>
+                                                  <span
+                                                    className={`ml-1 font-medium ${
+                                                      variance > 0
+                                                        ? 'text-red-600'
+                                                        : variance < 0
+                                                          ? 'text-green-600'
+                                                          : 'text-gray-600'
+                                                    }`}
+                                                  >
+                                                    {variance > 0 ? '+' : ''}
+                                                    {formatCurrency(variance)} (
+                                                    {variancePercent.toFixed(1)}%)
+                                                  </span>
+                                                </div>
                                               </div>
                                             </div>
-                                          </div>
-                                        )
-                                      })()}
+                                          )
+                                        })()}
+                                      </div>
                                     </div>
                                   </div>
-                                </div>
-                              )}
+                                )}
+                              </div>
                             </div>
-                          </div>
+                          )}
 
                           {/* AI Suggestion Section - Secondary */}
                           {match.matchType === 'suggested' && (
